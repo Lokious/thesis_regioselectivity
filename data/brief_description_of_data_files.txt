@@ -1,0 +1,4 @@
+#id_tosequence.xlsx includes uniprot entry and corresponding AA sequences
+#rhea2xrefs.tsv includes rhea id with reaction_direction EC_number and GO_annotation
+#Rhea-ec_2.1.1.list is all the Rhea id under EC 2.1.1.-
+#uniprot_ec2.1.1.fasta; uniprot_ec2.1.1.tsv; uniprot_ec2.1.1.xlsx includes "Entry	Reviewed	Entry Name	Rhea ID	Sequence	EC number	PDB" but in different format
