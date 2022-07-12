@@ -27,6 +27,38 @@ def rheaid_touniprot(rhea,data_frame):
 
             entrys.append(uniprot_entry.iloc[:,0])
     return entrys
+def get_substrate_inchkey():
+    """
+    This function is used to split the substrate and product and save in dataframe
+    :parameter
+
+    :return: datframe which use rhea as index
+    """
+    #read file includes rhea id and chEBI id and name
+    rhea_dataframe = pd.read_table("data/Rhea-ec_2_1_1.tsv", header=0, index_col=0,
+                                          sep='\t')
+    rhea_dataframe["substrate"] = 0
+    for id in list(rhea_dataframe.index):
+        equation = rhea_dataframe.loc[id,"Equation"]
+        subtrates = equation.split("=")[0]
+        subtrate_list = subtrates.split("+")
+        name = (rhea_dataframe.loc[id,"ChEBI name"]).split(";")
+        chebiid = (rhea_dataframe.loc[id,"ChEBI identifier"]).split(";")
+        participentid = (rhea_dataframe.loc[id,"Participant identifier"]).split(";")
+        subtrate_dict_1 = dict(zip(name,chebiid))
+        subtrate_dict_2 = dict(zip(name, participentid))
+        print(subtrate_dict_1)
+        sub = ""
+        for item in subtrate_list:
+            if item.strip(" ") in subtrate_dict_1:
+                sub += subtrate_dict_1[item.strip(" ")]+";"
+            else:
+                #error may occur because some of the substrate is not exact
+                sub += "error;"
+
+        rhea_dataframe.loc[id,"substrate"] = sub
+    print(rhea_dataframe)
+
 def main():
     # readfile whihc contains the rhea id and related uniprotid
     #run with command line
@@ -53,14 +85,16 @@ def main():
     # fulldata.to_csv(file_name)
     #convert rheaid to uniprot entry, as the directly find enzyme from Rhea seems doesn't work
     #read rhea id file
-    rhea = open("data/Rhea-ec_2.1.1.list").readlines()
-    uniprot_list = rheaid_touniprot(rhea, rheauniprot_dataframe)
-    file = open("uniprot_list.txt","w")
-    for index,entry in enumerate(uniprot_list):
-        if isinstance(entry, str):
-            file.write("{},{}\n".format(entry,rhea[index]))
-        else:
-            entry.to_csv("uniprot_list.txt", mode='a',header=False)
+    # rhea = open("data/Rhea-ec_2.1.1.list").readlines()
+    # uniprot_list = rheaid_touniprot(rhea, rheauniprot_dataframe)
+    # file = open("uniprot_list.txt","w")
+    # for index,entry in enumerate(uniprot_list):
+    #     if isinstance(entry, str):
+    #         file.write("{},{}\n".format(entry,rhea[index]))
+    #     else:
+    #         entry.to_csv("uniprot_list.txt", mode='a',header=False)
     # print(uniprot_list)
+
+    get_substrate_inchkey()
 if __name__ == "__main__":
     main()
