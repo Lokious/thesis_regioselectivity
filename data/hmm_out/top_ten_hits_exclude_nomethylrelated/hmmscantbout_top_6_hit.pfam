@@ -1,5 +1,5 @@
 #                                                                   --- full sequence ---- --- best 1 domain ---- --- domain number estimation ----
-# target name        accession  query name               accession    E-value  score  bias   E-value  score  bias   exp reg clu  ov env dom rep inc description of target
+#target name        accession  query name               accession    E-value  score  bias   E-value  score  bias   exp reg clu  ov env dom rep inc description of target
 #------------------- ----------     -------------------- ---------- --------- ------ ----- --------- ------ -----   --- --- --- --- --- --- --- --- ---------------------
 top_6_aligned        -          sp|A0A0H3PEK7|TLYA_CAMJJ -            5.8e-06   13.4   0.1   1.3e-05   12.3   0.1   1.7   1   1   0   1   1   1   1 -
 top_6_aligned        -          sp|A0A0N9HMN6|POMT3_SINHE -            5.2e-08   20.0   0.1   2.5e-07   17.8   0.0   2.0   2   0   0   2   2   2   1 -
