@@ -5,7 +5,7 @@ Description:
 Dependencies:   Python3.9
                 numpy
                 pandas
-datafile should be put in the directory data/
+datafile should be put in the directory data/ ,this script should be under regioselectivity_prediction
 includes Rhea-ec_2_1_1.tsv
 """
 
@@ -130,6 +130,6 @@ def main():
 
     get_substrate_inchkey()
 
-    target_sequences("E:/Download/regioselectivity_prediction/data/hmm_out/top_ten_hits_exclude_nomethylrelated/hmmscantbout_top_6_hit.pfam")
+    target_sequences("data/hmm_out/top_ten_hits_exclude_nomethylrelated/hmmscantbout_top_6_hit.pfam")
 if __name__ == "__main__":
     main()
