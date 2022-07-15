@@ -109,6 +109,7 @@ def get_smile(datasets):
         substrate = list(filter(None, substrate))
         print(substrate)
         products = datasets.loc[i,"product_CHEBI"].split(";")
+        products = list(filter(None, products))
         for sub in substrate:
             #some of the mol file is missing in the directory whihc download from rhea
             try:

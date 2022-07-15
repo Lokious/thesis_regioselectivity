@@ -1,0 +1,36 @@
+SEEDS= ["PF05175_seed","PF08241_seed","PF08242_seed","PF13489_seed","PF13649_seed","PF13847_seed"]
+
+rull all:
+    input:
+        expand("data/hmm_out/top_ten_hits_exclude_nomethylrelated/{seeds}.txt",seeds=SEEDS),
+        expand("data/hmm_out/{seeds}_build",seeds=SEEDS)
+        expand("hmmbuild data/hmm_out/{seeds}_hit.out",seeds=SEEDS)
+        expand("hmmbuild data/hmm_out/{seeds}_hit.txt",seeds=SEEDS)
+        expand("hmmbuild data/hmm_out/{seeds}_hit.tsv",seeds=SEEDS)
+rule hmm_build:
+    output:
+        directory="data/hmm_out/{seeds}_build",
+    shell:
+        "hmmbuild {output.directory} {seeds}"
+
+
+rule hmm_press:
+    input:
+        inputfile="hmmbuild data/hmm_out/{seeds}_build",
+
+    shell:
+        "hmmpress {input.inputfile}"
+
+
+rule hmm_scan:
+    input:
+        inputfile="data/uniprot_ec2.1.1.fasta",
+        buildfile = "hmmbuild data/hmm_out/{seeds}_build",
+    output:
+        o="hmmbuild data/hmm_out/{seeds}_hit.out", 
+        domtblout="hmmbuild data/hmm_out/{seeds}_hit.txt",
+        tblout="hmmbuild data/hmm_out/{seeds}_hit.tsv",
+    params:
+        cpu="3",
+    shell:
+        "hmmscan -o {output.o} --domtblout {output.domtblout} --tblout {output.tblout} --cpu {params.cpu} {input.buildfile} {input.inputfile}"

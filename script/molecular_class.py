@@ -1,6 +1,7 @@
 """
 class for saving the properties for each molecular
 """
+from pikachu.general import draw_smiles
 class molecular ():
     def __init__(self,chembi="",rhea_comp="",inchkey="",smiles=''):
         self.chembi = chembi
@@ -16,3 +17,9 @@ class molecular ():
         return self.inchkey
     def get_smiles(self):
         return self.smiles
+    def calculate_smile(self):
+
+if __name__ == "__main__":
+    mol = molecular()
+    mol.calculate_smile()
+
