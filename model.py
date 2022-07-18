@@ -14,6 +14,9 @@ from sys import argv
 from urllib.request import urlopen
 from rdkit import Chem, DataStructs
 from rdkit.Chem import RDKFingerprint, SDMolSupplier
+from rdkit.Chem.Draw import IPythonConsole
+from rdkit.Chem import Draw
+import pikachu
 from script.molecular_class import molecular
 def target_sequences(file):
     """
@@ -145,7 +148,10 @@ def get_smile(datasets):
                 smile = Chem.MolToSmiles(mol)
                 mol1 = molecular(pro,smiles=smile)
 
-
+def mol_with_atom_index(mol):
+    for atom in mol.GetAtoms():
+        atom.SetAtomMapNum(atom.GetIdx())
+    return mol
 def main():
     # readfile whihc contains the rhea id and related uniprotid
     #run with command line
@@ -181,10 +187,15 @@ def main():
     #         entry.to_csv("uniprot_list.txt", mode='a',header=False)
     # print(uniprot_list)
 
-    df1 = get_substrate_chebi("data/Rhea-ec_2_1_1.tsv")
-    print(df1)
-    get_smile(df1)
-
-    target_sequences("data/hmm_out/top_ten_hits_exclude_nomethylrelated/hmmscantbout_top_6_hit.pfam")
+    # df1 = get_substrate_chebi("data/Rhea-ec_2_1_1.tsv")
+    # print(df1)
+    # get_smile(df1)
+    #if the nmbering from rdkit is following the carbon numbering rules?
+    mol = Chem.MolFromSmiles('CC1=C[N]C2=C1[C@H](C)C=CC2=O.C(C5=CC4=C3CCN(C3=C(C(=C4[N]5)OC)O)C(=O)N)(=O)N6C7=C(CC6)C8=C(C(=C7O)OC)[N]C(=C8)C(=O)[N]9C%10=C(C=C9)C%11=C(C(=C%10)O)N=CC%11C')
+    mol = mol_with_atom_index(mol)
+    Draw.ShowMol(mol,size=(600,600))
+    #target_sequences("data/hmm_out/top_ten_hits_exclude_nomethylrelated/hmmscantbout_top_6_hit.pfam")
+    #pikachu.general.draw_smiles(
+    #    "CCC(=O)[C@@H]1NC(=O)[C@H](CC(N)=O)NC(=O)C(NC(=O)[C@@H](N)CC(C)C)[C@H](O)c3ccc(Oc2cc1cc(CC)c2O)c(Cl)c3")
 if __name__ == "__main__":
     main()

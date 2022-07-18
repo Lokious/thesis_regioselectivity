@@ -18,8 +18,11 @@ class molecular ():
     def get_smiles(self):
         return self.smiles
     def calculate_smile(self):
-
+        smile = Chem.MolToSmiles(mol)
+        self.smiles = smile
+def main():
+    unittest.main()
+    
 if __name__ == "__main__":
-    mol = molecular()
-    mol.calculate_smile()
+    main()
 
