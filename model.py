@@ -28,25 +28,28 @@ def target_sequences(file):
     name = ['target_name', 'accession_domain','query_name', 'accession',
             'E-value1',  'score1',  'bias1',   'E-value',  'score',  'bias',
             'exp', 'reg', 'clu',  'ov', 'env', 'dom','rep','inc', 'description_of_target']
-    hmmscan_df = (pd.read_table(file, header=None, comment='#',names=name ,sep= '\s+', skip_blank_lines=True)).dropna()
-    hmmscan_df = hmmscan_df.iloc[:,2]
+    hmmscan_df = (pd.read_table(file, header=None, comment='#',names=name,sep= '\s+', skip_blank_lines=True)).dropna()
+
+    hmmscan_df = hmmscan_df.iloc[:,[0,2]]
     for i in hmmscan_df.index:
-        hmmscan_df.iloc[i] = (hmmscan_df.iloc[i]).split("|")[1]
+        hmmscan_df.iloc[i][1] = (hmmscan_df.iloc[i][1]).split("|")[1]
     hmmscan_df.columns = ["index","id"]
+
     return hmmscan_df
 def remove_duplicated_id(directory):
-
+    """
+    This is to extract the hits uniprot id from hmmscan and remove the repeat part
+    :param directory: sting, directory of hmmscan output
+    :return:list of uniprot id
+    """
     file_name = glob.iglob(directory+'/*.tsv')
     datafrmae_list = []
     for i in file_name:
         df = target_sequences(i)
-        print(df.columns)
-        #????
-        print(df.index)
-        #print(df.iloc[:,1])
-        datafrmae_list.append(df['id'])
-        print(datafrmae_list)
-    
+        datafrmae_list += df['id'].tolist()
+        #return uniprot id
+        return list(set(datafrmae_list))
+
 def readrhlist(file_name):
 
     rheauniprot_dataframe = pd.read_table(file_name, header=0, index_col=3,sep='\t', encoding="ISO-8859-1")
