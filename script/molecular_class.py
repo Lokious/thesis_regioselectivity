@@ -22,7 +22,7 @@ class molecular ():
         self.smiles = smile
 def main():
     unittest.main()
-    
+
 if __name__ == "__main__":
     main()
 
