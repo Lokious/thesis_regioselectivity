@@ -20,7 +20,31 @@ import pikachu
 from script.molecular_class import molecular
 from script import parse_data
 import glob
-
+def merge_uniprot_id_smile(rheauniprot_dataframe,seq_df):
+    """
+    combine sequence and substrate smile in onefile and save to csv file
+    :param
+        rheauniprot_dataframe:
+        seq_df:
+    :return:
+    """
+    df1 = parse_data.get_substrate_chebi("data/Rhea-ec_2_1_1.tsv")
+    df1 = parse_data.get_smile(df1)
+    df1.index = df1.index.map(lambda x: x.split(":")[1])
+    df1["RHEA_ID"] = df1.index
+    df1.set_index("RHEA_ID", inplace=True)
+    uniprot_entry = parse_data.remove_duplicated_id(
+        r"E:\Download\regioselectivity_prediction\data\hmm_out")
+    fulldata = parse_data.rheaid_to_uniprot(uniprot_entry,
+                                            rheauniprot_dataframe)
+    fulldata.set_index("RHEA_ID", inplace=True)
+    fulldata = fulldata.reset_index()
+    df1 = df1.reset_index()
+    complete_data = pd.merge(fulldata, df1)
+    seq_df = seq_df.reset_index()
+    complete_data = pd.merge(seq_df,complete_data)
+    complete_data.to_csv("data/seq_smiles.csv")
+    return complete_data
 def main():
     # readfile whihc contains the rhea id and related uniprotid
     #run with command line
@@ -30,10 +54,15 @@ def main():
     rheauniprot_dataframe = parse_data.readrhlist(rh_file)
 
     #read id and sequences in dataframe
-    # run with pycharm
-    seq_file = "data/id_tosequence.xlsx"
+    seq_file = "data/id_tosequence.xlsx" # run with pycharm
     #seq_file = argv[2]
     id_seq_dataframe = parse_data.read_sequence(seq_file)
+    print(id_seq_dataframe)
+    merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
+
+
+
+
     #print(id_seq_dataframe)
     #link the sequences and reaction participant put in one csv file
     #fulldata = id_seq_dataframe.join(rheauniprot_dataframe)
@@ -57,12 +86,6 @@ def main():
     #         entry.to_csv("uniprot_list.txt", mode='a',header=False)
     # print(uniprot_list)
 
-    df1 = parse_data.get_substrate_chebi("data/Rhea-ec_2_1_1.tsv")
-    complet_datframe = parse_data.get_smile(df1)
-    print(complet_datframe)
-    uniprot_entry = parse_data.remove_duplicated_id(r"E:\Download\regioselectivity_prediction\data\hmm_out")
-    fulldata = parse_data.rheaid_to_uniprot(uniprot_entry, rheauniprot_dataframe)
-    print(fulldata.join(complet_datframe))
 
     #if the nmbering from rdkit is following the carbon numbering rules?
     # mol = mol_with_atom_index('CC1=C[N]C2=C1[C@H](C)C=CC2=O.C(C5=CC4=C3CCN(C3=C(C(=C4[N]5)OC)O)C(=O)N)(=O)N6C7=C(CC6)C8=C(C(=C7O)OC)[N]C(=C8)C(=O)[N]9C%10=C(C=C9)C%11=C(C(=C%10)O)N=CC%11C')
