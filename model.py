@@ -19,7 +19,13 @@ from rdkit.Chem import Draw
 import pikachu
 from script.molecular_class import molecular
 from script import parse_data
+from rdkit.Chem import Draw, AllChem
 import glob
+from IPython.display import SVG, display, Image
+import seaborn as sns; sns.set(color_codes=True)
+import matplotlib.pyplot as plt
+from PIL import Image
+
 def merge_uniprot_id_smile(rheauniprot_dataframe,seq_df):
     """
     combine sequence and substrate smile in onefile and save to csv file
@@ -45,6 +51,14 @@ def merge_uniprot_id_smile(rheauniprot_dataframe,seq_df):
     complete_data = pd.merge(seq_df,complete_data)
     complete_data.to_csv("data/seq_smiles.csv")
     return complete_data
+
+
+def drop_useless_column(dataframe):
+    dataframe = dataframe.loc[:,["Sequence","sub_mols","pro_mols","sub_smiles","pro_smiles"]]
+    print(dataframe)
+
+
+
 def main():
     # readfile whihc contains the rhea id and related uniprotid
     #run with command line
@@ -57,9 +71,8 @@ def main():
     seq_file = "data/id_tosequence.xlsx" # run with pycharm
     #seq_file = argv[2]
     id_seq_dataframe = parse_data.read_sequence(seq_file)
-    print(id_seq_dataframe)
-    merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
-
+    seq_smiles = merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
+    drop_useless_column(seq_smiles)
 
 
 
@@ -99,6 +112,11 @@ def main():
     # uniprot_entry = remove_duplicated_id(r"E:\Download\regioselectivity_prediction\data\hmm_out")
     # rheaid_to_uniprot(uniprot_entry, rheauniprot_dataframe)
     #pikachu.general.draw_smiles(
-    #    "CCC(=O)[C@@H]1NC(=O)[C@H](CC(N)=O)NC(=O)C(NC(=O)[C@@H](N)CC(C)C)[C@H](O)c3ccc(Oc2cc1cc(CC)c2O)c(Cl)c3")
+    #    "cc")
+    rxn = AllChem.ReactionFromSmarts(r"[C:1]-[C:2]>>[C:1].[C:2]")
+    img = Draw.ReactionToImage(rxn,returnPNG=True)
+    #?
+    display(img)
+
 if __name__ == "__main__":
     main()
