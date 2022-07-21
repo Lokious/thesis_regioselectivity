@@ -150,7 +150,7 @@ def get_smile(datasets)->pd.DataFrame:
         products = list(filter(None, products))
         smiles = []
         mols_list = []
-
+        j = 0
         for sub in substrate:
             #some of the mol file is missing in the directory whihc download from rhea
             try:
@@ -165,6 +165,8 @@ def get_smile(datasets)->pd.DataFrame:
                     download.write(content)
                 print("downloading the missing file: {},pleaze rerun the code".format(sub.replace(":","_")))
             if mol:
+                mol_ob = molecular()
+                mol,j = mol_ob.mol_with_atom_index(mol_object=mol,index=j)
                 smile = Chem.MolToSmiles(mol)
                 smiles.append(smile)
                 mols_list.append(mol)
@@ -172,6 +174,7 @@ def get_smile(datasets)->pd.DataFrame:
             datasets.at[i,"sub_mols"] = mols_list
         smiles = []
         mols_list = []
+        j = 0
         for pro in products:
             #some of the mol file is missing in the directory whihc download from rhea
 
@@ -187,6 +190,8 @@ def get_smile(datasets)->pd.DataFrame:
                     download.write(content)
                 print("downloading the missing file: {},pleaze rerun the code".format(pro.replace(":","_")))
             if mol:
+                mol_ob = molecular()
+                mol,j = mol_ob.mol_with_atom_index(mol_object=mol, index=j)
                 smile = Chem.MolToSmiles(mol)
                 smiles.append(smile)
                 mols_list.append(mol)
