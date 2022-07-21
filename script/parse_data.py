@@ -15,7 +15,7 @@ from urllib.request import urlopen
 from rdkit import Chem, DataStructs
 from rdkit.Chem import RDKFingerprint, SDMolSupplier
 from rdkit.Chem.Draw import IPythonConsole
-from rdkit.Chem import Draw
+from rdkit.Chem import Draw, AllChem, rdChemReactions
 import pikachu
 from script.molecular_class import molecular
 import glob
@@ -102,7 +102,8 @@ def get_substrate_chebi(file):
     rhea_dataframe = pd.read_table(file, header=0, index_col=0,
                                           sep='\t')
     #ignore H(+)
-    remove_item = ["CHEBI:15378"]
+    #remove_item = ["CHEBI:15378"]
+    remove_item = []
     for id in list(rhea_dataframe.index):
         equation = rhea_dataframe.loc[id,"Equation"]
         subtrates = equation.split("=")[0]
@@ -194,11 +195,30 @@ def get_smile(datasets)->pd.DataFrame:
 
     return datasets
 
-def mol_with_atom_index(smiles):
-    mol = Chem.MolFromSmiles(smiles)
-    for atom in mol.GetAtoms():
-        atom.SetAtomMapNum(atom.GetIdx())
-    return mol
+
+def merge_reaction(dataset)->pd.DataFrame:
+    """
+    add the rnx to dataframe
+    :return: pd.DataFrame
+    """
+    dataset["rxn"] = pd.DataFrame(
+        len(dataset["RHEA_ID"]) * [0]).astype('object')
+    dataset["rxn_smart"] = pd.DataFrame(
+        len(dataset["RHEA_ID"]) * [0]).astype('object')
+    #print(dataset)
+
+    for i, rheaid in enumerate(dataset["RHEA_ID"]):
+        # read rxn from smile
+        reaction_smile ="{}>>{}".format(dataset.loc[i,"sub_smiles"],dataset.loc[i,"pro_smiles"])
+        rxn = AllChem.ReactionFromSmarts(reaction_smile, useSmiles=True)
+        if rxn != None:
+            dataset.loc[i,"rxn"] = rxn
+            dataset.loc[i,"rxn_smart"] = rdChemReactions.ReactionToSmarts(rxn)
+        else:
+            dataset.loc[i, "rxn"] = None
+    return dataset
+
+
 def main():
     unittest.main()
 if __name__ == "__main__":

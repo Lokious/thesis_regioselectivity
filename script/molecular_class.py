@@ -3,6 +3,8 @@ class for saving the properties for each molecular
 """
 from pikachu.general import draw_smiles
 from rdkit.Chem import AllChem
+from rdkit.Chem.Draw import IPythonConsole
+from rdkit.Chem import Draw
 class molecular ():
     def __init__(self,chembi="",rhea_comp="",inchkey="",smiles=''):
         self.chembi = chembi
@@ -21,19 +23,43 @@ class molecular ():
     def calculate_smile(self):
         smile = Chem.MolToSmiles(mol)
         self.smiles = smile
+    def mol_with_atom_index(self,smile="",mol_object = None):
+        """Return mol object with index, input could be simles or mol"""
+        if mol_object:
+            for atom in mol_object.GetAtoms():
+                atom.SetAtomMapNum(atom.GetIdx() + 1)
+                # save the index in isotope just for keeeping the index for later use
+                atom.SetIsotope(atom.GetIdx() + 1)
+            return mol_object
+        else:
+            mol = Chem.MolFromSmiles(smile)
+            for atom in mol.GetAtoms():
+                atom.SetAtomMapNum(atom.GetIdx() + 1)
+                # save the index in isotope just for keeeping the index for later use
+                atom.SetIsotope(atom.GetIdx() + 1)
+            return mol
+
+
 class reaction ():
-    def __init__(self,substrates = "", products = ""):
+    def __init__(self,substrates="", products="",rxn_object=None):
         self.substrates = substrates
         self.products = products
-    def get_reaction_site(self):
-        bit_fingerprint = np.zeros((0,),
-                                   dtype=int)  # (one dimention, 0 is number of rows)
+        self.rxn_object = rxn_object
 
+    def get_reaction_sites(self,rxn_object=""):
+        rxn_object.Initialize()
+        reacting_atom_set = rxn_object.GetReactingAtoms()
+        print(reacting_atom_set)
+        img = Draw.ReactionToImage(rxn_object, returnPNG=True)
+        with open("test.png", 'wb') as handle:
+            handle.write(img)
 
-        morgan_bit_vector = AllChem.GetMorganFingerprintAsBitVect(mol, radius,
-                                                                  num_bits)
-        DataStructs.ConvertToNumpyArray(morgan_bit_vector, bit_fingerprint)
+    def get_reactant_atom(self):
 
+        react = AllChem.ReactionFromSmarts(
+            self.substrates + ">>" + self.products, useSmiles=True)
+        results = react.RunReactants((substrates,))[0]
+        print(results == self.products)
 
 
 def main():

@@ -3,3 +3,5 @@ packages:
 pandas
 numpy
 openpyxl-2.6.4
+rdkit
+openeye-toolkits
