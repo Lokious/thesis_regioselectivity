@@ -19,6 +19,7 @@ from rdkit.Chem import Draw, AllChem, rdChemReactions
 import pikachu
 from script.molecular_class import molecular
 import glob
+import dill
 def target_sequences(file):
     """
     This function is used to return Uniprot entry of target sequences from hmmscan
@@ -176,7 +177,7 @@ def get_smile(datasets)->pd.DataFrame:
         mols_list = []
         j = 0
         for pro in products:
-            #some of the mol file is missing in the directory whihc download from rhea
+            #some of the mol file is missing in the directory which download from rhea
 
             try:
                 mol = Chem.MolFromMolFile("data/mol/"+str(pro.replace(":","_")) +".mol")

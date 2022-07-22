@@ -84,13 +84,17 @@ def return_reactions(dataframe):
         r2 = reaction1.get_reactant_atom()
         break
 
-
-
+def read_object_from_file():
+    data_frame = pd.read_csv("data/seq_smiles.csv", header=0)
+    substrate_mols = data_frame.loc[0,"sub_mols"]
+    for mol in substrate_mols:
+        Draw.ShowMol(mol, size=(600, 600))
 def main():
     # readfile whihc contains the rhea id and related uniprotid
     #run with command line
     # rh_file = argv[1]
     #run with pycharm
+
     rh_file = "data/rhea2uniprot_sprot.tsv"
     rheauniprot_dataframe = parse_data.readrhlist(rh_file)
 
@@ -100,7 +104,6 @@ def main():
     id_seq_dataframe = parse_data.read_sequence(seq_file)
     seq_smiles = merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
     data_frame = keep_longest_smile(seq_smiles)
-
     return_reactions(seq_smiles)
     drop_useless_column(seq_smiles)
 
@@ -128,11 +131,18 @@ def main():
     #     else:
     #         entry.to_csv("uniprot_list.txt", mode='a',header=False)
     # print(uniprot_list)
-
-
+    '''
+    read_object_from_file()
+    '''
     #if the nmbering from rdkit is following the carbon numbering rules?
-    # mol = molecular_class.mol_with_atom_index('CC1=C[N]C2=C1[C@H](C)C=CC2=O.C(C5=CC4=C3CCN(C3=C(C(=C4[N]5)OC)O)C(=O)N)(=O)N6C7=C(CC6)C8=C(C(=C7O)OC)[N]C(=C8)C(=O)[N]9C%10=C(C=C9)C%11=C(C(=C%10)O)N=CC%11C')
-    # Draw.ShowMol(mol,size=(600,600))
+    molclass = molecular()
+    smile1='C1CC2=NC1=CC3=CC=C(N3)C=C4C=CC(=N4)C=C5C=CC(=C2)N5'
+    smile2="C1=CC(=C(C=C1C=CC(=O)O)O)O"
+    mol,index = molclass.mol_with_atom_index(smile=smile2)
+    smile_withindex = Chem.MolToSmiles(mol)
+    for atom in mol.GetAtoms():
+        atom.SetIsotope(0)
+    Draw.ShowMol(mol,size=(600,600))
     # smiles_with_atom_mappings = Chem.MolToSmiles(mol)
 
 
@@ -141,8 +151,8 @@ def main():
 
     # uniprot_entry = remove_duplicated_id(r"E:\Download\regioselectivity_prediction\data\hmm_out")
     # rheaid_to_uniprot(uniprot_entry, rheauniprot_dataframe)
-    #pikachu.general.draw_smiles(
-    #    "cc")
+    draw_smile = pikachu.general.draw_smiles(smile_withindex)
+
     # rxn = AllChem.ReactionFromSmarts(r"[C:1]-[C:2]>>[C:1].[C:2]")
     # img = Draw.ReactionToImage(rxn,returnPNG=True)
     # #?

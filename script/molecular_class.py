@@ -8,6 +8,7 @@ from IPython.display import SVG, display, Image
 from rdkit.Chem import Draw
 from rdkit import Chem
 from PIL import Image
+import dill
 class molecular ():
     def __init__(self,chembi="",rhea_comp="",inchkey="",smiles=''):
         self.chembi = chembi
@@ -36,7 +37,6 @@ class molecular ():
                 # save the index in isotope just for keeeping the index for later use
                 atom.SetIsotope(atom.GetIdx() + i)
                 index = atom.GetIdx() + i
-
             return mol_object,index
         else:
             i = index+1
@@ -54,6 +54,8 @@ class reaction ():
         self.substrates = substrates
         self.products = products
         self.rxn_object = rxn_object
+        self.mol_product = None
+        self.mol_substrate = None
 
     def get_reaction_sites(self,rxn_object=""):
         """
@@ -65,65 +67,106 @@ class reaction ():
         """
         rxn_object.Initialize()
         reacting_atom_set = rxn_object.GetReactingAtoms()
-        print(reacting_atom_set)
-        img = Draw.ReactionToImage(rxn_object, returnPNG=True)
+        # print(reacting_atom_set)
+        img = Draw.ReactionToImage(rxn_object, returnPNG=True, subImgSize=(600,600))
         with open("test.png", 'wb') as handle:
             handle.write(img)
 
-    def get_reactant_atom(self):
+    def perform_reaction(self):
         """
-        This function only consider the large substrate and product, it assume
-        the smaller molecular as Methyl donor, H2O or coenzyme etc.
+        perform reaction to get product's mol object and save, perform for each reaction
 
         :return:
         """
         react = AllChem.ReactionFromSmarts(
             self.substrates + ">>" + self.products, useSmiles=True)
         mol_substrate = Chem.MolFromSmiles(self.substrates)
-        print(self.products)
+        self.mol_substrate = mol_substrate
+        # print(self.products)
+        # print(self.substrates)
         react.Initialize()
-        #There should be only one product molecular,
-        #the RunReactants function just for keep the atom map to find the reactant atom
+        # There should be only one product molecular,
+        # the RunReactants function just for keep the atom map to find the reactant atom
         for result in react.RunReactants((mol_substrate,)):
+            # perform reaction and get the product
             for mol_product in result:
-                #Draw.ShowMol(mol2, size=(600, 600))
+                Draw.ShowMol(mol_product, size=(600, 600))
                 for atom in mol_product.GetAtoms():
                     atom.SetAtomMapNum(atom.GetIsotope())
-                    #atom.SetIsotope(0)
-                result = Chem.MolToSmiles(mol_product)
-                print(result)
-                print(result == self.products)
+                    # atom.SetIsotope(0)
+                result1 = Chem.MolToSmiles(mol_product)
+        self.mol_product = mol_product
+
+    def get_reactant_atom(self):
+        """
+        This function only consider the large substrate and product, it assume
+        the smaller molecular as Methyl donor, H2O or coenzyme etc.
+
+        :return: list of atom objects which is the regioselectivity site
+        """
+        #perform the reaction to
+        reaction.perform_reaction(self)
+
+        mol_product = self.mol_product
+        mol_substrate = self.mol_substrate
+
+        Draw.ShowMol(mol_substrate, size=(600, 600))
+        Draw.ShowMol(mol_product, size=(600, 600))
         for atom in mol_substrate.GetAtoms():
             atom.SetAtomMapNum(atom.GetIsotope())
             #atom.SetIsotope(0)
+
+        reactant_atoms = []
+        pro_atom_dic= {}
+        sub_atom_dic = {}
         for atom in mol_product.GetAtoms():
-            atom_index = atom.GetIdx()
+            pro_atom_dic[atom] = atom.GetAtomMapNum()
+        for atom in mol_substrate.GetAtoms():
+            sub_atom_dic[atom] = atom.GetAtomMapNum()
+        #list of tuple with (atom_object,AtomMapNum)
+        pro_atom_list = list(sorted(pro_atom_dic.items(), key=lambda item: item[1]))
+        sub_atom_list = list(
+            sorted(sub_atom_dic.items(), key=lambda item: item[1]))
+
+        for i in range(len(pro_atom_list)):
+
+            atom_index_pro = pro_atom_list[i][0].GetIdx()
             radius = 1
-            reactant_atoms = []
             try:
+                atom_index_sub = sub_atom_list[i][0].GetIdx()
                 sub_atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(mol_substrate,
                                                                          radius,
-                                                                         atom_index)
+                                                                         atom_index_sub)
             except:
-                reactant_atoms.append(atom_index)
+                reactant_atoms.append(atom_index_pro)
+
             pro_atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(
                 mol_product,
                 radius,
-                atom_index)
-
+                atom_index_pro)
             atom_map = {}
-            sub_submol_smiles = Chem.MolToSmiles(Chem.PathToSubmol(mol_substrate, sub_atom_environment, atomMap=atom_map))
-            pro_submol_smiles = Chem.MolToSmiles(Chem.PathToSubmol(mol_product, pro_atom_environment,
-                                       atomMap=atom_map))
-            print(sub_submol_smiles)
-            print(pro_submol_smiles)
-            if sub_submol_smiles != pro_submol_smiles:
-                reactant_atoms.append(atom_index)
-                print(reactant_atoms)
-        im = Draw.FingerprintEnv(mol_substrate,highlightAtomLists=reactant_atoms)
-        im.show()
-        #Draw.ShowMol(mol1, size=(600, 600))
+            sub_mol = Chem.PathToSubmol(mol_substrate, sub_atom_environment,
+                              atomMap=atom_map)
+            pro_mol = Chem.PathToSubmol(mol_product, pro_atom_environment,
+                              atomMap=atom_map)
 
+            # Draw.ShowMol(sub_mol, size=(600, 600))
+            # Draw.ShowMol(pro_mol, size=(600, 600))
+
+        atoms_list=[]
+        for index in reactant_atoms:
+            atom_methyl = mol_product.GetAtomWithIdx(index)
+            for bond in atom_methyl.GetBonds():
+                atom_1, atom_2 = bond.GetBeginAtom(), bond.GetEndAtom()
+                if atom_1 == atom_methyl:
+                    atoms_list.append(atom_2)
+                else:
+                    atoms_list.append(atom_1)
+        for atom in atoms_list:
+            print(atom.GetIdx())
+            print(atom.GetAtomMapNum())
+            print(atom.GetIsotope())
+        return atoms_list
 
 
 def main():
