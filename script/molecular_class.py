@@ -90,7 +90,7 @@ class reaction ():
         for result in react.RunReactants((mol_substrate,)):
             # perform reaction and get the product
             for mol_product in result:
-                Draw.ShowMol(mol_product, size=(600, 600))
+                #Draw.ShowMol(mol_product, size=(600, 600))
                 for atom in mol_product.GetAtoms():
                     atom.SetAtomMapNum(atom.GetIsotope())
                     # atom.SetIsotope(0)
@@ -109,9 +109,8 @@ class reaction ():
 
         mol_product = self.mol_product
         mol_substrate = self.mol_substrate
-
-        Draw.ShowMol(mol_substrate, size=(600, 600))
-        Draw.ShowMol(mol_product, size=(600, 600))
+        # Draw.ShowMol(mol_substrate, size=(600, 600))
+        # Draw.ShowMol(mol_product, size=(600, 600))
         for atom in mol_substrate.GetAtoms():
             atom.SetAtomMapNum(atom.GetIsotope())
             #atom.SetIsotope(0)
@@ -164,8 +163,8 @@ class reaction ():
                     atoms_list.append(atom_1)
         for atom in atoms_list:
             print(atom.GetIdx())
-            print(atom.GetAtomMapNum())
-            print(atom.GetIsotope())
+            # print(atom.GetAtomMapNum())
+            # print(atom.GetIsotope())
         return atoms_list
 
 

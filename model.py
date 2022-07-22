@@ -79,16 +79,18 @@ def return_reactions(dataframe):
         pro = dataframe.loc[index, "main_pro"]
         reaction1 = reaction(substrates=sub, products=pro)
         #print(dataframe.loc[index,"RHEA_ID"])
-        r1 = reaction1.get_reaction_sites(rxn_object=rxn)
-
+        #r1 = reaction1.get_reaction_sites(rxn_object=rxn)
         r2 = reaction1.get_reactant_atom()
-        break
+        dataframe["reactant_site"] = pd.DataFrame(
+            len(dataframe.index) * [0]).astype('object')
+        #save atom index(methylation site) from substrate in dataframe
+        dataframe.loc[index, "reactant_site"] = r2
 
 def read_object_from_file():
     data_frame = pd.read_csv("data/seq_smiles.csv", header=0)
     substrate_mols = data_frame.loc[0,"sub_mols"]
-    for mol in substrate_mols:
-        Draw.ShowMol(mol, size=(600, 600))
+    # for mol in substrate_mols:
+    #     Draw.ShowMol(mol, size=(600, 600))
 def main():
     # readfile whihc contains the rhea id and related uniprotid
     #run with command line
@@ -105,7 +107,7 @@ def main():
     seq_smiles = merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
     data_frame = keep_longest_smile(seq_smiles)
     return_reactions(seq_smiles)
-    drop_useless_column(seq_smiles)
+    #drop_useless_column(seq_smiles)
 
 
 
