@@ -24,6 +24,7 @@ from IPython.display import SVG, display, Image
 import seaborn as sns; sns.set(color_codes=True)
 import matplotlib.pyplot as plt
 from PIL import Image
+import numpy as np
 
 def merge_uniprot_id_smile(rheauniprot_dataframe,seq_df):
     """
@@ -49,7 +50,7 @@ def merge_uniprot_id_smile(rheauniprot_dataframe,seq_df):
     seq_df = seq_df.reset_index()
     complete_data = pd.merge(seq_df,complete_data)
     complete_data = parse_data.merge_reaction(complete_data)
-    complete_data.to_csv("data/seq_smiles.csv")
+    # complete_data.to_csv("data/seq_smiles.csv")
     return complete_data
 
 
@@ -58,34 +59,54 @@ def drop_useless_column(dataframe):
     #print(dataframe)
 
 
-def keep_longest_smile(dataframe):
+def keep_longest_smile(dataframe_before):
 
-    dataframe["main_sub"] = pd.DataFrame(
-        len(dataframe.index) * [0])
-    dataframe["main_pro"] = pd.DataFrame(
-        len(dataframe.index) * [0])
-    for index in dataframe.index:
-        main_sub = max((dataframe.loc[index,"sub_smiles"]).split("."), key=len)
-        dataframe.loc[index, "main_sub"] = main_sub
-        main_pro = max((dataframe.loc[index,"pro_smiles"]).split("."), key=len)
-        dataframe.loc[index, "main_pro"] = main_pro
-    return dataframe
+    dataframe_before["main_sub"] = pd.DataFrame(
+        len(dataframe_before.index) * [0])
+    dataframe_before["main_pro"] = pd.DataFrame(
+        len(dataframe_before.index) * [0])
+    for index in dataframe_before.index:
+        main_sub = max((dataframe_before.loc[index,"sub_smiles"]).split("."), key=len)
+        dataframe_before.loc[index, "main_sub"] = main_sub
+        main_pro = max((dataframe_before.loc[index,"pro_smiles"]).split("."), key=len)
+        dataframe_before.loc[index, "main_pro"] = main_pro
+    return dataframe_before
 
 
-def return_reactions(dataframe):
-    for index in dataframe.index:
-        rxn = dataframe.loc[index,"rxn"]
-        sub = dataframe.loc[index, "main_sub"]
-        pro = dataframe.loc[index, "main_pro"]
+def return_reactions(dataframe_rr):
+    """
+
+    :param dataframe:
+    :return:
+    """
+    atom_object_dictionary = {}
+    dataframe_rr["reactant_site"] = pd.DataFrame(
+        len(dataframe_rr.index) * [0]).astype('object')
+    for index in dataframe_rr.index:
+        rxn = dataframe_rr.loc[index,"rxn"]
+        sub = dataframe_rr.loc[index, "main_sub"]
+        pro = dataframe_rr.loc[index, "main_pro"]
         reaction1 = reaction(substrates=sub, products=pro)
         #print(dataframe.loc[index,"RHEA_ID"])
-        #r1 = reaction1.get_reaction_sites(rxn_object=rxn)
-        r2 = reaction1.get_reactant_atom()
-        dataframe["reactant_site"] = pd.DataFrame(
-            len(dataframe.index) * [0]).astype('object')
-        #save atom index(methylation site) from substrate in dataframe
-        dataframe.loc[index, "reactant_site"] = r2
+        rxn_file_name = "data/rxn_picture/{}".format(dataframe_rr.loc[index,"Entry"])
+        #r1 = reaction1.get_reaction_sites(rxn_object=rxn,file_name=rxn_file_name)
+        r2, index_list = reaction1.get_reactant_atom()
+        print("index: {}".format(index))
 
+        #save atom index(methylation site) from substrate in dataframe
+        site = ",".join(index_list)
+        print(site)
+        if site != "":
+            dataframe_rr.loc[index, "reactant_site"] = site
+        else:
+            #because we use the largest molecular, but for some substrates, methyl donor is larger
+            #we first leave those
+            dataframe_rr.loc[index,"reactant_site"] = "NA"
+
+        #save list of methyl site atom objects and index to a dictionary
+        atom_object_dictionary[index] = r2
+    dataframe_rr.to_csv("data/seq_smiles.csv")
+    return dataframe_rr
 def read_object_from_file():
     data_frame = pd.read_csv("data/seq_smiles.csv", header=0)
     substrate_mols = data_frame.loc[0,"sub_mols"]
@@ -106,7 +127,8 @@ def main():
     id_seq_dataframe = parse_data.read_sequence(seq_file)
     seq_smiles = merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
     data_frame = keep_longest_smile(seq_smiles)
-    return_reactions(seq_smiles)
+    data_with_site = return_reactions(data_frame)
+    print(data_with_site["reactant_site"])
     #drop_useless_column(seq_smiles)
 
 
@@ -137,14 +159,14 @@ def main():
     read_object_from_file()
     '''
     #if the nmbering from rdkit is following the carbon numbering rules?
-    molclass = molecular()
-    smile1='C1CC2=NC1=CC3=CC=C(N3)C=C4C=CC(=N4)C=C5C=CC(=C2)N5'
-    smile2="C1=CC(=C(C=C1C=CC(=O)O)O)O"
-    mol,index = molclass.mol_with_atom_index(smile=smile2)
-    smile_withindex = Chem.MolToSmiles(mol)
-    for atom in mol.GetAtoms():
-        atom.SetIsotope(0)
-    Draw.ShowMol(mol,size=(600,600))
+    # molclass = molecular()
+    # smile1='C1CC2=NC1=CC3=CC=C(N3)C=C4C=CC(=N4)C=C5C=CC(=C2)N5'
+    # smile2="C1=CC(=C(C=C1C=CC(=O)O)O)O"
+    # mol,index = molclass.mol_with_atom_index(smile=smile2)
+    # smile_withindex = Chem.MolToSmiles(mol)
+    # for atom in mol.GetAtoms():
+    #     atom.SetIsotope(0)
+    # Draw.ShowMol(mol,size=(600,600))
     # smiles_with_atom_mappings = Chem.MolToSmiles(mol)
 
 
@@ -153,7 +175,7 @@ def main():
 
     # uniprot_entry = remove_duplicated_id(r"E:\Download\regioselectivity_prediction\data\hmm_out")
     # rheaid_to_uniprot(uniprot_entry, rheauniprot_dataframe)
-    draw_smile = pikachu.general.draw_smiles(smile_withindex)
+    # draw_smile = pikachu.general.draw_smiles(smile_withindex)
 
     # rxn = AllChem.ReactionFromSmarts(r"[C:1]-[C:2]>>[C:1].[C:2]")
     # img = Draw.ReactionToImage(rxn,returnPNG=True)

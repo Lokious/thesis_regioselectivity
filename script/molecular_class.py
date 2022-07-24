@@ -57,7 +57,7 @@ class reaction ():
         self.mol_product = None
         self.mol_substrate = None
 
-    def get_reaction_sites(self,rxn_object=""):
+    def get_reaction_sites(self,rxn_object="",file_name= None ):
         """
         Function for finding all reactanct atoms, which include all substrates
         and products in the reaction
@@ -69,9 +69,9 @@ class reaction ():
         reacting_atom_set = rxn_object.GetReactingAtoms()
         # print(reacting_atom_set)
         img = Draw.ReactionToImage(rxn_object, returnPNG=True, subImgSize=(600,600))
-        with open("test.png", 'wb') as handle:
+        with open("{}.png".format(file_name), 'wb') as handle:
             handle.write(img)
-
+        handle.close()
     def perform_reaction(self):
         """
         perform reaction to get product's mol object and save, perform for each reaction
@@ -116,7 +116,7 @@ class reaction ():
             #atom.SetIsotope(0)
 
         reactant_atoms = []
-        pro_atom_dic= {}
+        pro_atom_dic = {}
         sub_atom_dic = {}
         for atom in mol_product.GetAtoms():
             pro_atom_dic[atom] = atom.GetAtomMapNum()
@@ -153,6 +153,7 @@ class reaction ():
             # Draw.ShowMol(pro_mol, size=(600, 600))
 
         atoms_list=[]
+        atom_index_list = []
         for index in reactant_atoms:
             atom_methyl = mol_product.GetAtomWithIdx(index)
             for bond in atom_methyl.GetBonds():
@@ -162,10 +163,11 @@ class reaction ():
                 else:
                     atoms_list.append(atom_1)
         for atom in atoms_list:
-            print(atom.GetIdx())
+            #str with symbol index and mapnumber
+            atom_index_list.append((atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum())))
             # print(atom.GetAtomMapNum())
             # print(atom.GetIsotope())
-        return atoms_list
+        return atoms_list, atom_index_list
 
 
 def main():
