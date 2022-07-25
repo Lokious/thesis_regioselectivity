@@ -1,13 +1,15 @@
 """
 class for saving the properties for each molecular
 """
+import pandas as pd
 from pikachu.general import draw_smiles
 from rdkit.Chem import AllChem, rdmolops
 from rdkit.Chem.Draw import IPythonConsole
 from IPython.display import SVG, display, Image
-from rdkit.Chem import Draw
+from rdkit.Chem import Draw,DataStructs
 from rdkit import Chem
 from PIL import Image
+import numpy as np
 import dill
 class molecular ():
     def __init__(self,chembi="",rhea_comp="",inchkey="",smiles=''):
@@ -47,7 +49,24 @@ class molecular ():
                 atom.SetIsotope(atom.GetIdx() + i)
                 index = atom.GetIdx() + i
             return mol,index
+    def create_fingerprint(self, substrate_molecular: Chem.Mol,num_bits: int = 2048,
+        radius: int = 3)->np.array:
 
+        #inisilize a numpy array for molecular fingerprint
+        bit_fingerprint_mol = np.zeros((0,),
+                                   dtype=int)  # (one dimention, 0 is number of rows)
+
+        #returns an RDKit vector object.
+        print(substrate_molecular)
+        print(radius)
+        print(num_bits)
+        morgan_bit_vector = AllChem.GetMorganFingerprintAsBitVect(substrate_molecular, radius,
+                                                                  num_bits)
+
+        # We convert the RDKit vetor object to a numpy array.
+        DataStructs.ConvertToNumpyArray(morgan_bit_vector, bit_fingerprint_mol)
+
+        return bit_fingerprint_mol
 
 class reaction ():
     def __init__(self,substrates="", products="",rxn_object=None):
@@ -69,6 +88,7 @@ class reaction ():
         reacting_atom_set = rxn_object.GetReactingAtoms()
         # print(reacting_atom_set)
         img = Draw.ReactionToImage(rxn_object, returnPNG=True, subImgSize=(600,600))
+        img.drawOptions()
         with open("{}.png".format(file_name), 'wb') as handle:
             handle.write(img)
         handle.close()
@@ -167,7 +187,8 @@ class reaction ():
             atom_index_list.append((atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum())))
             # print(atom.GetAtomMapNum())
             # print(atom.GetIsotope())
-        return atoms_list, atom_index_list
+        return atoms_list, atom_index_list,mol_substrate
+
 
 
 def main():

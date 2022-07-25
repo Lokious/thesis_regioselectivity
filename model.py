@@ -8,6 +8,7 @@ Dependencies:   Python3.9
 datafile should be put in the directory data/ ,this script should be under regioselectivity_prediction
 includes Rhea-ec_2_1_1.tsv
 """
+import dill
 from script.molecular_class import molecular, reaction
 from script import parse_data
 
@@ -18,14 +19,19 @@ from rdkit import Chem, DataStructs
 from rdkit.Chem import RDKFingerprint, SDMolSupplier
 from rdkit.Chem.Draw import IPythonConsole
 import pikachu
-from rdkit.Chem import Draw, AllChem
+from rdkit.Chem import Draw, AllChem, rdmolops
 import glob
 from IPython.display import SVG, display, Image
 import seaborn as sns; sns.set(color_codes=True)
 import matplotlib.pyplot as plt
 from PIL import Image
 import numpy as np
-
+#import for model
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.metrics import confusion_matrix, mean_squared_error, mean_absolute_percentage_error, r2_score, mean_absolute_error, accuracy_score, ConfusionMatrixDisplay, multilabel_confusion_matrix
+from sklearn.model_selection import GridSearchCV
 def merge_uniprot_id_smile(rheauniprot_dataframe,seq_df):
     """
     combine sequence and substrate smile in onefile and save to csv file
@@ -82,6 +88,8 @@ def return_reactions(dataframe_rr):
     atom_object_dictionary = {}
     dataframe_rr["reactant_site"] = pd.DataFrame(
         len(dataframe_rr.index) * [0]).astype('object')
+    dataframe_rr["mainsub_mol"] = pd.DataFrame(
+        len(dataframe_rr.index) * [0]).astype('object')
     for index in dataframe_rr.index:
         rxn = dataframe_rr.loc[index,"rxn"]
         sub = dataframe_rr.loc[index, "main_sub"]
@@ -90,28 +98,87 @@ def return_reactions(dataframe_rr):
         #print(dataframe.loc[index,"RHEA_ID"])
         rxn_file_name = "data/rxn_picture/{}".format(dataframe_rr.loc[index,"Entry"])
         #r1 = reaction1.get_reaction_sites(rxn_object=rxn,file_name=rxn_file_name)
-        r2, index_list = reaction1.get_reactant_atom()
+        r2, index_list,mainsub_mol = reaction1.get_reactant_atom()
         print("index: {}".format(index))
 
         #save atom index(methylation site) from substrate in dataframe
         site = ",".join(index_list)
         print(site)
+        dataframe_rr.loc[index,"mainsub_mol"] = mainsub_mol
         if site != "":
             dataframe_rr.loc[index, "reactant_site"] = site
         else:
             #because we use the largest molecular, but for some substrates, methyl donor is larger
             #we first leave those
             dataframe_rr.loc[index,"reactant_site"] = "NA"
-
         #save list of methyl site atom objects and index to a dictionary
         atom_object_dictionary[index] = r2
-    dataframe_rr.to_csv("data/seq_smiles.csv")
-    return dataframe_rr
+    else:
+        with open("data/seq_smiles", "wb") as dill_file:
+            dill.dump(dataframe_rr, dill_file)
+        #dataframe_rr.to_csv("data/seq_smiles.csv")
+        return dataframe_rr,atom_object_dictionary
+
+def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: int = 2048,radius: int = 3):
+    """
+    this function is to build inputdata with fingerprints and labels
+    :param sauce_data:
+    :param atom_object_dictionary:
+    :param num_bits:
+    :param radius:
+    :return:
+    """
+    self_defined_mol_object = molecular()
+    input_dataframe = pd.DataFrame()
+    current_index = 0
+    for index in sauce_data.index:
+        sub_mol = sauce_data.loc[index,"mainsub_mol"]
+        for atom in sub_mol.GetAtoms():
+            fingerprint_mol = self_defined_mol_object.create_fingerprint(
+                sub_mol, num_bits= num_bits, radius=radius)
+            sy_index = (atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum()))
+            if sy_index in atom_object_dictionary[index]:
+                label = 1
+            else:
+                label = 0
+            atom_index_sub = atom.GetIdx()
+            sub_atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(
+                sub_mol,
+                radius,
+                atom_index_sub)
+            fingerprint_atom = self_defined_mol_object.create_fingerprint(
+                sub_atom_environment, num_bits=num_bits, radius=radius)
+            #add fingerprints ebedding sequences and label to dataframe
+            input_dataframe.append(fingerprint_mol+fingerprint_atom,ignore_index=True)
+            input_dataframe.loc[current_index,"label"] = label
+            current_index += 1
+    print(input_dataframe)
+
 def read_object_from_file():
     data_frame = pd.read_csv("data/seq_smiles.csv", header=0)
     substrate_mols = data_frame.loc[0,"sub_mols"]
     # for mol in substrate_mols:
     #     Draw.ShowMol(mol, size=(600, 600))
+
+def prepare_train_teat_data(data):
+
+    X = data[list(x.columns)[:-1]]
+    y = data.Label
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
+
+def RF_model(X_train, X_test, y_train, y_test):
+
+    hyperparameters = {'n_estimators': range(1, 300, 30),
+                       'max_features': range(1, 22)
+                       }
+
+    rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
+                         hyperparameters,
+                         cv=10,
+                         verbose=True,
+                         n_jobs=-1)
+    rf_cv.fit(X_train, y_train)
+    y_pred = rf_cv.best_estimator_.predict(X_test)
 def main():
     # readfile whihc contains the rhea id and related uniprotid
     #run with command line
@@ -127,9 +194,12 @@ def main():
     id_seq_dataframe = parse_data.read_sequence(seq_file)
     seq_smiles = merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
     data_frame = keep_longest_smile(seq_smiles)
-    data_with_site = return_reactions(data_frame)
+    data_with_site,diction_atom = return_reactions(data_frame)
     print(data_with_site["reactant_site"])
-    #drop_useless_column(seq_smiles)
+    with open('data/seq_smiles','rb') as file1:
+        pd1 = dill.load(file1)
+    print(pd1)
+    save_fingerprints_to_dataframe(data_with_site,diction_atom,2048,3)
 
 
 
