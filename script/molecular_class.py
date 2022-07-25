@@ -57,9 +57,7 @@ class molecular ():
                                    dtype=int)  # (one dimention, 0 is number of rows)
 
         #returns an RDKit vector object.
-        print(substrate_molecular)
-        print(radius)
-        print(num_bits)
+
         morgan_bit_vector = AllChem.GetMorganFingerprintAsBitVect(substrate_molecular, radius,
                                                                   num_bits)
 
@@ -174,16 +172,19 @@ class reaction ():
 
         atoms_list=[]
         atom_index_list = []
+
         for index in reactant_atoms:
             atom_methyl = mol_product.GetAtomWithIdx(index)
             for bond in atom_methyl.GetBonds():
                 atom_1, atom_2 = bond.GetBeginAtom(), bond.GetEndAtom()
                 if atom_1 == atom_methyl:
                     atoms_list.append(atom_2)
+
                 else:
                     atoms_list.append(atom_1)
+
         for atom in atoms_list:
-            #str with symbol index and mapnumber
+            #str with symbol index and mapnumber(mapnumber is the same as substrate's mapnumber)
             atom_index_list.append((atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum())))
             # print(atom.GetAtomMapNum())
             # print(atom.GetIsotope())

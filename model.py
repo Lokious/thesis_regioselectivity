@@ -11,8 +11,10 @@ includes Rhea-ec_2_1_1.tsv
 import dill
 from script.molecular_class import molecular, reaction
 from script import parse_data
-
+#for data structure
 import pandas as pd
+import numpy as np
+
 from sys import argv
 from urllib.request import urlopen
 from rdkit import Chem, DataStructs
@@ -21,11 +23,13 @@ from rdkit.Chem.Draw import IPythonConsole
 import pikachu
 from rdkit.Chem import Draw, AllChem, rdmolops
 import glob
+#for display and draw picture and graph
 from IPython.display import SVG, display, Image
 import seaborn as sns; sns.set(color_codes=True)
 import matplotlib.pyplot as plt
+
 from PIL import Image
-import numpy as np
+
 #import for model
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
@@ -56,7 +60,7 @@ def merge_uniprot_id_smile(rheauniprot_dataframe,seq_df):
     seq_df = seq_df.reset_index()
     complete_data = pd.merge(seq_df,complete_data)
     complete_data = parse_data.merge_reaction(complete_data)
-    # complete_data.to_csv("data/seq_smiles.csv")
+
     return complete_data
 
 
@@ -98,7 +102,7 @@ def return_reactions(dataframe_rr):
         #print(dataframe.loc[index,"RHEA_ID"])
         rxn_file_name = "data/rxn_picture/{}".format(dataframe_rr.loc[index,"Entry"])
         #r1 = reaction1.get_reaction_sites(rxn_object=rxn,file_name=rxn_file_name)
-        r2, index_list,mainsub_mol = reaction1.get_reactant_atom()
+        r2, index_list, mainsub_mol = reaction1.get_reactant_atom()
         print("index: {}".format(index))
 
         #save atom index(methylation site) from substrate in dataframe
@@ -112,11 +116,13 @@ def return_reactions(dataframe_rr):
             #we first leave those
             dataframe_rr.loc[index,"reactant_site"] = "NA"
         #save list of methyl site atom objects and index to a dictionary
-        atom_object_dictionary[index] = r2
+        atom_object_dictionary[index] = site
     else:
         with open("data/seq_smiles", "wb") as dill_file:
             dill.dump(dataframe_rr, dill_file)
-        #dataframe_rr.to_csv("data/seq_smiles.csv")
+        with open("data/diction_atom", "wb") as dill_file:
+            dill.dump(atom_object_dictionary, dill_file)
+
         return dataframe_rr,atom_object_dictionary
 
 def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: int = 2048,radius: int = 3):
@@ -132,44 +138,56 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
     input_dataframe = pd.DataFrame()
     current_index = 0
     for index in sauce_data.index:
+        print(index)
         sub_mol = sauce_data.loc[index,"mainsub_mol"]
         for atom in sub_mol.GetAtoms():
             fingerprint_mol = self_defined_mol_object.create_fingerprint(
                 sub_mol, num_bits= num_bits, radius=radius)
             sy_index = (atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum()))
+
             if sy_index in atom_object_dictionary[index]:
                 label = 1
             else:
                 label = 0
-            atom_index_sub = atom.GetIdx()
-            sub_atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(
-                sub_mol,
-                radius,
-                atom_index_sub)
-            fingerprint_atom = self_defined_mol_object.create_fingerprint(
-                sub_atom_environment, num_bits=num_bits, radius=radius)
-            #add fingerprints ebedding sequences and label to dataframe
-            input_dataframe.append(fingerprint_mol+fingerprint_atom,ignore_index=True)
+            atom_index_sub = atom.GetAtomMapNum()
+            newrow = {}
+            #add fingerprint atom index ebedding sequences and label to dataframe
+            for i,item in enumerate(fingerprint_mol):
+                newrow[i] = item
+            newrow['atom_index'] = atom_index_sub
+            input_dataframe.append(newrow,ignore_index=True)
             input_dataframe.loc[current_index,"label"] = label
             current_index += 1
-    print(input_dataframe)
+    print(input_dataframe.columns)
+    input_dataframe.to_csv("data/input_dataframe_withoutstructure")
+    return input_dataframe
 
-def read_object_from_file():
-    data_frame = pd.read_csv("data/seq_smiles.csv", header=0)
-    substrate_mols = data_frame.loc[0,"sub_mols"]
-    # for mol in substrate_mols:
-    #     Draw.ShowMol(mol, size=(600, 600))
+def sequences_feature_to_dataframe(substratedata,whole_data):
+    for index in substratedata.index:
+
+
 
 def prepare_train_teat_data(data):
-
+    """
+    simply sepreate train and test data
+    :param data:
+    :return:
+    """
     X = data[list(x.columns)[:-1]]
     y = data.Label
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
-
+    return X_train, X_test, y_train, y_test
 def RF_model(X_train, X_test, y_train, y_test):
+    """
 
-    hyperparameters = {'n_estimators': range(1, 300, 30),
-                       'max_features': range(1, 22)
+    :param X_train:
+    :param X_test:
+    :param y_train:
+    :param y_test:
+    :return:
+    """
+    hyperparameters = {'n_estimators': [1, 300, 30],
+                       'max_features': [20,100,500,1000]
                        }
 
     rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
@@ -177,14 +195,37 @@ def RF_model(X_train, X_test, y_train, y_test):
                          cv=10,
                          verbose=True,
                          n_jobs=-1)
+
     rf_cv.fit(X_train, y_train)
     y_pred = rf_cv.best_estimator_.predict(X_test)
+    print("Train/test accuracy: {}/{}".format(
+        accuracy_score(rf_cv.best_estimator_.predict(X_train), y_train),
+        accuracy_score(rf_cv.best_estimator_.predict(X_test), y_test), ))
+    cm = confusion_matrix(y_test, y_pred)
+    cm_display = ConfusionMatrixDisplay(cm).plot()
+
+    plt.title("Amacrine RF confusion matrix with best parameters")
+
+    #use the best parameters from cross validation redo RF
+    rf = RandomForestClassifier(random_state=0,
+                                n_estimators=31,
+                                max_features=8,
+                                oob_score=True)
+    rf.fit(X_train, y_train)
+    fi = pd.DataFrame(data=rf.feature_importances_, index=X_train.columns,
+                      columns=['Importance']) \
+        .sort_values(by=['Importance'], ascending=False)
+
+    # And visualize
+    sns.barplot(data=fi, x="Importance", y=fi.index).set_title(
+        "feature importance for Amacrine RF model")
+
 def main():
     # readfile whihc contains the rhea id and related uniprotid
     #run with command line
     # rh_file = argv[1]
     #run with pycharm
-
+    '''
     rh_file = "data/rhea2uniprot_sprot.tsv"
     rheauniprot_dataframe = parse_data.readrhlist(rh_file)
 
@@ -196,12 +237,21 @@ def main():
     data_frame = keep_longest_smile(seq_smiles)
     data_with_site,diction_atom = return_reactions(data_frame)
     print(data_with_site["reactant_site"])
+    '''
     with open('data/seq_smiles','rb') as file1:
-        pd1 = dill.load(file1)
-    print(pd1)
+        data_with_site = dill.load(file1)
+    with open('data/diction_atom','rb') as file1:
+        diction_atom = dill.load(file1)
+    indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
+    # Delete these row indexes from dataFrame
+    data_with_site.drop(indexNames, inplace=True)
+    print(len(data_with_site.index))
     save_fingerprints_to_dataframe(data_with_site,diction_atom,2048,3)
 
-
+    X = pd.read_csv("data/input_dataframe_withoutstructure",header=0)
+    X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
+    #train RF model
+    RF_model(X_train, X_test, y_train, y_test)
 
     #print(id_seq_dataframe)
     #link the sequences and reaction participant put in one csv file
