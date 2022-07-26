@@ -1,3 +1,5 @@
 data/hmm_out/*.h*
 data/input_dataframe_withoutstructure.csv
+data/input_dataframe_withoutstructure_2048.csv
+data/input_dataframe_withoutstructure_2048
 #data/seq_smiles.csv

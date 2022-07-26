@@ -177,7 +177,7 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
 
 
 
-def prepare_train_teat_data(data):
+def prepare_train_teat_data(df,test:float=0.2,group_column:str='molecular_id'):
     """
     simply sepreate train and test data
     :param data:
@@ -185,19 +185,22 @@ def prepare_train_teat_data(data):
     """
 
     from sklearn.model_selection import GroupShuffleSplit
-    splitter = GroupShuffleSplit(test_size=.20, n_splits=1, random_state=7)
-    split = splitter.split(data, groups=df['molecular_id'])
+    splitter = GroupShuffleSplit(test_size=test, n_splits=1, random_state=1)
+    split = splitter.split(data, groups=df[group_column])
     train_inds, test_inds = next(split)
-
     train = df.iloc[train_inds]
     test = df.iloc[test_inds]
     print(test,train)
+    X_train = train[list(data.columns)[:-1]]
+    Y_train = train["label"]
+    X_test = test[list(data.columns)[:-1]]
+    Y_test = test["label"]
     # X = data[list(data.columns)[:-1]]
     # y = data["label"]
     #
     # train_test_split(X, y, random_state=1, stratify=y)
     # X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1,stratify=y)
-    # return X_train, X_test, y_train, y_test
+    return X_train, X_test, Y_train, Y_test
 
 def RF_model(X_train, X_test, y_train, y_test):
     """
