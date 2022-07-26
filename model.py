@@ -165,8 +165,8 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
             input_dataframe.loc[current_index, "molecular_id"] = "m"+str(index)
             input_dataframe.loc[current_index,"label"] = label
             current_index += 1
-    input_dataframe.to_csv("data/input_dataframe_withoutstructure_2048.csv")
-    with open("data/input_dataframe_withoutstructure_2048", "wb") as dill_file:
+    input_dataframe.to_csv("data/input_dataframe_withoutstructure_{}.csv".format(str(num_bits)))
+    with open("data/input_dataframe_withoutstructure_{}".format(str(num_bits)), "wb") as dill_file:
         dill.dump(input_dataframe, dill_file)
 
     return input_dataframe
@@ -186,20 +186,22 @@ def prepare_train_teat_data(df,test:float=0.2,group_column:str='molecular_id'):
 
     from sklearn.model_selection import GroupShuffleSplit
     splitter = GroupShuffleSplit(test_size=test, n_splits=1, random_state=1)
-    split = splitter.split(data, groups=df[group_column])
+    split = splitter.split(df, groups=df[group_column])
     train_inds, test_inds = next(split)
     train = df.iloc[train_inds]
     test = df.iloc[test_inds]
-    print(test,train)
-    X_train = train[list(data.columns)[:-1]]
+
+    X_train = train[list(train.columns)[:-2]]
     Y_train = train["label"]
-    X_test = test[list(data.columns)[:-1]]
+    X_test = test[list(test.columns)[:-2]]
     Y_test = test["label"]
+
     # X = data[list(data.columns)[:-1]]
     # y = data["label"]
     #
     # train_test_split(X, y, random_state=1, stratify=y)
     # X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1,stratify=y)
+    print(X_train,Y_train)
     return X_train, X_test, Y_train, Y_test
 
 def RF_model(X_train, X_test, y_train, y_test):
@@ -211,8 +213,8 @@ def RF_model(X_train, X_test, y_train, y_test):
     :param y_test:
     :return:
     """
-    hyperparameters = {'n_estimators': [1, 300, 30],
-                       'max_features': [20,100,500,1000]
+    hyperparameters = {'n_estimators': [300, 30],
+                       'max_features': [0.3,0.5,1.0]
                        }
 
     rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
@@ -223,18 +225,19 @@ def RF_model(X_train, X_test, y_train, y_test):
 
     rf_cv.fit(X_train, y_train)
     y_pred = rf_cv.best_estimator_.predict(X_test)
+    print(rf_cv.best_params_)
     print("Train/test accuracy: {}/{}".format(
         accuracy_score(rf_cv.best_estimator_.predict(X_train), y_train),
-        accuracy_score(rf_cv.best_estimator_.predict(X_test), y_test), ))
+        accuracy_score(rf_cv.best_estimator_.predict(X_test), y_test)))
+    print()
     cm = confusion_matrix(y_test, y_pred)
     cm_display = ConfusionMatrixDisplay(cm).plot()
-
-    plt.title("Amacrine RF confusion matrix with best parameters")
-
+    cm.figure_.savefig('cm_128bit.png', dpi=300)
+    plt.title("RF confusion matrix with best parameters")
+    plt.show()
     #use the best parameters from cross validation redo RF
     rf = RandomForestClassifier(random_state=0,
                                 n_estimators=31,
-                                max_features=8,
                                 oob_score=True)
     rf.fit(X_train, y_train)
     fi = pd.DataFrame(data=rf.feature_importances_, index=X_train.columns,
@@ -242,9 +245,10 @@ def RF_model(X_train, X_test, y_train, y_test):
         .sort_values(by=['Importance'], ascending=False)
 
     # And visualize
-    sns.barplot(data=fi, x="Importance", y=fi.index).set_title(
-        "feature importance for Amacrine RF model")
-
+    ax = sns.barplot(data=fi, x="Importance", y=fi.index).set_title(
+        "feature importance for RF model")
+    fig = ax.get_figure()
+    fig.savefig('feature_importance.png')
 def main():
     # readfile whihc contains the rhea id and related uniprotid
     #run with command line
@@ -263,18 +267,18 @@ def main():
     data_with_site,diction_atom = return_reactions(data_frame)
     print(data_with_site["reactant_site"])
     '''
-    with open('data/seq_smiles','rb') as file1:
-        data_with_site = dill.load(file1)
-    with open('data/diction_atom','rb') as file1:
-        diction_atom = dill.load(file1)
-    indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
-    # Delete these row indexes from dataFrame
-    data_with_site.drop(indexNames, inplace=True)
-    print(len(data_with_site.index))
-    save_fingerprints_to_dataframe(data_with_site,diction_atom,2048,3)
+    # with open('data/seq_smiles','rb') as file1:
+    #     data_with_site = dill.load(file1)
+    # with open('data/diction_atom','rb') as file1:
+    #     diction_atom = dill.load(file1)
+    # indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
+    # # Delete these row indexes from dataFrame
+    # data_with_site.drop(indexNames, inplace=True)
+    # print(len(data_with_site.index))
+    # save_fingerprints_to_dataframe(data_with_site,diction_atom,128,3)
 
     #read manual_data
-    parse_data.read_mannual_data()
+    #parse_data.read_mannual_data()
 
 
 
@@ -282,7 +286,7 @@ def main():
 
 
 
-    X = pd.read_csv("data/input_dataframe_withoutstructure.csv",header=0)
+    X = pd.read_csv("data/input_dataframe_withoutstructure_128.csv",header=0,index_col=0)
     X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
     #train RF model
     RF_model(X_train, X_test, y_train, y_test)
