@@ -224,13 +224,13 @@ def merge_reaction(dataset)->pd.DataFrame:
             dataset.loc[i, "rxn"] = None
     return dataset
 
-def read_mannual_data(file=r"E:\Download\regioselectivity_prediction\data\from_paper\manually_edit_datapoints.xlsx"):
+def read_mannual_data(file=r"E:\Download\regioselectivity_prediction\data\mannual_data.csv"):
     """
     read manually made data and save the structure with atom index
     :param file:
     :return:
     """
-    manual_data=pd.read_excel(file,header=0)
+    manual_data=pd.read_csv(file,header=0,index_col=0,encoding="ISO-8859-1")
     manual_data["index_smile"] = pd.DataFrame(
         len(manual_data.index) * [0]).astype('object')
     manual_data["mainsub_mol"] = pd.DataFrame(
@@ -251,7 +251,7 @@ def read_mannual_data(file=r"E:\Download\regioselectivity_prediction\data\from_p
             manual_data.loc[index, "mainsub_mol"] = "NA"
             manual_data.loc[index, "index_smile"] = smile
     #save panda.Dataframe object
-    with open("data/mannual_data.csv", "wb") as dill_file:
+    with open("data/mannual_data", "wb") as dill_file:
         dill.dump(manual_data, dill_file)
     #save csv file to for check
     manual_data.to_csv("data/mannual_data.csv")

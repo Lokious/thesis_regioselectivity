@@ -242,15 +242,15 @@ def main():
     data_with_site,diction_atom = return_reactions(data_frame)
     print(data_with_site["reactant_site"])
     '''
-    with open('data/seq_smiles','rb') as file1:
-        data_with_site = dill.load(file1)
-    with open('data/diction_atom','rb') as file1:
-        diction_atom = dill.load(file1)
-    indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
-    # Delete these row indexes from dataFrame
-    data_with_site.drop(indexNames, inplace=True)
-    print(len(data_with_site.index))
-    save_fingerprints_to_dataframe(data_with_site,diction_atom,2048,3)
+    # with open('data/seq_smiles','rb') as file1:
+    #     data_with_site = dill.load(file1)
+    # with open('data/diction_atom','rb') as file1:
+    #     diction_atom = dill.load(file1)
+    # indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
+    # # Delete these row indexes from dataFrame
+    # data_with_site.drop(indexNames, inplace=True)
+    # print(len(data_with_site.index))
+    # save_fingerprints_to_dataframe(data_with_site,diction_atom,2048,3)
 
     #read manual_data
     parse_data.read_mannual_data()
