@@ -55,9 +55,13 @@ class molecular ():
                 return None, index
         else:
             print("missing input")
-    def create_fingerprint(self, substrate_molecular: Chem.Mol,num_bits: int = 2048,
+    def create_fingerprint_mol(self, substrate_molecular: Chem.Mol, num_bits: int = 2048,
         radius: int = 3)->np.array:
 
+        #sanitize molecular
+        Chem.SanitizeMol(substrate_molecular,
+                         sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+        rdmolops.SanitizeFlags.SANITIZE_NONE
         #inisilize a numpy array for molecular fingerprint
         bit_fingerprint_mol = np.zeros((0,),
                                    dtype=int)  # (one dimention, 0 is number of rows)
@@ -71,6 +75,30 @@ class molecular ():
         DataStructs.ConvertToNumpyArray(morgan_bit_vector, bit_fingerprint_mol)
 
         return bit_fingerprint_mol
+    def create_fingerprint_atom(self, substrate_molecular: Chem.Mol,atom_object: Chem.Atom, num_bits: int = 2048,
+        radius: int = 3)->np.array:
+        atom_index = atom_object.GetIdx()
+        atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(substrate_molecular, radius,
+                                                                 atom_index)
+        atom_map = {}
+        submol = Chem.PathToSubmol(substrate_molecular, atom_environment, atomMap=atom_map)
+        #sanitize molecular
+        Chem.SanitizeMol(submol,
+                         sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+        rdmolops.SanitizeFlags.SANITIZE_NONE
+        #inisilize a numpy array for molecular fingerprint
+        bit_fingerprint_atom = np.zeros((0,),
+                                   dtype=int)  # (one dimention, 0 is number of rows)
+
+        #returns an RDKit vector object.
+
+        morgan_bit_vector = AllChem.GetMorganFingerprintAsBitVect(submol, radius,
+                                                                  num_bits)
+
+        # We convert the RDKit vetor object to a numpy array.
+        DataStructs.ConvertToNumpyArray(morgan_bit_vector, bit_fingerprint_atom)
+
+        return bit_fingerprint_atom
 
 class reaction ():
     def __init__(self,substrates="", products="",rxn_object=None):

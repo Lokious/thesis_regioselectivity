@@ -141,27 +141,34 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
         print(index)
         sub_mol = sauce_data.loc[index,"mainsub_mol"]
         #Draw.ShowMol(sub_mol, size=(600, 600))
+        fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
+            sub_mol, num_bits=num_bits, radius=radius)
         for atom in sub_mol.GetAtoms():
-            fingerprint_mol = self_defined_mol_object.create_fingerprint(
-                sub_mol, num_bits= num_bits, radius=radius)
+            fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
+                sub_mol,atom_object=atom, num_bits= num_bits, radius=radius)
             sy_index = (atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum()))
-
             if sy_index in atom_object_dictionary[index]:
                 label = 1
             else:
                 label = 0
-            atom_index_sub = atom.GetAtomMapNum()
+            #atom_index_sub = atom.GetAtomMapNum()
             newrow = {}
             #add fingerprint atom index ebedding sequences and label to dataframe
             for i,item in enumerate(fingerprint_mol):
                 newrow[i] = item
-            newrow['atom_index'] = atom_index_sub
+            for j,item in enumerate(fingerprint_atom):
+                newrow[j+i] = item
+            #newrow['atom_index'] = atom_index_sub
             add_dataframe = pd.DataFrame(newrow,index=[current_index])
             input_dataframe=pd.concat([input_dataframe,add_dataframe],axis=
                                       0)
+            input_dataframe.loc[current_index, "molecular_id"] = "m"+str(index)
             input_dataframe.loc[current_index,"label"] = label
             current_index += 1
-    input_dataframe.to_csv("data/input_dataframe_withoutstructure.csv")
+    input_dataframe.to_csv("data/input_dataframe_withoutstructure_2048.csv")
+    with open("data/input_dataframe_withoutstructure_2048", "wb") as dill_file:
+        dill.dump(input_dataframe, dill_file)
+
     return input_dataframe
 #
 # def sequences_feature_to_dataframe(substratedata,whole_data):
@@ -242,15 +249,15 @@ def main():
     data_with_site,diction_atom = return_reactions(data_frame)
     print(data_with_site["reactant_site"])
     '''
-    # with open('data/seq_smiles','rb') as file1:
-    #     data_with_site = dill.load(file1)
-    # with open('data/diction_atom','rb') as file1:
-    #     diction_atom = dill.load(file1)
-    # indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
-    # # Delete these row indexes from dataFrame
-    # data_with_site.drop(indexNames, inplace=True)
-    # print(len(data_with_site.index))
-    # save_fingerprints_to_dataframe(data_with_site,diction_atom,2048,3)
+    with open('data/seq_smiles','rb') as file1:
+        data_with_site = dill.load(file1)
+    with open('data/diction_atom','rb') as file1:
+        diction_atom = dill.load(file1)
+    indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
+    # Delete these row indexes from dataFrame
+    data_with_site.drop(indexNames, inplace=True)
+    print(len(data_with_site.index))
+    save_fingerprints_to_dataframe(data_with_site,diction_atom,2048,3)
 
     #read manual_data
     parse_data.read_mannual_data()
