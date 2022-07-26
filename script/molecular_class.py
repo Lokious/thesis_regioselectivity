@@ -57,7 +57,13 @@ class molecular ():
             print("missing input")
     def create_fingerprint_mol(self, substrate_molecular: Chem.Mol, num_bits: int = 2048,
         radius: int = 3)->np.array:
+        """
 
+        :param substrate_molecular:
+        :param num_bits:
+        :param radius:
+        :return:
+        """
         #sanitize molecular
         Chem.SanitizeMol(substrate_molecular,
                          sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE)

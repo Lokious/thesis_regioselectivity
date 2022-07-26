@@ -183,10 +183,21 @@ def prepare_train_teat_data(data):
     :param data:
     :return:
     """
-    X = data[list(data.columns)[:-1]]
-    y = data["label"]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
-    return X_train, X_test, y_train, y_test
+
+    from sklearn.model_selection import GroupShuffleSplit
+    splitter = GroupShuffleSplit(test_size=.20, n_splits=1, random_state=7)
+    split = splitter.split(data, groups=df['molecular_id'])
+    train_inds, test_inds = next(split)
+
+    train = df.iloc[train_inds]
+    test = df.iloc[test_inds]
+    print(test,train)
+    # X = data[list(data.columns)[:-1]]
+    # y = data["label"]
+    #
+    # train_test_split(X, y, random_state=1, stratify=y)
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1,stratify=y)
+    # return X_train, X_test, y_train, y_test
 
 def RF_model(X_train, X_test, y_train, y_test):
     """

@@ -1,3 +1,4 @@
+import pandas as pd
 from rdkit.Chem import AllChem, rdmolops
 from rdkit.Chem.Draw import IPythonConsole
 from IPython.display import SVG, display, Image
