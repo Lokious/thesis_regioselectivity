@@ -1,2 +1,3 @@
 data/hmm_out/*.h*
+data/input_dataframe_withoutstructure.csv
 #data/seq_smiles.csv
