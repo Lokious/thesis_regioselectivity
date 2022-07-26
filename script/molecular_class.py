@@ -40,15 +40,21 @@ class molecular ():
                 atom.SetIsotope(atom.GetIdx() + i)
                 index = atom.GetIdx() + i
             return mol_object,index
-        else:
+        elif smile:
             i = index+1
             mol = Chem.MolFromSmiles(smile)
-            for atom in mol.GetAtoms():
-                atom.SetAtomMapNum(atom.GetIdx() + i)
-                # save the index in isotope just for keeeping the index for later use
-                atom.SetIsotope(atom.GetIdx() + i)
-                index = atom.GetIdx() + i
-            return mol,index
+            if mol:
+                for atom in mol.GetAtoms():
+                    atom.SetAtomMapNum(atom.GetIdx() + i)
+                    # save the index in isotope just for keeeping the index for later use
+                    atom.SetIsotope(atom.GetIdx() + i)
+                    index = atom.GetIdx() + i
+                return mol,index
+            else:
+                print("warning:cannot due with this smile:{}".format(smile))
+                return None, index
+        else:
+            print("missing input")
     def create_fingerprint(self, substrate_molecular: Chem.Mol,num_bits: int = 2048,
         radius: int = 3)->np.array:
 

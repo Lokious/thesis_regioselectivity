@@ -140,6 +140,7 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
     for index in sauce_data.index:
         print(index)
         sub_mol = sauce_data.loc[index,"mainsub_mol"]
+        #Draw.ShowMol(sub_mol, size=(600, 600))
         for atom in sub_mol.GetAtoms():
             fingerprint_mol = self_defined_mol_object.create_fingerprint(
                 sub_mol, num_bits= num_bits, radius=radius)
@@ -155,15 +156,17 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
             for i,item in enumerate(fingerprint_mol):
                 newrow[i] = item
             newrow['atom_index'] = atom_index_sub
-            input_dataframe.append(newrow,ignore_index=True)
+            add_dataframe = pd.DataFrame(newrow,index=[current_index])
+            input_dataframe=pd.concat([input_dataframe,add_dataframe],axis=
+                                      0)
             input_dataframe.loc[current_index,"label"] = label
             current_index += 1
-    print(input_dataframe.columns)
-    input_dataframe.to_csv("data/input_dataframe_withoutstructure")
+    input_dataframe.to_csv("data/input_dataframe_withoutstructure.csv")
     return input_dataframe
-
-def sequences_feature_to_dataframe(substratedata,whole_data):
-    for index in substratedata.index:
+#
+# def sequences_feature_to_dataframe(substratedata,whole_data):
+#     for index in substratedata.index:
+#
 
 
 
@@ -173,10 +176,11 @@ def prepare_train_teat_data(data):
     :param data:
     :return:
     """
-    X = data[list(x.columns)[:-1]]
-    y = data.Label
+    X = data[list(data.columns)[:-1]]
+    y = data["label"]
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1)
     return X_train, X_test, y_train, y_test
+
 def RF_model(X_train, X_test, y_train, y_test):
     """
 
@@ -248,7 +252,16 @@ def main():
     print(len(data_with_site.index))
     save_fingerprints_to_dataframe(data_with_site,diction_atom,2048,3)
 
-    X = pd.read_csv("data/input_dataframe_withoutstructure",header=0)
+    #read manual_data
+    parse_data.read_mannual_data()
+
+
+
+
+
+
+
+    X = pd.read_csv("data/input_dataframe_withoutstructure.csv",header=0)
     X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
     #train RF model
     RF_model(X_train, X_test, y_train, y_test)

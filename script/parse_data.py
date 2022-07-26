@@ -232,16 +232,24 @@ def read_mannual_data(file=r"E:\Download\regioselectivity_prediction\data\from_p
     """
     manual_data=pd.read_excel(file,header=0)
     manual_data["index_smile"] = pd.DataFrame(
-        len(datasets.index) * [0]).astype('object')
+        len(manual_data.index) * [0]).astype('object')
     manual_data["mainsub_mol"] = pd.DataFrame(
-        len(datasets.index) * [0]).astype('object')
+        len(manual_data.index) * [0]).astype('object')
     for index in manual_data.index:
         smile = manual_data.loc[index,'substrate_smiles']
         mol_ob = molecular()
+        print(smile)
         mol, j = mol_ob.mol_with_atom_index(smile=smile)
-        smile = Chem.MolToSmiles(mol)
-        manual_data.loc[index, "mainsub_mol"] = mol
-        manual_data.loc[index, "index_smile"] = smile
+        if mol:
+            smile = Chem.MolToSmiles(mol)
+            manual_data.loc[index, "mainsub_mol"] = mol
+            manual_data.loc[index, "index_smile"] = smile
+            img=Draw.MolToImage(mol,size=(600,600))
+            file_name = "data/manual/{}_{}.png".format(manual_data.loc[index,'Entry'],index)
+            img.save(file_name)
+        else:
+            manual_data.loc[index, "mainsub_mol"] = "NA"
+            manual_data.loc[index, "index_smile"] = smile
     #save panda.Dataframe object
     with open("data/mannual_data.csv", "wb") as dill_file:
         dill.dump(manual_data, dill_file)
