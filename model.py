@@ -138,12 +138,12 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
     self_defined_mol_object = molecular()
     input_dataframe = pd.DataFrame()
     current_index = 0
+    print(sauce_data)
     for index in sauce_data.index:
         print(index)
         sub_mol = sauce_data.loc[index,"mainsub_mol"]
-        sub_mol = molecular.mol_with_atom_index(sub_mol)
         #Draw.ShowMol(sub_mol, size=(600, 600))
-        sub_rest_mol, no_use_variable = molecular.mol_with_atom_index(sub_mol)
+        sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(mol_object=sub_mol)
         fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
             sub_rest_mol, num_bits=num_bits, radius=radius)
         for atom in sub_mol.GetAtoms():
@@ -379,15 +379,15 @@ def main():
     data_with_site,diction_atom = return_reactions(data_frame)
     print(data_with_site["reactant_site"])
     '''
-    # with open('data/seq_smiles','rb') as file1:
-    #     data_with_site = dill.load(file1)
-    # with open('data/diction_atom','rb') as file1:
-    #     diction_atom = dill.load(file1)
-    # indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
-    # # Delete these row indexes from dataFrame
-    # data_with_site.drop(indexNames, inplace=True)
-    # print(len(data_with_site.index))
-    # save_fingerprints_to_dataframe(data_with_site,diction_atom,128,3)
+    with open('data/seq_smiles','rb') as file1:
+        data_with_site = dill.load(file1)
+    with open('data/diction_atom','rb') as file1:
+        diction_atom = dill.load(file1)
+    indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
+    # Delete these row indexes from dataFrame
+    data_with_site.drop(indexNames, inplace=True)
+    print(len(data_with_site.index))
+    save_fingerprints_to_dataframe(data_with_site,diction_atom,56,3)
 
     #read manual_data
     #parse_data.read_mannual_data()
