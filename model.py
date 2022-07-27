@@ -417,6 +417,19 @@ def main():
     data_frame=keep_methyled_substrate(seq_smiles)
     data_with_site,diction_atom = return_reactions(data_frame)
     print(data_with_site["reactant_site"])
+<<<<<<< HEAD
+=======
+    '''
+    with open('data/seq_smiles','rb') as file1:
+        data_with_site = dill.load(file1)
+    with open('data/diction_atom','rb') as file1:
+        diction_atom = dill.load(file1)
+    indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
+    # Delete these row indexes from dataFrame
+    data_with_site.drop(indexNames, inplace=True)
+    print(len(data_with_site.index))
+    save_fingerprints_to_dataframe(data_with_site,diction_atom,128,3)
+>>>>>>> 3e4625f1a8d12f0a4148fbe26f166d79bcf205b4
 
     # rh_file = "data/rhea2uniprot_sprot.tsv"
     # rheauniprot_dataframe = parse_data.readrhlist(rh_file)
@@ -455,10 +468,18 @@ def main():
     X = pd.read_csv("data/input_dataframe_withoutstructure_1024.csv",header=0,index_col=0)
     #only use substrate then drop the duplicate
 
+<<<<<<< HEAD
     X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
     #train RF model
     model = RF_model(X_train, X_test, y_train, y_test)
     multidata_predict()
+=======
+    X = pd.read_csv("data/input_dataframe_withoutstructure_128.csv",header=0,index_col=0)
+    X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
+    #train RF model
+    model = RF_model(X_train, X_test, y_train, y_test)
+    multidata_predict(model)
+>>>>>>> 3e4625f1a8d12f0a4148fbe26f166d79bcf205b4
 
     #print(id_seq_dataframe)
     #link the sequences and reaction participant put in one csv file
