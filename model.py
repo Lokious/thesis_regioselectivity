@@ -23,6 +23,7 @@ from rdkit.Chem.Draw import IPythonConsole
 import pikachu
 from rdkit.Chem import Draw, AllChem, rdmolops
 import glob
+import joblib
 #for display and draw picture and graph
 from IPython.display import SVG, display, Image
 import seaborn as sns; sns.set(color_codes=True)
@@ -140,12 +141,13 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
     for index in sauce_data.index:
         print(index)
         sub_mol = sauce_data.loc[index,"mainsub_mol"]
+        sub_mol = molecular.mol_with_atom_index(sub_mol)
         #Draw.ShowMol(sub_mol, size=(600, 600))
+        sub_rest_mol, no_use_variable = molecular.mol_with_atom_index(sub_mol)
         fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
-            sub_mol, num_bits=num_bits, radius=radius)
+            sub_rest_mol, num_bits=num_bits, radius=radius)
         for atom in sub_mol.GetAtoms():
-            fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
-                sub_mol,atom_object=atom, num_bits= num_bits, radius=radius)
+            #set label
             sy_index = (atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum()))
             if sy_index in atom_object_dictionary[index]:
                 label = 1
@@ -153,6 +155,9 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
                 label = 0
             #atom_index_sub = atom.GetAtomMapNum()
             newrow = {}
+            #resrt atom index and then build fingerprint
+            fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
+                sub_rest_mol, atom_object=atom, num_bits=num_bits, radius=radius)
             #add fingerprint atom index ebedding sequences and label to dataframe
             for i,item in enumerate(fingerprint_mol):
                 newrow[i] = item
@@ -165,6 +170,7 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
             input_dataframe.loc[current_index, "molecular_id"] = "m"+str(index)
             input_dataframe.loc[current_index,"label"] = label
             current_index += 1
+    print(input_dataframe)
     input_dataframe.to_csv("data/input_dataframe_withoutstructure_{}.csv".format(str(num_bits)))
     with open("data/input_dataframe_withoutstructure_{}".format(str(num_bits)), "wb") as dill_file:
         dill.dump(input_dataframe, dill_file)
@@ -175,6 +181,48 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
 #     for index in substratedata.index:
 #
 
+def fingerprint_df_preapare(substrate_mol_df,num_bits: int = 2048,radius: int = 3):
+    """
+
+    :param substrate_mol:
+    :param num_bits:
+    :param radius:
+    :return:
+    """
+    current_index = 0
+    mol_id:int = 0
+    fingerprint_dataframe = pd.DataFrame()
+    self_defined_mol_object = molecular()
+    print(substrate_mol_df)
+    for index in substrate_mol_df.index:
+        substrate_mol = substrate_mol_df.loc[index,'substrate_mol']
+        try:
+
+            #Draw.ShowMol(substrate_mol, size=(600, 600))
+            fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
+                substrate_mol, num_bits=num_bits, radius=radius)
+            for atom in substrate_mol.GetAtoms():
+                fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
+                    substrate_mol, atom_object=atom, num_bits=num_bits, radius=radius)
+                atom_index_sub = atom.GetIdx()
+                newrow = {}
+                # add fingerprint atom index ebedding sequences and label to dataframe
+                for i, item in enumerate(fingerprint_mol):
+                    newrow[i] = item
+                for j, item in enumerate(fingerprint_atom):
+                    newrow[j + i] = item
+
+                add_dataframe = pd.DataFrame(newrow, index=[current_index])
+                fingerprint_dataframe = pd.concat([fingerprint_dataframe, add_dataframe], axis=
+                0)
+                fingerprint_dataframe.loc[current_index, "molecular_id"] = "m"+str(mol_id)
+                fingerprint_dataframe.loc[current_index, 'atom_index'] = atom_index_sub
+                current_index += 1
+        except:
+            print("skip in mol{}".format(mol_id))
+        mol_id +=1
+    print(fingerprint_dataframe)
+    return fingerprint_dataframe
 
 
 def prepare_train_teat_data(df,test:float=0.2,group_column:str='molecular_id'):
@@ -201,7 +249,6 @@ def prepare_train_teat_data(df,test:float=0.2,group_column:str='molecular_id'):
     #
     # train_test_split(X, y, random_state=1, stratify=y)
     # X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1,stratify=y)
-    print(X_train,Y_train)
     return X_train, X_test, Y_train, Y_test
 
 def RF_model(X_train, X_test, y_train, y_test):
@@ -211,44 +258,109 @@ def RF_model(X_train, X_test, y_train, y_test):
     :param X_test:
     :param y_train:
     :param y_test:
-    :return:
+    :return: randomforest model
     """
-    hyperparameters = {'n_estimators': [300, 30],
-                       'max_features': [0.3,0.5,1.0]
-                       }
+    # hyperparameters = {'n_estimators': [300, 30],
+    #                    'max_features': [0.3,0.5,1.0]
+    #                    }
+    #
+    # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
+    #                      hyperparameters,
+    #                      cv=10,
+    #                      verbose=True,
+    #                      n_jobs=-1)
+    #
+    # rf_cv.fit(X_train, y_train)
+    # print(rf_cv.best_params_)
+    #
+    # y_pred = rf_cv.best_estimator_.predict(X_test)
+    #
 
-    rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
-                         hyperparameters,
-                         cv=10,
-                         verbose=True,
-                         n_jobs=-1)
-
-    rf_cv.fit(X_train, y_train)
-    y_pred = rf_cv.best_estimator_.predict(X_test)
-    print(rf_cv.best_params_)
+    #use the best parameters from cross validation redo RF
+    rf = RandomForestClassifier(random_state=1,
+                                n_estimators=30,max_features=0.3,
+                                oob_score=True)
+    rf.fit(X_train, y_train)
+    y_pred = rf.predict(X_test)
     print("Train/test accuracy: {}/{}".format(
-        accuracy_score(rf_cv.best_estimator_.predict(X_train), y_train),
-        accuracy_score(rf_cv.best_estimator_.predict(X_test), y_test)))
+        accuracy_score(rf.predict(X_train), y_train),
+        accuracy_score(rf.predict(X_test), y_test)))
     print()
     cm = confusion_matrix(y_test, y_pred)
     cm_display = ConfusionMatrixDisplay(cm).plot()
-    cm.figure_.savefig('cm_128bit.png', dpi=300)
+    cm_display.figure_.savefig('cm_128bit.png', dpi=300)
     plt.title("RF confusion matrix with best parameters")
     plt.show()
-    #use the best parameters from cross validation redo RF
-    rf = RandomForestClassifier(random_state=0,
-                                n_estimators=31,
-                                oob_score=True)
-    rf.fit(X_train, y_train)
+
     fi = pd.DataFrame(data=rf.feature_importances_, index=X_train.columns,
                       columns=['Importance']) \
         .sort_values(by=['Importance'], ascending=False)
 
     # And visualize
+    plt.figure(figsize=(200, 600))
     ax = sns.barplot(data=fi, x="Importance", y=fi.index).set_title(
         "feature importance for RF model")
     fig = ax.get_figure()
+    plt.show()
     fig.savefig('feature_importance.png')
+    #save model
+    filename = 'data/model/rf_test_model'
+    joblib.dump(rf, filename)
+    return rf
+
+
+def predict(substrate_smile_df,enzyme_sequences:str="", inputmodel = None):
+
+    if inputmodel:
+        model = inputmodel
+    elif enzyme_sequences=="":
+        #load model
+        model = joblib.load('data/model/rf_test_model')
+    #create new columns
+    substrate_smile_df["substrate_mol"] = pd.DataFrame(
+        len(substrate_smile_df.index) * [0]).astype('object')
+    for index in substrate_smile_df.index:
+        substrate_smile = substrate_smile_df.loc[index,"substrate_smiles"]
+        #smile to fingerprint
+        try:
+            substrate = Chem.MolFromSmiles(substrate_smile)
+            #reset model index and mapnumber
+            self_defined_mol_object = molecular()
+            substrate, no_use_virable = self_defined_mol_object.mol_with_atom_index(mol_object =substrate)
+
+            substrate_smile_df.loc[index,"substrate_mol"] = substrate
+        except:
+            print("unable to proces the smile")
+            print(substrate_smile)
+            substrate_smile_df.loc[index, "substrate_mol"] = "NA"
+    substrate_df = substrate_smile_df
+    methyl_site_atom = {}
+    #need to chang to prepare data based on model
+    fingerprint_df=fingerprint_df_preapare(substrate_df,128,3)
+    Y = model.predict(fingerprint_df[list(fingerprint_df.columns)[:-2]])
+    print(Y)
+
+    for index,y in enumerate(Y):
+        mol_id = fingerprint_df.loc[index,'molecular_id']
+        if mol_id not in methyl_site_atom:
+            methyl_site_atom[mol_id]=[]
+        else:
+            if y == 1:
+                atom_index=fingerprint_df.loc[index,'atom_index']
+                atom = substrate.GetAtomWithIdx(atom_index)
+                methyl_site_atom[mol_id].append((atom.GetSymbol()+str(atom_index)))
+            else:
+                continue
+    else:
+        return methyl_site_atom
+
+def multidata_predict(dataset=None):
+    if dataset == None:
+    #then do with test data
+        loded_data=pd.read_excel("data/prediction_test.xlsx", header=0, index_col=0)
+        print(loded_data)
+        methyl_site_atom= predict(loded_data)
+        print(methyl_site_atom)
 def main():
     # readfile whihc contains the rhea id and related uniprotid
     #run with command line
@@ -286,11 +398,11 @@ def main():
 
 
 
-    X = pd.read_csv("data/input_dataframe_withoutstructure_128.csv",header=0,index_col=0)
-    X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
-    #train RF model
-    RF_model(X_train, X_test, y_train, y_test)
-
+    # X = pd.read_csv("data/input_dataframe_withoutstructure_128.csv",header=0,index_col=0)
+    # X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
+    # #train RF model
+    # model = RF_model(X_train, X_test, y_train, y_test)
+    multidata_predict()
     #print(id_seq_dataframe)
     #link the sequences and reaction participant put in one csv file
     #fulldata = id_seq_dataframe.join(rheauniprot_dataframe)
