@@ -30,13 +30,14 @@ import seaborn as sns; sns.set(color_codes=True)
 import matplotlib.pyplot as plt
 
 from PIL import Image
-
+import copy
 #import for model
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.metrics import confusion_matrix, mean_squared_error, mean_absolute_percentage_error, r2_score, mean_absolute_error, accuracy_score, ConfusionMatrixDisplay, multilabel_confusion_matrix
 from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GroupShuffleSplit
 def merge_uniprot_id_smile(rheauniprot_dataframe,seq_df):
     """
     combine sequence and substrate smile in onefile and save to csv file
@@ -143,13 +144,14 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
         print(index)
         sub_mol = sauce_data.loc[index,"mainsub_mol"]
         #Draw.ShowMol(sub_mol, size=(600, 600))
-        sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(mol_object=sub_mol)
+        sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(mol_object=copy.deepcopy(sub_mol))
         fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
             sub_rest_mol, num_bits=num_bits, radius=radius)
         for atom in sub_mol.GetAtoms():
             #set label
             sy_index = (atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum()))
             if sy_index in atom_object_dictionary[index]:
+                print(sy_index)
                 label = 1
             else:
                 label = 0
@@ -232,7 +234,7 @@ def prepare_train_teat_data(df,test:float=0.2,group_column:str='molecular_id'):
     :return:
     """
 
-    from sklearn.model_selection import GroupShuffleSplit
+
     splitter = GroupShuffleSplit(test_size=test, n_splits=1, random_state=1)
     split = splitter.split(df, groups=df[group_column])
     train_inds, test_inds = next(split)
@@ -244,11 +246,6 @@ def prepare_train_teat_data(df,test:float=0.2,group_column:str='molecular_id'):
     X_test = test[list(test.columns)[:-2]]
     Y_test = test["label"]
 
-    # X = data[list(data.columns)[:-1]]
-    # y = data["label"]
-    #
-    # train_test_split(X, y, random_state=1, stratify=y)
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1,stratify=y)
     return X_train, X_test, Y_train, Y_test
 
 def RF_model(X_train, X_test, y_train, y_test):
@@ -335,6 +332,7 @@ def predict(substrate_smile_df,enzyme_sequences:str="", inputmodel = None):
             substrate_smile_df.loc[index, "substrate_mol"] = "NA"
     substrate_df = substrate_smile_df
     methyl_site_atom = {}
+
     #need to chang to prepare data based on model
     fingerprint_df=fingerprint_df_preapare(substrate_df,128,3)
     Y = model.predict(fingerprint_df[list(fingerprint_df.columns)[:-2]])
@@ -387,7 +385,7 @@ def main():
     # Delete these row indexes from dataFrame
     data_with_site.drop(indexNames, inplace=True)
     print(len(data_with_site.index))
-    save_fingerprints_to_dataframe(data_with_site,diction_atom,56,3)
+    save_fingerprints_to_dataframe(data_with_site,diction_atom,128,3)
 
     #read manual_data
     #parse_data.read_mannual_data()
@@ -398,11 +396,12 @@ def main():
 
 
 
-    # X = pd.read_csv("data/input_dataframe_withoutstructure_128.csv",header=0,index_col=0)
-    # X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
-    # #train RF model
-    # model = RF_model(X_train, X_test, y_train, y_test)
-    multidata_predict()
+    X = pd.read_csv("data/input_dataframe_withoutstructure_128.csv",header=0,index_col=0)
+    X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
+    #train RF model
+    model = RF_model(X_train, X_test, y_train, y_test)
+    multidata_predict(model)
+
     #print(id_seq_dataframe)
     #link the sequences and reaction participant put in one csv file
     #fulldata = id_seq_dataframe.join(rheauniprot_dataframe)
