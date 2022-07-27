@@ -30,13 +30,14 @@ import seaborn as sns; sns.set(color_codes=True)
 import matplotlib.pyplot as plt
 
 from PIL import Image
-
+import copy
 #import for model
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.metrics import confusion_matrix, mean_squared_error, mean_absolute_percentage_error, r2_score, mean_absolute_error, accuracy_score, ConfusionMatrixDisplay, multilabel_confusion_matrix
 from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GroupShuffleSplit
 def merge_uniprot_id_smile(rheauniprot_dataframe,seq_df):
     """
     combine sequence and substrate smile in onefile and save to csv file
@@ -83,7 +84,37 @@ def keep_longest_smile(dataframe_before):
         dataframe_before.loc[index, "main_pro"] = main_pro
     return dataframe_before
 
+def keep_methyled_substrate(dataframe_before):
+    """
+    exclude H+,
+    :param dataframe_before:
+    :return:
+    """
+    #UNFINISHED
+    dataframe_before["main_sub"] = pd.DataFrame(
+        len(dataframe_before.index) * [0])
+    dataframe_before["main_pro"] = pd.DataFrame(
+        len(dataframe_before.index) * [0])
+    for index in dataframe_before.index:
+        subs = (dataframe_before.loc[index,"sub_smiles"]).split(".")
+        pros = (dataframe_before.loc[index,"pro_smiles"]).split(".")
+        for sub in subs:
+            mol = Chem.MolFromSmiles(sub)
+            if len(mol.GetAtoms())<2:
+                print(subs)
+                subs.remove(sub)
+        for pro in pros:
+            mol = Chem.MolFromSmiles(pro)
+            if len(mol.GetAtoms())<2:
+                print(pros)
+                subs.remove(pro)
+        if len(subs) == len(pros):
+            reaction_object = reaction()
+            main_sub,main_pro=reaction_object.main_substrate(subs,pros)
+            dataframe_before.loc[index, "main_sub"] = main_sub
+            dataframe_before.loc[index, "main_pro"] = main_pro
 
+    return copy.deepcopy(dataframe_before)
 def return_reactions(dataframe_rr):
     """
 
@@ -119,14 +150,14 @@ def return_reactions(dataframe_rr):
         #save list of methyl site atom objects and index to a dictionary
         atom_object_dictionary[index] = site
     else:
-        with open("data/seq_smiles", "wb") as dill_file:
+        with open("data/seq_smiles_all", "wb") as dill_file:
             dill.dump(dataframe_rr, dill_file)
-        with open("data/diction_atom", "wb") as dill_file:
+        with open("data/diction_atom_all", "wb") as dill_file:
             dill.dump(atom_object_dictionary, dill_file)
 
         return dataframe_rr,atom_object_dictionary
 
-def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: int = 2048,radius: int = 3):
+def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: int = 2048,radius: int = 3,file_name=""):
     """
     this function is to build inputdata with fingerprints and labels
     :param sauce_data:
@@ -143,13 +174,14 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
         print(index)
         sub_mol = sauce_data.loc[index,"mainsub_mol"]
         #Draw.ShowMol(sub_mol, size=(600, 600))
-        sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(mol_object=sub_mol)
+        sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(mol_object=copy.deepcopy(sub_mol))
         fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
             sub_rest_mol, num_bits=num_bits, radius=radius)
         for atom in sub_mol.GetAtoms():
             #set label
             sy_index = (atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum()))
             if sy_index in atom_object_dictionary[index]:
+                print(sy_index)
                 label = 1
             else:
                 label = 0
@@ -171,8 +203,8 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
             input_dataframe.loc[current_index,"label"] = label
             current_index += 1
     print(input_dataframe)
-    input_dataframe.to_csv("data/input_dataframe_withoutstructure_{}.csv".format(str(num_bits)))
-    with open("data/input_dataframe_withoutstructure_{}".format(str(num_bits)), "wb") as dill_file:
+    input_dataframe.to_csv("data/input_dataframe_withoutstructure_{}.csv".format(file_name))
+    with open("data/input_dataframe_withoutstructure_{}".format(file_name), "wb") as dill_file:
         dill.dump(input_dataframe, dill_file)
 
     return input_dataframe
@@ -232,7 +264,7 @@ def prepare_train_teat_data(df,test:float=0.2,group_column:str='molecular_id'):
     :return:
     """
 
-    from sklearn.model_selection import GroupShuffleSplit
+
     splitter = GroupShuffleSplit(test_size=test, n_splits=1, random_state=1)
     split = splitter.split(df, groups=df[group_column])
     train_inds, test_inds = next(split)
@@ -244,11 +276,6 @@ def prepare_train_teat_data(df,test:float=0.2,group_column:str='molecular_id'):
     X_test = test[list(test.columns)[:-2]]
     Y_test = test["label"]
 
-    # X = data[list(data.columns)[:-1]]
-    # y = data["label"]
-    #
-    # train_test_split(X, y, random_state=1, stratify=y)
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=1,stratify=y)
     return X_train, X_test, Y_train, Y_test
 
 def RF_model(X_train, X_test, y_train, y_test):
@@ -309,13 +336,20 @@ def RF_model(X_train, X_test, y_train, y_test):
     return rf
 
 
-def predict(substrate_smile_df,enzyme_sequences:str="", inputmodel = None):
+def predict(substrate_smile_df,enzyme_sequences:str="", inputmodel = None,num_bits: int = 2048):
+    """
 
+    :param substrate_smile_df:
+    :param enzyme_sequences:
+    :param inputmodel:
+    :return:
+    """
     if inputmodel:
         model = inputmodel
-    elif enzyme_sequences=="":
-        #load model
-        model = joblib.load('data/model/rf_test_model')
+    else:
+        if enzyme_sequences=="":
+            #load model
+            model = joblib.load('data/model/rf_test_model')
     #create new columns
     substrate_smile_df["substrate_mol"] = pd.DataFrame(
         len(substrate_smile_df.index) * [0]).astype('object')
@@ -335,8 +369,9 @@ def predict(substrate_smile_df,enzyme_sequences:str="", inputmodel = None):
             substrate_smile_df.loc[index, "substrate_mol"] = "NA"
     substrate_df = substrate_smile_df
     methyl_site_atom = {}
+
     #need to chang to prepare data based on model
-    fingerprint_df=fingerprint_df_preapare(substrate_df,128,3)
+    fingerprint_df=fingerprint_df_preapare(substrate_df,num_bits=num_bits,radius=3)
     Y = model.predict(fingerprint_df[list(fingerprint_df.columns)[:-2]])
     print(Y)
 
@@ -346,7 +381,7 @@ def predict(substrate_smile_df,enzyme_sequences:str="", inputmodel = None):
             methyl_site_atom[mol_id]=[]
         else:
             if y == 1:
-                atom_index=fingerprint_df.loc[index,'atom_index']
+                atom_index=int(fingerprint_df.loc[index,'atom_index'])
                 atom = substrate.GetAtomWithIdx(atom_index)
                 methyl_site_atom[mol_id].append((atom.GetSymbol()+str(atom_index)))
             else:
@@ -354,19 +389,22 @@ def predict(substrate_smile_df,enzyme_sequences:str="", inputmodel = None):
     else:
         return methyl_site_atom
 
-def multidata_predict(dataset=None):
-    if dataset == None:
+def multidata_predict(dataset=None,inputmodel = None):
+    if (dataset == None) or (inputmodel == None):
     #then do with test data
         loded_data=pd.read_excel("data/prediction_test.xlsx", header=0, index_col=0)
         print(loded_data)
-        methyl_site_atom= predict(loded_data)
+        methyl_site_atom= predict(loded_data,num_bits=1024)
         print(methyl_site_atom)
+
+
 def main():
     # readfile whihc contains the rhea id and related uniprotid
     #run with command line
     # rh_file = argv[1]
     #run with pycharm
-    '''
+
+
     rh_file = "data/rhea2uniprot_sprot.tsv"
     rheauniprot_dataframe = parse_data.readrhlist(rh_file)
 
@@ -375,34 +413,53 @@ def main():
     #seq_file = argv[2]
     id_seq_dataframe = parse_data.read_sequence(seq_file)
     seq_smiles = merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
-    data_frame = keep_longest_smile(seq_smiles)
+    #data_frame = keep_longest_smile(seq_smiles)
+    data_frame=keep_methyled_substrate(seq_smiles)
     data_with_site,diction_atom = return_reactions(data_frame)
     print(data_with_site["reactant_site"])
-    '''
-    with open('data/seq_smiles','rb') as file1:
-        data_with_site = dill.load(file1)
-    with open('data/diction_atom','rb') as file1:
-        diction_atom = dill.load(file1)
-    indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
-    # Delete these row indexes from dataFrame
-    data_with_site.drop(indexNames, inplace=True)
-    print(len(data_with_site.index))
-    save_fingerprints_to_dataframe(data_with_site,diction_atom,56,3)
 
-    #read manual_data
-    #parse_data.read_mannual_data()
+    # rh_file = "data/rhea2uniprot_sprot.tsv"
+    # rheauniprot_dataframe = parse_data.readrhlist(rh_file)
+    #
+    # #read id and sequences in dataframe
+    # seq_file = "data/id_tosequence.xlsx" # run with pycharm
+    # id_seq_dataframe = parse_data.read_sequence(seq_file)
+    # seq_smiles = merge_uniprot_id_smile(rheauniprot_dataframe,
+    #                                     id_seq_dataframe)
+    # data_frame = keep_methyled_substrate(seq_smiles)
+    # data_with_site,diction_atom = return_reactions(data_frame)
+    # print(data_with_site["reactant_site"])
+    #
+    #
+    # with open('data/seq_smiles','rb') as file1:
+    #     data_with_site = dill.load(file1)
+    # with open('data/diction_atom','rb') as file1:
+    #     diction_atom = dill.load(file1)
+    # indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
+    # # Delete these row indexes from dataFrame
+    # data_with_site.drop(indexNames, inplace=True)
+    # print(len(data_with_site.index))
+    #
+    # data_with_site_drop_du = copy.deepcopy(data_with_site).drop_duplicates(['main_sub'])
+    # save_fingerprints_to_dataframe(data_with_site_drop_du,diction_atom,128,3,file_name="128_drop_duplicate")
+    #
+    # #read manual_data
+    # #parse_data.read_mannual_data()
+    #
 
 
 
 
 
 
+    X = pd.read_csv("data/input_dataframe_withoutstructure_1024.csv",header=0,index_col=0)
+    #only use substrate then drop the duplicate
 
-    # X = pd.read_csv("data/input_dataframe_withoutstructure_128.csv",header=0,index_col=0)
-    # X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
-    # #train RF model
-    # model = RF_model(X_train, X_test, y_train, y_test)
+    X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
+    #train RF model
+    model = RF_model(X_train, X_test, y_train, y_test)
     multidata_predict()
+
     #print(id_seq_dataframe)
     #link the sequences and reaction participant put in one csv file
     #fulldata = id_seq_dataframe.join(rheauniprot_dataframe)

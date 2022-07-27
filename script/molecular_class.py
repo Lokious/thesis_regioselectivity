@@ -230,7 +230,53 @@ class reaction ():
             # print(atom.GetIsotope())
         return atoms_list, atom_index_list,mol_substrate
 
+def fingerprint_similiarity(mol1_fprint,mol2_fprint):
 
+    # First we check if the dimensions of both fingerprints are correct.
+    if len(mol1_fprint.shape) != 1:
+        raise ValueError(f"expected dimensionality (N,) for `first_fingerprint`, got: {mol1_fprint.shape}")
+    if len(mol2_fprint.shape) != 1:
+        raise ValueError(f"expected dimensionality (N,) for `second_fingerprint`, got: {second_fingerprint.shape}")
+
+    # We also check if the lengths of both fingerprints are equal.
+    if mol1_fprint.shape[0] != mol2_fprint.shape[0]:
+        raise ValueError(
+            f"first_fingerprint (num_bits: {mol1_fprint.shape[0]}) and "
+            f"second_fingerrint (num_bits: {mol2_fprint.shape[0]}) do not "
+            "have same length!"
+        )
+
+    tanimoto_similarity = (
+        np.logical_and(mol1_fprint, mol2_fprint).sum() / (
+            float(np.logical_or(mol1_fprint, mol2_fprint).sum())
+        )
+    )
+    return tanimoto_similarity
+
+
+def main_substrate(subs,pros):
+
+    sim_dictionary = {}
+    for i,mol1 in enumerate(subs):
+        sub_fg = create_fingerprint_mol(mol1)
+        for j,mol2 in enumerate(pros):
+            mol_object = molecular()
+            pro_fg = mol_object.create_fingerprint_mol(substrate_molecular=mol2)
+            sim_dictionary[(i,j)]=fingerprint_similiarity(sub_fg,pro_fg)
+    similarity_list_top_2 = list(
+        sorted(sim_dictionary.items(), key=lambda item: item[1]))[:2]
+    for key in similarity_list_top_2:
+        i = key[0]
+        j= key[1]
+
+        #this function assumed the similarity of fingerprint betwween molecular before methylation
+        #and after methylation should be higher than this molecular with other molecular
+
+        #the methyl donor molecular will become smaller after reaction
+        if len(pros[j])>len(subs[i]):
+            return subs[i],pros[j]
+        else:
+            continue
 
 def main():
     unittest.main()
