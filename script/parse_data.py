@@ -235,11 +235,15 @@ def read_mannual_data(file=r"E:\Download\regioselectivity_prediction\data\mannua
         len(manual_data.index) * [0]).astype('object')
     manual_data["mainsub_mol"] = pd.DataFrame(
         len(manual_data.index) * [0]).astype('object')
+    methyl_site_dictionary = {}
     for index in manual_data.index:
         smile = manual_data.loc[index,'substrate_smiles']
         mol_ob = molecular()
-        print(smile)
         mol, j = mol_ob.mol_with_atom_index(smile=smile)
+        try:
+            methyl_site_dictionary[index] = list(manual_data.loc[index,'reactant_site'])
+        except:
+            methyl_site_dictionary[index]=[]
         if mol:
             smile = Chem.MolToSmiles(mol)
             manual_data.loc[index, "mainsub_mol"] = mol
@@ -255,6 +259,8 @@ def read_mannual_data(file=r"E:\Download\regioselectivity_prediction\data\mannua
         dill.dump(manual_data, dill_file)
     #save csv file to for check
     manual_data.to_csv("data/mannual_data.csv")
+    with open("data/methyl_site_dictionary", "wb") as dill_file:
+        dill.dump(methyl_site_dictionary, dill_file)
 
 
 def main():

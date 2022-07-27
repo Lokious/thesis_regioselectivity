@@ -176,6 +176,7 @@ def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: i
     for index in sauce_data.index:
         print(index)
         sub_mol = sauce_data.loc[index,"mainsub_mol"]
+        print(sub_mol)
         #Draw.ShowMol(sub_mol, size=(600, 600))
         sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(mol_object=copy.deepcopy(sub_mol))
         fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
@@ -290,53 +291,55 @@ def RF_model(X_train, X_test, y_train, y_test,file_name=""):
     :param y_test:
     :return: randomforest model
     """
-    # hyperparameters = {'n_estimators': [300, 30],
-    #                    'max_features': [0.3,0.5,1.0]
-    #                    }
-    #
-    # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
-    #                      hyperparameters,
-    #                      cv=10,
-    #                      verbose=True,
-    #                      n_jobs=-1)
-    #
-    # rf_cv.fit(X_train, y_train)
-    # print(rf_cv.best_params_)
-    #
-    # y_pred = rf_cv.best_estimator_.predict(X_test)
-    #
+    hyperparameters = {'n_estimators': [300, 30],
+                       'max_features': [0.3,0.5,1.0]
+                       }
 
-    #use the best parameters from cross validation redo RF
-    rf = RandomForestClassifier(random_state=1,
-                                n_estimators=30,max_features=0.3,
-                                oob_score=True)
-    rf.fit(X_train, y_train)
-    y_pred = rf.predict(X_test)
-    print("Train/test accuracy: {}/{}".format(
-        accuracy_score(rf.predict(X_train), y_train),
-        accuracy_score(rf.predict(X_test), y_test)))
-    print()
+    rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
+                         hyperparameters,
+                         cv=10,
+                         verbose=True,
+                         n_jobs=-1)
+
+    rf_cv.fit(X_train, y_train)
+    print(rf_cv.best_params_)
+
+    y_pred = rf_cv.best_estimator_.predict(X_test)
     cm = confusion_matrix(y_test, y_pred)
     cm_display = ConfusionMatrixDisplay(cm).plot()
-    cm_display.figure_.savefig('cm_128bit.png', dpi=300)
-    plt.title("RF confusion matrix with best parameters")
-    plt.show()
+    cm_display.figure_.savefig('cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
 
-    fi = pd.DataFrame(data=rf.feature_importances_, index=X_train.columns,
-                      columns=['Importance']) \
-        .sort_values(by=['Importance'], ascending=False)
-
-    # And visualize
-    plt.figure(figsize=(200, 600))
-    ax = sns.barplot(data=fi, x="Importance", y=fi.index).set_title(
-        "feature importance for RF model")
-    fig = ax.get_figure()
-    plt.show()
-    fig.savefig('feature_importance{}.png'.format(file_name))
-    #save model
-    filename = 'data/model/rf_test_model{}'.format(file_name)
-    joblib.dump(rf, filename)
-    return rf
+    #use the best parameters from cross validation redo RF
+    # rf = RandomForestClassifier(random_state=1,
+    #                             n_estimators=30,max_features=0.5,
+    #                             oob_score=True)
+    # rf.fit(X_train, y_train)
+    # y_pred = rf.predict(X_test)
+    # print("Train/test accuracy: {}/{}".format(
+    #     accuracy_score(rf.predict(X_train), y_train),
+    #     accuracy_score(rf.predict(X_test), y_test)))
+    # print()
+    # cm = confusion_matrix(y_test, y_pred)
+    # cm_display = ConfusionMatrixDisplay(cm).plot()
+    # cm_display.figure_.savefig('cm_{}.png'.format(file_name), dpi=300)
+    # plt.title("RF confusion matrix with best parameters")
+    # plt.show()
+    #
+    # fi = pd.DataFrame(data=rf.feature_importances_, index=X_train.columns,
+    #                   columns=['Importance']) \
+    #     .sort_values(by=['Importance'], ascending=False)
+    #
+    # # And visualize
+    # plt.figure(figsize=(200, 600))
+    # ax = sns.barplot(data=fi, x="Importance", y=fi.index).set_title(
+    #     "feature importance for RF model")
+    # fig = ax.get_figure()
+    # plt.show()
+    # fig.savefig('feature_importance{}.png'.format(file_name))
+    # #save model
+    filename = 'data/model/rf_test_model_cv{}'.format(file_name)
+    joblib.dump(rf_cv, filename)
+    return rf_cv
 
 
 def predict(substrate_smile_df,enzyme_sequences:str="", inputmodel = None,num_bits: int = 2048):
@@ -407,7 +410,7 @@ def main():
     # rh_file = argv[1]
     #run with pycharm
 
-
+    '''
     rh_file = "data/rhea2uniprot_sprot.tsv"
     rheauniprot_dataframe = parse_data.readrhlist(rh_file)
 
@@ -420,9 +423,9 @@ def main():
     data_frame=keep_methyled_substrate(seq_smiles)
     data_with_site,diction_atom = return_reactions(data_frame)
     print(data_with_site["reactant_site"])
+    '''
 
-
-
+    '''
     with open('data/seq_smiles_all','rb') as file1:
         data_with_site = dill.load(file1)
     with open('data/diction_atom_all','rb') as file1:
@@ -433,22 +436,34 @@ def main():
     #print(len(data_with_site.index))
 
     data_with_site_drop_du = copy.deepcopy(data_with_site).drop_duplicates(['main_sub'])
-    save_fingerprints_to_dataframe(data_with_site_drop_du,diction_atom,512,3,file_name="512_drop_duplicate_all")
-
+    save_fingerprints_to_dataframe(data_with_site_drop_du,diction_atom,2048,3,file_name="2048_drop_duplicate_all")
+    '''
     # #read manual_data
-    # #parse_data.read_mannual_data()
-    #
+    parse_data.read_mannual_data()
+    with open("data/mannual_data", "rb") as dill_file:
+        manual_data = dill.load(dill_file)
+    #save csv file to for check
+    with open("data/methyl_site_dictionary", "rb") as dill_file:
+        methyl_site_dictionary = dill.load(dill_file)
+    #drop NA
+    indexNames = manual_data[manual_data['mainsub_mol'] == 'NA'].index
+    # Delete these row indexes from dataFrame
+    manual_data.drop(indexNames, inplace=True)
+    print(manual_data)
+    manual_fg = save_fingerprints_to_dataframe(manual_data,methyl_site_dictionary,2048,3,file_name="manual_2048")
+    print(manual_fg)
 
 
 
+    X = pd.read_csv("data/input_dataframe_withoutstructure_2048_drop_duplicate_all.csv",header=0,index_col=0)
+    # merge manual data and rhea data
 
-    X = pd.read_csv("data/input_dataframe_withoutstructure_512_drop_duplicate_all.csv",header=0,index_col=0)
     #only use substrate then drop the duplicate
 
 
-    X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
+    #X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
     #train RF model
-    model = RF_model(X_train, X_test, y_train, y_test,"_512_drop_duplicate_all")
+    #model = RF_model(X_train, X_test, y_train, y_test,"_512_drop_duplicate_all")
     #multidata_predict()
 
     #print(id_seq_dataframe)
