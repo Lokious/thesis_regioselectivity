@@ -111,7 +111,6 @@ def keep_methyled_substrate(dataframe_before):
             smiles = reaction_object.main_substrate(subs, pros)
             if smiles:
                 main_sub, main_pro = smiles[0],smiles[1]
-                print(main_sub, main_pro)
                 dataframe_before.loc[index, "main_sub"] = main_sub
                 dataframe_before.loc[index, "main_pro"] = main_pro
 
@@ -131,17 +130,20 @@ def return_reactions(dataframe_rr):
         rxn = dataframe_rr.loc[index,"rxn"]
         sub = dataframe_rr.loc[index, "main_sub"]
         pro = dataframe_rr.loc[index, "main_pro"]
-        reaction1 = reaction(substrates=sub, products=pro)
-        #print(dataframe.loc[index,"RHEA_ID"])
-        rxn_file_name = "data/rxn_picture/{}".format(dataframe_rr.loc[index,"Entry"])
-        #r1 = reaction1.get_reaction_sites(rxn_object=rxn,file_name=rxn_file_name)
-        r2, index_list, mainsub_mol = reaction1.get_reactant_atom()
-        print("index: {}".format(index))
+        if (sub != pro) and sub !=0 and pro !=0:
+            reaction1 = reaction(substrates=sub, products=pro)
+            #print(dataframe.loc[index,"RHEA_ID"])
+            rxn_file_name = "data/rxn_picture/{}".format(dataframe_rr.loc[index,"Entry"])
+            #r1 = reaction1.get_reaction_sites(rxn_object=rxn,file_name=rxn_file_name)
+            r2, index_list, mainsub_mol = reaction1.get_reactant_atom()
+            print("index: {}".format(index))
 
-        #save atom index(methylation site) from substrate in dataframe
-        site = ",".join(index_list)
-        print(site)
-        dataframe_rr.loc[index,"mainsub_mol"] = mainsub_mol
+            #save atom index(methylation site) from substrate in dataframe
+            site = ",".join(index_list)
+            print(site)
+            dataframe_rr.loc[index,"mainsub_mol"] = mainsub_mol
+        else:
+            site = ""
         if site != "":
             dataframe_rr.loc[index, "reactant_site"] = site
         else:
@@ -155,7 +157,7 @@ def return_reactions(dataframe_rr):
             dill.dump(dataframe_rr, dill_file)
         with open("data/diction_atom_all", "wb") as dill_file:
             dill.dump(atom_object_dictionary, dill_file)
-
+        dataframe_rr.to_csv("data/diction_atom_all.csv")
         return dataframe_rr,atom_object_dictionary
 
 def save_fingerprints_to_dataframe(sauce_data,atom_object_dictionary,num_bits: int = 2048,radius: int = 3,file_name=""):
@@ -279,7 +281,7 @@ def prepare_train_teat_data(df,test:float=0.2,group_column:str='molecular_id'):
 
     return X_train, X_test, Y_train, Y_test
 
-def RF_model(X_train, X_test, y_train, y_test):
+def RF_model(X_train, X_test, y_train, y_test,file_name=""):
     """
 
     :param X_train:
@@ -330,9 +332,9 @@ def RF_model(X_train, X_test, y_train, y_test):
         "feature importance for RF model")
     fig = ax.get_figure()
     plt.show()
-    fig.savefig('feature_importance.png')
+    fig.savefig('feature_importance{}.png'.format(file_name))
     #save model
-    filename = 'data/model/rf_test_model'
+    filename = 'data/model/rf_test_model{}'.format(file_name)
     joblib.dump(rf, filename)
     return rf
 
@@ -421,17 +423,17 @@ def main():
 
 
 
-    with open('data/seq_smiles','rb') as file1:
+    with open('data/seq_smiles_all','rb') as file1:
         data_with_site = dill.load(file1)
-    with open('data/diction_atom','rb') as file1:
+    with open('data/diction_atom_all','rb') as file1:
         diction_atom = dill.load(file1)
     indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
     # Delete these row indexes from dataFrame
     data_with_site.drop(indexNames, inplace=True)
-    print(len(data_with_site.index))
+    #print(len(data_with_site.index))
 
     data_with_site_drop_du = copy.deepcopy(data_with_site).drop_duplicates(['main_sub'])
-    save_fingerprints_to_dataframe(data_with_site_drop_du,diction_atom,128,3,file_name="128_drop_duplicate")
+    save_fingerprints_to_dataframe(data_with_site_drop_du,diction_atom,512,3,file_name="512_drop_duplicate_all")
 
     # #read manual_data
     # #parse_data.read_mannual_data()
@@ -440,14 +442,14 @@ def main():
 
 
 
-    X = pd.read_csv("data/input_dataframe_withoutstructure_1024.csv",header=0,index_col=0)
+    X = pd.read_csv("data/input_dataframe_withoutstructure_512_drop_duplicate_all.csv",header=0,index_col=0)
     #only use substrate then drop the duplicate
 
 
     X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
     #train RF model
-    model = RF_model(X_train, X_test, y_train, y_test)
-    multidata_predict()
+    model = RF_model(X_train, X_test, y_train, y_test,"_512_drop_duplicate_all")
+    #multidata_predict()
 
     #print(id_seq_dataframe)
     #link the sequences and reaction participant put in one csv file

@@ -140,6 +140,8 @@ class reaction ():
         """
         # Draw.ShowMol(self.substrates, size=(600, 600))
         # Draw.ShowMol(self.products, size=(600, 600))
+        print(self.substrates)
+        print(self.products)
         react = AllChem.ReactionFromSmarts(
             self.substrates + ">>" + self.products, useSmiles=True)
         mol_substrate = Chem.MolFromSmiles(self.substrates)
@@ -234,7 +236,7 @@ class reaction ():
             # print(atom.GetIsotope())
         return atoms_list, atom_index_list,mol_substrate
 
-    def fingerprint_similiarity(self,mol1_fprint,mol2_fprint):
+    def fingerprint_similiarity(self,mol1_fprint,mol2_fprint,mol1:Chem.Mol,mol2:Chem.Mol):
 
         # First we check if the dimensions of both fingerprints are correct.
         if len(mol1_fprint.shape) != 1:
@@ -255,8 +257,10 @@ class reaction ():
                 float(np.logical_or(mol1_fprint, mol2_fprint).sum())
             )
         )
+        if mol1 and mol2:
+            similarity = DataStructs.FingerprintSimilarity(Chem.RDKFingerprint(mol1), Chem.RDKFingerprint(mol2))
+            return similarity
         return tanimoto_similarity
-
     def main_substrate(self,subs,pros):
 
         sim_dictionary = {}
@@ -276,9 +280,12 @@ class reaction ():
 
                 except:
                     return None
-                sim_dictionary[(i,j)]=reaction_object.fingerprint_similiarity(sub_fg,pro_fg)
+                #sim_dictionary[(i,j)]=reaction_object.fingerprint_similiarity(sub_fg,pro_fg)
+                sim_dictionary[
+                    (i, j)] = reaction_object.fingerprint_similiarity(sub_fg,pro_fg,mol1=mol1,
+                                                                      mol2=mol2)
         similarity_list_top_2 = list(
-            sorted(sim_dictionary.items(), key=lambda item: item[1]))[:2]
+            sorted(sim_dictionary.items(),reverse=True,key=lambda item: item[1]))[:2]
         for key in similarity_list_top_2:
             i = key[0][0]
             j= key[0][1]
