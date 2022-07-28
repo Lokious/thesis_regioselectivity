@@ -241,7 +241,7 @@ def read_mannual_data(file=r"E:\Download\regioselectivity_prediction\data\mannua
         mol_ob = molecular()
         mol, j = mol_ob.mol_with_atom_index(smile=smile)
         try:
-            methyl_site_dictionary[index] = list(manual_data.loc[index,'reactant_site'])
+            methyl_site_dictionary[index] = (manual_data.loc[index,'reactant_site']).split(",")
         except:
             methyl_site_dictionary[index]=[]
         if mol:
@@ -262,7 +262,18 @@ def read_mannual_data(file=r"E:\Download\regioselectivity_prediction\data\mannua
     with open("data/methyl_site_dictionary", "wb") as dill_file:
         dill.dump(methyl_site_dictionary, dill_file)
 
+def group_by_domain(directory,dataframe):
 
+    file_name = glob.iglob(directory + '/*.tsv')
+    datafrmae_dict = {}
+    for i in file_name:
+
+        df = target_sequences(i)
+        seed = (i.split("\\")[-1]).split("_")[0]
+        datafrmae_dict[seed] = dataframe.loc[dataframe["Entry"].isin(list(df["id"]))]
+    with open("data/dictionary_with_sepreate_datasets_by_seeds", "wb") as dill_file:
+        dill.dump(datafrmae_dict, dill_file)
+    return datafrmae_dict
 def main():
     unittest.main()
 if __name__ == "__main__":
