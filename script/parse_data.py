@@ -8,6 +8,7 @@ Dependencies:   Python3.9
 datafile should be put in the directory data/ ,this script should be under regioselectivity_prediction
 includes Rhea-ec_2_1_1.tsv
 """
+import os
 
 import pandas as pd
 from sys import argv
@@ -273,7 +274,24 @@ def group_by_domain(directory,dataframe):
         datafrmae_dict[seed] = dataframe.loc[dataframe["Entry"].isin(list(df["id"]))]
     with open("data/dictionary_with_sepreate_datasets_by_seeds", "wb") as dill_file:
         dill.dump(datafrmae_dict, dill_file)
+
+    for key in datafrmae_dict.keys():
+        f = open("data/{}.fasta".format(key), "a")
+        for index in datafrmae_dict[key].index:
+
+            entry = datafrmae_dict[key].loc[index,"Entry"]
+            f.write(">{}\n".format(entry))
+            f.write("{}\n".format(datafrmae_dict[key].loc[index,"Sequence"]))
+        f.close()
+        run_maff(datafrmae_dict.keys())
     return datafrmae_dict
+
+def run_maff(files):
+    for file in files:
+        cmd1 = "nohup mafft - -auto - -anysymbol - -add {0}.fasta - -reorder - -thread - 2 hmm_out/top_ten_hits_exclude_nomethylrelated/{0}_seed.fasta_aln.txt > align/{0}_align_addmodel &\n".format(file)
+        os.system(cmd1)
+        cmd2=" nohup mafft --auto --anysymbol --addfragments {0}.fasta --reorder --thread -2 hmm_out/top_ten_hits_exclude_nomethylrelated/{0}_seed.fasta_aln.txt > align/{0}_align &\n".format(file)
+        os.system(cmd2)
 def main():
     unittest.main()
 if __name__ == "__main__":

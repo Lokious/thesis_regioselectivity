@@ -464,6 +464,7 @@ def main():
     #print(len(data_with_site.index))
     data_frame_dictionary = parse_data.group_by_domain(
         r"E:\Download\regioselectivity_prediction\data\hmm_out",data_with_site )
+
     # data_with_site_drop_du = copy.deepcopy(data_with_site).drop_duplicates(['main_sub'])
     # save_fingerprints_to_dataframe(data_with_site_drop_du,diction_atom,2048,3,file_name="2048_drop_duplicate_all")
     #
