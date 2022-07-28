@@ -20,7 +20,7 @@ from urllib.request import urlopen
 from rdkit import Chem, DataStructs
 from rdkit.Chem import RDKFingerprint, SDMolSupplier
 from rdkit.Chem.Draw import IPythonConsole
-import pikachu
+#import pikachu
 from rdkit.Chem import Draw, AllChem, rdmolops
 import glob
 import joblib

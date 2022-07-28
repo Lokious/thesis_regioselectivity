@@ -16,7 +16,7 @@ from rdkit import Chem, DataStructs
 from rdkit.Chem import RDKFingerprint, SDMolSupplier
 from rdkit.Chem.Draw import IPythonConsole
 from rdkit.Chem import Draw, AllChem, rdChemReactions
-import pikachu
+#import pikachu
 from script.molecular_class import molecular
 import glob
 import dill
