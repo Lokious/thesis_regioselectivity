@@ -10,3 +10,5 @@ dill 0.3.5.1
 scikit-learn 1.0.2
 seaborn 0.11.2
 matplotlib 3.5.0
+biopython
+bio-embedding

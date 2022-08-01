@@ -24,6 +24,7 @@ from rdkit.Chem.Draw import IPythonConsole
 from rdkit.Chem import Draw, AllChem, rdmolops
 import glob
 import joblib
+import pathlib
 #for display and draw picture and graph
 from IPython.display import SVG, display, Image
 import seaborn as sns; sns.set(color_codes=True)
@@ -38,8 +39,8 @@ from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.metrics import confusion_matrix, mean_squared_error, mean_absolute_percentage_error, r2_score, mean_absolute_error, accuracy_score, ConfusionMatrixDisplay, multilabel_confusion_matrix
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import GroupShuffleSplit
+from sklearn.decomposition import PCA
 
-#GLOBAL VARIABLES for data
 
 class model():
 
@@ -51,8 +52,9 @@ class model():
         try:
             file1 = 'data/seq_smiles_all'
             file2 = 'data/diction_atom_all'
-            pathlib.Path(file1).exists()
-            pathlib.Path(file2).exists()
+
+            assert pathlib.Path(file1).exists()==True
+            assert pathlib.Path(file2).exists()==True
 
         except:
             print("missing file{},{}".format(file1,file2))
@@ -62,10 +64,10 @@ class model():
             #read id and sequences in dataframe
             seq_file = "data/id_tosequence.xlsx" # run with pycharm
             id_seq_dataframe = parse_data.read_sequence(seq_file)
-            seq_smiles = merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
+            seq_smiles = self.merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
             #data_frame = keep_longest_smile(seq_smiles)
-            data_frame=keep_methyled_substrate(seq_smiles)
-            return_reactions(data_frame)
+            data_frame=self.keep_methyled_substrate(seq_smiles)
+            self.return_reactions(data_frame)
 
 
 
@@ -316,7 +318,22 @@ class model():
         Y_test = test["label"]
 
         return X_train, X_test, Y_train, Y_test
+    def run_PCA(self,datasets):
+        data_with_site = copy.deepcopy(datasets)
+        V = []
+        PC = []
+        for i in range(len(datasets.columns)):
+            PC.append("PC" + str(i + 1))
+            V.append("V" + str(i + 1))
+        pca_fit =PCA(random_state=42).fit(datasets)
 
+        pca_loadings = pd.DataFrame(pca_fit.components_.T,
+                                    index=datasets.columns, columns=V)
+        pca_df = pd.DataFrame(pca_fit.fit_transform(datasets), columns=PC,
+                              index=datasets.index)
+        fig, ax = plt.subplots()
+        plt.scatter(pca_df.PC1, pca_df.PC2,  s=5)
+        plt.show()
     def RF_model(self,X_train, X_test, y_train, y_test,file_name=""):
         """
 
@@ -453,19 +470,9 @@ def main():
     #run with pycharm
 
 
-    with open('data/seq_smiles_all', 'rb') as file1:
-        data_with_site = dill.load(file1)
-    with open('data/diction_atom_all', 'rb') as file1:
-        diction_atom = dill.load(file1)
 
-    indexNames = data_with_site[data_with_site['reactant_site'] == 'NA'].index
-    # Delete these row indexes from dataFrame
-    data_with_site.drop(indexNames, inplace=True)
-    #print(len(data_with_site.index))
-    data_frame_dictionary = parse_data.group_by_domain(
-        r"E:\Download\regioselectivity_prediction\data\hmm_out",data_with_site )
 
-    # data_with_site_drop_du = copy.deepcopy(data_with_site).drop_duplicates(['main_sub'])
+    data_with_site_drop_du = copy.deepcopy(data_with_site).drop_duplicates(['main_sub'])
     # save_fingerprints_to_dataframe(data_with_site_drop_du,diction_atom,2048,3,file_name="2048_drop_duplicate_all")
     #
     # #read manual_data

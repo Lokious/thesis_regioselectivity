@@ -9,7 +9,7 @@ datafile should be put in the directory data/ ,this script should be under regio
 includes Rhea-ec_2_1_1.tsv
 """
 import os
-
+import subprocess
 import pandas as pd
 from sys import argv
 from urllib.request import urlopen
@@ -21,6 +21,8 @@ from rdkit.Chem import Draw, AllChem, rdChemReactions
 from script.molecular_class import molecular
 import glob
 import dill
+from Bio import AlignIO
+from script.sequence import sequences
 def target_sequences(file):
     """
     This function is used to return Uniprot entry of target sequences from hmmscan
@@ -274,7 +276,6 @@ def group_by_domain(directory,dataframe):
         datafrmae_dict[seed] = dataframe.loc[dataframe["Entry"].isin(list(df["id"]))]
     with open("data/dictionary_with_sepreate_datasets_by_seeds", "wb") as dill_file:
         dill.dump(datafrmae_dict, dill_file)
-
     for key in datafrmae_dict.keys():
         f = open("data/{}.fasta".format(key), "a")
         for index in datafrmae_dict[key].index:
@@ -283,15 +284,36 @@ def group_by_domain(directory,dataframe):
             f.write(">{}\n".format(entry))
             f.write("{}\n".format(datafrmae_dict[key].loc[index,"Sequence"]))
         f.close()
-        run_maff(datafrmae_dict.keys())
+    keys=datafrmae_dict.keys()
+
     return datafrmae_dict
 
-def run_maff(files):
-    for file in files:
-        cmd1 = "nohup mafft - -auto - -anysymbol - -add {0}.fasta - -reorder - -thread - 2 hmm_out/top_ten_hits_exclude_nomethylrelated/{0}_seed.fasta_aln.txt > align/{0}_align_addmodel &\n".format(file)
-        os.system(cmd1)
-        cmd2=" nohup mafft --auto --anysymbol --addfragments {0}.fasta --reorder --thread -2 hmm_out/top_ten_hits_exclude_nomethylrelated/{0}_seed.fasta_aln.txt > align/{0}_align &\n".format(file)
-        os.system(cmd2)
+def read_msa_and_encoding(files="data/align/Keeplength/PF05175_align_addmodel"):
+    """
+    simpliest encoding by transfer aminoacide to number and encode it to binary arrary
+    :param files:
+    :return:
+    """
+    import numpy as np
+    from sklearn.preprocessing import OneHotEncoder
+    from sklearn.preprocessing import LabelEncoder
+    align = AlignIO.read(files, "fasta")
+
+    align_array = np.array([list(rec) for rec in align], np.character)
+    length = len(np.unique(align_array))
+    #print(align_array)
+    id = list(rec.id for rec in align)
+    align_pd = pd.DataFrame(data=align_array,index=id)
+    align_pd = align_pd.drop_duplicates()
+    print(align_pd)
+    #encode_seq = pd.DataFrame(250*length*[],columns=list(range(250*20)))
+
+
+def clean_seq():
+    #remove duplicate sequneces in fasta file
+    file_list = ["PF05175","PF08241","PF08242","PF13489","PF13649","PF13847"]
+    seq=sequences()
+    seq.remove_duplicate(file_list)
 def main():
     unittest.main()
 if __name__ == "__main__":
