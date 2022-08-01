@@ -284,36 +284,69 @@ def group_by_domain(directory,dataframe):
             f.write(">{}\n".format(entry))
             f.write("{}\n".format(datafrmae_dict[key].loc[index,"Sequence"]))
         f.close()
-    keys=datafrmae_dict.keys()
+    keys = datafrmae_dict.keys()
 
     return datafrmae_dict
 
-def read_msa_and_encoding(files="data/align/Keeplength/PF05175_align_addmodel"):
+def read_msa_and_encoding(file="data/align/Keeplength/PF05175_align_addmodel"):
     """
     simpliest encoding by transfer aminoacide to number and encode it to binary arrary
-    :param files:
+
+    :param file:
     :return:
     """
+
     import numpy as np
     from sklearn.preprocessing import OneHotEncoder
-    from sklearn.preprocessing import LabelEncoder
-    align = AlignIO.read(files, "fasta")
-
+    align = AlignIO.read(file, "fasta")
     align_array = np.array([list(rec) for rec in align], np.character)
-    length = len(np.unique(align_array))
-    #print(align_array)
+    #the length of aligned sequence
+    seq_length = len(align[0])
+    print(seq_length)
+    char_list = np.unique(align_array)
+    char_dictionary = {}
+    for i,char in enumerate(char_list):
+        char_dictionary[char] = i
+    print(char_dictionary)
+
     id = list(rec.id for rec in align)
     align_pd = pd.DataFrame(data=align_array,index=id)
     align_pd = align_pd.drop_duplicates()
     print(align_pd)
-    #encode_seq = pd.DataFrame(250*length*[],columns=list(range(250*20)))
 
+    encode_dictionary = {}
+    for key in char_dictionary.keys():
+        align_pd = align_pd.mask(align_pd == key,char_dictionary[key])
+        encoding_list = [0]*len(char_dictionary)
+        encoding_list[char_dictionary[key]]=1
+        encode_dictionary[char_dictionary[key]] = encoding_list
+    encode_seq = pd.DataFrame(seq_length * len(char_dictionary) * [],
+                              columns=list(range(seq_length * len(char_dictionary))))
+    # X = one_hot_encoder.fit_transform(align_pd)
+    # print(X)
+
+    for index in align_pd.index:
+        line = []
+        for aa in list(align_pd.loc[index]):
+            line += encode_dictionary[aa]
+        encode_seq.loc[index] = line
+
+    print(encode_seq)
 
 def clean_seq():
     #remove duplicate sequneces in fasta file
     file_list = ["PF05175","PF08241","PF08242","PF13489","PF13649","PF13847"]
-    seq=sequences()
+    seq = sequences()
     seq.remove_duplicate(file_list)
+
+def merge_uniprot_emebeding():
+    file_list = ["PF05175", "PF08241", "PF08242", "PF13489", "PF13649",
+                 "PF13847"]
+    umiprot_df = pd.DataFrame()
+    for file in file_list:
+        df = read_msa_and_encoding("data/align/Keeplength/{}_align_addmodel".format(file))
+        umiprot_df=pd.concat([umiprot_df,df],axis=0)
+        print(umiprot_df)
 def main():
     unittest.main()
 if __name__ == "__main__":

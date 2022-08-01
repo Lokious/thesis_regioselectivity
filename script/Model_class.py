@@ -42,10 +42,10 @@ from sklearn.model_selection import GroupShuffleSplit
 from sklearn.decomposition import PCA
 
 
-class model():
+class Model_class():
 
-    def __init__(self):
-        self.check_file_exist()
+    #def __init__(self):
+        #self.check_file_exist()
 
     def check_file_exist(self):
 
@@ -68,8 +68,6 @@ class model():
             #data_frame = keep_longest_smile(seq_smiles)
             data_frame=self.keep_methyled_substrate(seq_smiles)
             self.return_reactions(data_frame)
-
-
 
 
 
@@ -102,6 +100,7 @@ class model():
 
 
     def drop_useless_column(self,dataframe):
+
         dataframe = dataframe.loc[:,["Sequence","sub_mols","pro_mols","sub_smiles","pro_smiles"]]
         #print(dataframe)
 
@@ -150,6 +149,7 @@ class model():
                     dataframe_before.loc[index, "main_pro"] = main_pro
 
         return copy.deepcopy(dataframe_before)
+
     def return_reactions(self,dataframe_rr):
         """
 
@@ -198,12 +198,14 @@ class model():
     def save_fingerprints_to_dataframe(self,sauce_data,atom_object_dictionary,num_bits: int = 2048,radius: int = 3,file_name=""):
         """
         this function is to build inputdata with fingerprints and labels
+
         :param sauce_data:
         :param atom_object_dictionary:
         :param num_bits:
         :param radius:
         :return:
         """
+
         self_defined_mol_object = molecular()
         input_dataframe = pd.DataFrame()
         current_index = 0
@@ -211,7 +213,7 @@ class model():
         for index in sauce_data.index:
             print(index)
             sub_mol = sauce_data.loc[index,"mainsub_mol"]
-            print(sub_mol)
+            # print(sub_mol)
             #Draw.ShowMol(sub_mol, size=(600, 600))
             sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(mol_object=copy.deepcopy(sub_mol))
             fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
@@ -219,10 +221,10 @@ class model():
             for atom in sub_mol.GetAtoms():
                 #set label
                 sy_index = (atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum()))
-                print(sy_index)
-                print(atom_object_dictionary[index])
+                #print(sy_index)
+                #print(atom_object_dictionary[index])
                 if sy_index in atom_object_dictionary[index]:
-                    print(sy_index)
+                    #print(sy_index)
                     label = 1
                 else:
                     label = 0
@@ -242,6 +244,7 @@ class model():
                                           0)
                 input_dataframe.loc[current_index, "molecular_id"] = "m"+str(index)
                 input_dataframe.loc[current_index,"label"] = label
+                input_dataframe.loc[current_index,"Entry"] = sauce_data.loc[index,"Entry"]
                 current_index += 1
         print(input_dataframe)
         input_dataframe.to_csv("data/input_dataframe_withoutstructure_{}.csv".format(file_name))
@@ -473,7 +476,7 @@ def main():
 
 
     data_with_site_drop_du = copy.deepcopy(data_with_site).drop_duplicates(['main_sub'])
-    # save_fingerprints_to_dataframe(data_with_site_drop_du,diction_atom,2048,3,file_name="2048_drop_duplicate_all")
+
     #
     # #read manual_data
     # parse_data.read_mannual_data()
