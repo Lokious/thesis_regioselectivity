@@ -1,4 +1,6 @@
 data/hmm_out/*.h*
+data/align/*
+data/*.fasta
 data/input_dataframe_withoutstructure.csv
 data/input_dataframe_withoutstructure_2048.csv
 data/input_dataframe_withoutstructure_2048
