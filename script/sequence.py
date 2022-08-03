@@ -11,7 +11,7 @@ import sys
 from Bio import SeqIO
 class sequences():
 
-    def __init__(self,msa_model=None):
+    def __init__(self, msa_model=None):
         self.model = msa_model
 
     def get_acative_site(self,seq = "",num_AA:int=0):

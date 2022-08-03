@@ -195,7 +195,7 @@ class Model_class():
             dataframe_rr.to_csv("data/diction_atom_all.csv")
 
 
-    def save_fingerprints_to_dataframe(self,sauce_data,atom_object_dictionary,num_bits: int = 2048,radius: int = 3,file_name=""):
+    def save_fingerprints_to_dataframe(self,sauce_data,atom_object_dictionary,num_bits: int = 2048,radius: int = 3,drop_atoms=False,file_name=""):
         """
         this function is to build inputdata with fingerprints and labels
 
@@ -209,8 +209,9 @@ class Model_class():
         self_defined_mol_object = molecular()
         input_dataframe = pd.DataFrame()
         current_index = 0
-        print(sauce_data)
+
         for index in sauce_data.index:
+
             print(index)
             sub_mol = sauce_data.loc[index,"mainsub_mol"]
             # print(sub_mol)
@@ -219,6 +220,8 @@ class Model_class():
             fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
                 sub_rest_mol, num_bits=num_bits, radius=radius)
             for atom in sub_mol.GetAtoms():
+
+
                 #set label
                 sy_index = (atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum()))
                 #print(sy_index)
@@ -230,27 +233,60 @@ class Model_class():
                     label = 0
                 #atom_index_sub = atom.GetAtomMapNum()
                 newrow = {}
-                #resrt atom index and then build fingerprint
-                fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
-                    sub_rest_mol, atom_object=atom, num_bits=num_bits, radius=radius)
-                #add fingerprint atom index ebedding sequences and label to dataframe
-                for i,item in enumerate(fingerprint_mol):
-                    newrow[i] = item
-                for j,item in enumerate(fingerprint_atom):
-                    newrow[j+i] = item
-                #newrow['atom_index'] = atom_index_sub
-                add_dataframe = pd.DataFrame(newrow,index=[current_index])
-                input_dataframe=pd.concat([input_dataframe,add_dataframe],axis=
-                                          0)
-                input_dataframe.loc[current_index, "molecular_id"] = "m"+str(index)
-                input_dataframe.loc[current_index,"label"] = label
-                input_dataframe.loc[current_index,"Entry"] = sauce_data.loc[index,"Entry"]
-                current_index += 1
+                #if drop_atoms is True, filter out some Carbon whose degree is already 4
+                if drop_atoms and (label != 1):
+                    #print(atom.GetTotalDegree(),atom.GetSymbol())
+                    if (atom.GetTotalDegree() == 4) and (atom.GetSymbol()=="C"):
+                        print("drop C")
+                        continue
+                    else:
+                        # resrt atom index and then build fingerprint
+                        fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
+                            sub_rest_mol, atom_object=atom, num_bits=num_bits,
+                            radius=radius)
+                        # add fingerprint atom index ebedding sequences and label to dataframe
+                        for i, item in enumerate(fingerprint_mol):
+                            newrow[i] = item
+                        for j, item in enumerate(fingerprint_atom):
+                            newrow[j + i] = item
+                        # newrow['atom_index'] = atom_index_sub
+                        add_dataframe = pd.DataFrame(newrow,
+                                                     index=[current_index])
+                        input_dataframe = pd.concat(
+                            [input_dataframe, add_dataframe], axis=
+                            0)
+                        input_dataframe.loc[
+                            current_index, "molecular_id"] = "m" + str(index)
+                        input_dataframe.loc[current_index, "label"] = label
+                        input_dataframe.loc[current_index, "Entry"] = \
+                        sauce_data.loc[index, "Entry"]
+                        current_index += 1
+                else:
+                    #resrt atom index and then build fingerprint
+                    fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
+                        sub_rest_mol, atom_object=atom, num_bits=num_bits, radius=radius)
+                    #add fingerprint atom index ebedding sequences and label to dataframe
+                    for i,item in enumerate(fingerprint_mol):
+                        newrow[i] = item
+                    for j,item in enumerate(fingerprint_atom):
+                        newrow[j+i] = item
+                    #newrow['atom_index'] = atom_index_sub
+                    add_dataframe = pd.DataFrame(newrow,index=[current_index])
+                    input_dataframe=pd.concat([input_dataframe,add_dataframe],axis=
+                                              0)
+                    input_dataframe.loc[current_index, "molecular_id"] = "m"+str(index)
+                    input_dataframe.loc[current_index,"label"] = label
+                    input_dataframe.loc[current_index,"Entry"] = sauce_data.loc[index,"Entry"]
+                    current_index += 1
         print(input_dataframe)
-        input_dataframe.to_csv("data/input_dataframe_withoutstructure_{}.csv".format(file_name))
-        with open("data/input_dataframe_withoutstructure_{}".format(file_name), "wb") as dill_file:
-            dill.dump(input_dataframe, dill_file)
-
+        if drop_atoms:
+            input_dataframe.to_csv("data/input_dataframe_withoutstructure_dropatoms{}.gz".format(file_name),compression=gzip)
+            with open("data/input_dataframe_withoutstructure_dropatoms{}".format(file_name), "wb") as dill_file:
+                dill.dump(input_dataframe, dill_file)
+        else:
+            input_dataframe.to_csv("data/input_dataframe_withoutstructure_{}.csv".format(file_name))
+            with open("data/input_dataframe_withoutstructure_{}".format(file_name), "wb") as dill_file:
+                dill.dump(input_dataframe, dill_file)
         return input_dataframe
     #
     # def sequences_feature_to_dataframe(substratedata,whole_data):
@@ -315,25 +351,29 @@ class Model_class():
         train = df.iloc[train_inds]
         test = df.iloc[test_inds]
 
-        X_train = train[list(train.columns)[:-2]]
+        #X_train = train[list(train.columns)[:-2]]
+        X_train = (copy.deepcopy(train)).drop(columns=["Entry","molecular_id","label"])
         Y_train = train["label"]
-        X_test = test[list(test.columns)[:-2]]
+        #X_test = test[list(test.columns)[:-2]]
+        X_test = (copy.deepcopy(test)).drop(columns=["Entry", "molecular_id", "label"])
         Y_test = test["label"]
-
+        print(X_train, X_test, Y_train, Y_test)
         return X_train, X_test, Y_train, Y_test
+
+
     def run_PCA(self,datasets):
         data_with_site = copy.deepcopy(datasets)
         V = []
         PC = []
-        for i in range(len(datasets.columns)):
+        for i in range(len(data_with_site.columns)):
             PC.append("PC" + str(i + 1))
             V.append("V" + str(i + 1))
-        pca_fit =PCA(random_state=42).fit(datasets)
+        pca_fit =PCA(random_state=42).fit(data_with_site)
 
         pca_loadings = pd.DataFrame(pca_fit.components_.T,
-                                    index=datasets.columns, columns=V)
-        pca_df = pd.DataFrame(pca_fit.fit_transform(datasets), columns=PC,
-                              index=datasets.index)
+                                    index=data_with_site.columns, columns=V)
+        pca_df = pd.DataFrame(pca_fit.fit_transform(data_with_site), columns=PC,
+                              index=data_with_site.index)
         fig, ax = plt.subplots()
         plt.scatter(pca_df.PC1, pca_df.PC2,  s=5)
         plt.show()

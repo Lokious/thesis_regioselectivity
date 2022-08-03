@@ -288,14 +288,14 @@ def group_by_domain(directory,dataframe):
 
     return datafrmae_dict
 
-def read_msa_and_encoding(file="data/align/Keeplength/PF05175_align_addmodel"):
+def read_msa_and_encoding(file_name=""):
     """
     simpliest encoding by transfer aminoacide to number and encode it to binary arrary
 
     :param file:
     :return:
     """
-
+    file = "data/align/Keeplength/{}_align_addmodel_rm".format(file_name)
     import numpy as np
     from sklearn.preprocessing import OneHotEncoder
     align = AlignIO.read(file, "fasta")
@@ -306,32 +306,55 @@ def read_msa_and_encoding(file="data/align/Keeplength/PF05175_align_addmodel"):
     char_list = np.unique(align_array)
     char_dictionary = {}
     for i,char in enumerate(char_list):
-        char_dictionary[char] = i
-    print(char_dictionary)
+        char_dictionary[char] = (i+1)
+
 
     id = list(rec.id for rec in align)
     align_pd = pd.DataFrame(data=align_array,index=id)
     align_pd = align_pd.drop_duplicates()
-    print(align_pd)
+    # print(align_pd)
 
     encode_dictionary = {}
+    """"
     for key in char_dictionary.keys():
         align_pd = align_pd.mask(align_pd == key,char_dictionary[key])
         encoding_list = [0]*len(char_dictionary)
-        encoding_list[char_dictionary[key]]=1
+        encoding_list[char_dictionary[key]] = 1
         encode_dictionary[char_dictionary[key]] = encoding_list
-    encode_seq = pd.DataFrame(seq_length * len(char_dictionary) * [],
-                              columns=list(range(seq_length * len(char_dictionary))))
+    """
+    # convert number to binary to shorten the size
+    for key in char_dictionary.keys():
+        align_pd = align_pd.mask(align_pd == key,char_dictionary[key])
+        if key != "-":
+            bi = [int(x) for x in bin(char_dictionary[key])[2:]]
+            encode_dictionary[char_dictionary[key]] = ((6-len(bi))*[0]+bi)
+            print(encode_dictionary)
+        else:
+            encode_dictionary[char_dictionary[key]] = [0]*6
+
+    encode_seq = pd.DataFrame(seq_length * 6 * [],
+                              columns=list(range(seq_length * 6)))
+
+
     # X = one_hot_encoder.fit_transform(align_pd)
     # print(X)
-
+    #print(len(align_pd.index))
+    print(encode_seq.columns)
     for index in align_pd.index:
         line = []
         for aa in list(align_pd.loc[index]):
             line += encode_dictionary[aa]
+            print(len(line))
         encode_seq.loc[index] = line
 
-    print(encode_seq)
+    encode_seq["Entry"] = encode_seq.index
+    encode_seq = (encode_seq.reset_index()).drop(columns='index')
+    #print(encode_seq)
+    with open("data/protein_encoding/{}_simple_encoding_bi".format(file_name),
+              "wb") as dill_file:
+        dill.dump(encode_seq, dill_file)
+    encode_seq.to_csv("data/protein_encoding/{}_simple_encoding_bi.csv".format(file_name))
+    return encode_seq
 
 def clean_seq():
     #remove duplicate sequneces in fasta file
@@ -344,9 +367,26 @@ def merge_uniprot_emebeding():
                  "PF13847"]
     umiprot_df = pd.DataFrame()
     for file in file_list:
-        df = read_msa_and_encoding("data/align/Keeplength/{}_align_addmodel".format(file))
-        umiprot_df=pd.concat([umiprot_df,df],axis=0)
-        print(umiprot_df)
+        try:
+            with open("data/protein_encoding/{}_simple_encoding_bi".format(file), 'rb') as file1:
+                df = dill.load(file1)
+            # df = pd.read_csv("data/protein_encoding/{}_simple_encoding.csv".format(file),header=0,index_col=0)
+            # print(df)
+        except:
+            df = read_msa_and_encoding("{}".format(file))
+        umiprot_df = pd.concat([umiprot_df,df],axis=0,join='outer')
+        #umiprot_df.index=umiprot_df["Entry"]
+
+
+    "replace the NA with 0, cause the difference in aeq length"
+    umiprot_df=umiprot_df.fillna(0)
+
+    #umiprot_df=umiprot_df.reset_index()
+    #some sequences aligned to different hmm,only keep one
+    print(umiprot_df.drop_duplicates(subset="Entry",keep="first"))
+    umiprot_df=(umiprot_df.drop_duplicates(subset="Entry",keep="first")).reset_index(drop=True)
+    umiprot_df.to_csv("data/protein_encoding/protein_seq_simple_encoding_bi.csv")
+    return umiprot_df
 def main():
     unittest.main()
 if __name__ == "__main__":
