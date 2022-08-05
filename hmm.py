@@ -18,7 +18,7 @@ def main():
     #     tblout="data/hmm_out/{}_seed_hit.tsv".format(seed)
     #     os.system("nohup hmmscan -o {} --domtblout {} --tblout {} --cpu 2 {} {} &\n".format(o,domtblout,tblout,buildfile,inputfile))
     for seed in seeds:
-        os.system("nohup hmmalign --amino --outformat A2M data/hmm_out/top_ten_hits_exclude_nomethylrelated/{0}.hmm data/{0}_rm.fasta > {0}.a2m&\n".format(seed))
+        os.system("nohup hmmalign --amino data/hmm_out/top_ten_hits_exclude_nomethylrelated/{0}.hmm data/manual_seq.fasta > {0}_manual&\n".format(seed))
 
 if __name__ == "__main__":
     main()

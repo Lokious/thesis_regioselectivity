@@ -29,27 +29,41 @@ class molecular ():
     def calculate_smile(self):
         smile = Chem.MolToSmiles(mol)
         self.smiles = smile
-    def mol_with_atom_index(self,smile="",mol_object = None, index = 0):
+    def mol_with_atom_index(self,smile="",mol_object = None, index ={}):
         """Return mol object with index, input could be simles or mol"""
         if mol_object:
             #set i here inorder to make the atom from all substrates has different mapnumber
-            i = index+1
+
+            atom_type = index
             for atom in mol_object.GetAtoms():
-                atom.SetAtomMapNum(atom.GetIdx() + i)
+
+                atom_sy = atom.GetSymbol()
+                if atom_sy not in atom_type.keys():
+                    # makesure no repeate number
+                    atom_type[atom_sy] = 0
+                # print(atom_type[atom_sy])
+                # print(atom.GetSymbol())
+                atom.SetAtomMapNum(atom.GetIdx())
                 # save the index in isotope just for keeeping the index for later use
-                atom.SetIsotope(atom.GetIdx() + i)
-                index = atom.GetIdx() + i
-            return mol_object,index
+                atom.SetIsotope(atom_type[atom_sy])
+                atom_type[atom_sy] += 1
+
+            return mol_object,atom_type
         elif smile:
-            i = index+1
+
             mol = Chem.MolFromSmiles(smile)
             if mol:
+                atom_type = index
                 for atom in mol.GetAtoms():
-                    atom.SetAtomMapNum(atom.GetIdx() + i)
+
+                    if atom.GetSymbol() not in atom_type.keys():
+                        #makesure no repeate number
+                        atom_type[atom.GetSymbol()] = 0
+                    atom.SetAtomMapNum(atom.GetIdx())
                     # save the index in isotope just for keeeping the index for later use
-                    atom.SetIsotope(atom.GetIdx() + i)
-                    index = atom.GetIdx() + i
-                return mol,index
+                    atom.SetIsotope(atom_type[atom.GetSymbol()])
+                    atom_type[atom.GetSymbol()] += 1
+                return mol,atom_type
             else:
                 print("warning:cannot due with this smile:{}".format(smile))
                 return None, index
@@ -81,6 +95,7 @@ class molecular ():
         DataStructs.ConvertToNumpyArray(morgan_bit_vector, bit_fingerprint_mol)
 
         return bit_fingerprint_mol
+
     def create_fingerprint_atom(self, substrate_molecular: Chem.Mol,atom_object: Chem.Atom, num_bits: int = 2048,
         radius: int = 3)->np.array:
         atom_index = atom_object.GetIdx()
@@ -123,14 +138,16 @@ class reaction ():
         :return:
         """
         rxn_object.Initialize()
-        reacting_atom_set = rxn_object.GetReactingAtoms()
-        # print(reacting_atom_set)
-        img = Draw.ReactionToImage(rxn_object, returnPNG=True, subImgSize=(600,600))
-        img.drawOptions()
-        with open("{}.png".format(file_name), 'wb') as handle:
-            handle.write(img)
-        handle.close()
-
+        try:
+            reacting_atom_set = rxn_object.GetReactingAtoms()
+            print(reacting_atom_set)
+            img = Draw.ReactionToImage(rxn_object, returnPNG=True, subImgSize=(600,600))
+            img.drawOptions()
+            with open("{}.png".format(file_name), 'wb') as handle:
+                handle.write(img)
+            handle.close()
+        except:
+            print("cnnot run reaction{}".format(file_name))
 
     def perform_reaction(self):
         """
@@ -140,15 +157,19 @@ class reaction ():
         """
         # Draw.ShowMol(self.substrates, size=(600, 600))
         # Draw.ShowMol(self.products, size=(600, 600))
-        print(self.substrates)
-        print(self.products)
+
         react = AllChem.ReactionFromSmarts(
             self.substrates + ">>" + self.products, useSmiles=True)
         mol_substrate = Chem.MolFromSmiles(self.substrates)
+
         self.mol_substrate = mol_substrate
+        for atom in mol_substrate.GetAtoms():
+            atom.SetIsotope(0)
         # print(self.products)
         # print(self.substrates)
         react.Initialize()
+        print(self.products)
+        print(self.substrates)
         # There should be only one product molecular,
         # the RunReactants function just for keep the atom map to find the reactant atom
         for result in react.RunReactants((mol_substrate,)):
@@ -157,6 +178,7 @@ class reaction ():
                 #Draw.ShowMol(mol_product, size=(600, 600))
                 for atom in mol_product.GetAtoms():
                     atom.SetAtomMapNum(atom.GetIsotope())
+                    print(atom.GetAtomMapNum())
                     # atom.SetIsotope(0)
                 result1 = Chem.MolToSmiles(mol_product)
         self.mol_product = mol_product
@@ -168,72 +190,43 @@ class reaction ():
 
         :return: list of atom objects which is the regioselectivity site
         """
-        #perform the reaction to
-        reaction.perform_reaction(self)
 
-        mol_product = self.mol_product
-        mol_substrate = self.mol_substrate
-        # Draw.ShowMol(mol_substrate, size=(600, 600))
-        # Draw.ShowMol(mol_product, size=(600, 600))
-        for atom in mol_substrate.GetAtoms():
-            atom.SetAtomMapNum(atom.GetIsotope())
-            #atom.SetIsotope(0)
-
-        reactant_atoms = []
-        pro_atom_dic = {}
-        sub_atom_dic = {}
-        for atom in mol_product.GetAtoms():
-            pro_atom_dic[atom] = atom.GetAtomMapNum()
-        for atom in mol_substrate.GetAtoms():
-            sub_atom_dic[atom] = atom.GetAtomMapNum()
-        #list of tuple with (atom_object,AtomMapNum)
-        pro_atom_list = list(sorted(pro_atom_dic.items(), key=lambda item: item[1]))
-        sub_atom_list = list(
-            sorted(sub_atom_dic.items(), key=lambda item: item[1]))
-
-        for i in range(len(pro_atom_list)):
-
-            atom_index_pro = pro_atom_list[i][0].GetIdx()
-            radius = 1
-            try:
-                atom_index_sub = sub_atom_list[i][0].GetIdx()
-                sub_atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(mol_substrate,
-                                                                         radius,
-                                                                         atom_index_sub)
-            except:
-                reactant_atoms.append(atom_index_pro)
-
-            pro_atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(
-                mol_product,
-                radius,
-                atom_index_pro)
-            atom_map = {}
-            sub_mol = Chem.PathToSubmol(mol_substrate, sub_atom_environment,
-                              atomMap=atom_map)
-            pro_mol = Chem.PathToSubmol(mol_product, pro_atom_environment,
-                              atomMap=atom_map)
-
-            # Draw.ShowMol(sub_mol, size=(600, 600))
-            # Draw.ShowMol(pro_mol, size=(600, 600))
 
         atoms_list=[]
         atom_index_list = []
 
-        for index in reactant_atoms:
-            atom_methyl = mol_product.GetAtomWithIdx(index)
-            for bond in atom_methyl.GetBonds():
-                atom_1, atom_2 = bond.GetBeginAtom(), bond.GetEndAtom()
-                if atom_1 == atom_methyl:
-                    atoms_list.append(atom_2)
+        mol_substrate = Chem.MolFromSmiles(self.substrates)
+        mol_product = Chem.MolFromSmiles(self.products)
 
-                else:
-                    atoms_list.append(atom_1)
+        sub_mapnumber_dict={}
+        pro_mapnumber_dict = {}
+        for atom in mol_substrate.GetAtoms():
+            #isotope is what is set before
+            num = atom.GetSymbol()+str(atom.GetIsotope())
+            index = atom.GetIdx()
+            sub_mapnumber_dict[num]=index
+        for atom in mol_product.GetAtoms():
+            num = atom.GetSymbol()+str(atom.GetIsotope())
+            index = atom.GetIdx()
+            pro_mapnumber_dict[num]=index
+        for map_index in sub_mapnumber_dict.keys():
+            atom_sub = mol_substrate.GetAtomWithIdx(sub_mapnumber_dict[map_index])
+            if map_index in pro_mapnumber_dict.keys():
+                atom_pro = mol_product.GetAtomWithIdx(pro_mapnumber_dict[map_index])
+            else:
+                continue
+            #if atom neibor increase and this atom is not carbon, then add it to methylation site list
+            if len(atom_sub.GetNeighbors()) < len(atom_pro.GetNeighbors()):
+                if (atom_sub.GetSymbol()!="C") and (atom_sub.GetSymbol()!="*") :
+                    atoms_list.append(atom_sub)
 
         for atom in atoms_list:
             #str with symbol index and mapnumber(mapnumber is the same as substrate's mapnumber)
-            atom_index_list.append((atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum())))
+            atom_index_list.append((atom.GetSymbol() + str(atom.GetAtomMapNum())+":"+str(atom.GetIsotope())))
             # print(atom.GetAtomMapNum())
             # print(atom.GetIsotope())
+        #print(atom_index_list)
+
         return atoms_list, atom_index_list,mol_substrate
 
     def fingerprint_similiarity(self,mol1_fprint,mol2_fprint,mol1:Chem.Mol,mol2:Chem.Mol):

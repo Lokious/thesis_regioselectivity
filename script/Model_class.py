@@ -15,6 +15,7 @@ from script import parse_data
 import pandas as pd
 import numpy as np
 
+import random
 from sys import argv
 from urllib.request import urlopen
 from rdkit import Chem, DataStructs
@@ -59,14 +60,15 @@ class Model_class():
         except:
             print("missing file{},{}".format(file1,file2))
             print("preparing the file......")
-            rh_file = "data/rhea2uniprot_sprot.tsv"
+            rh_file = "data/rawdata/rhea2uniprot_sprot.tsv"
             rheauniprot_dataframe = parse_data.readrhlist(rh_file)
             #read id and sequences in dataframe
-            seq_file = "data/id_tosequence.xlsx" # run with pycharm
+            seq_file = "data/rawdata/id_tosequence.xlsx" # run with pycharm
             id_seq_dataframe = parse_data.read_sequence(seq_file)
             seq_smiles = self.merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
-            #data_frame = keep_longest_smile(seq_smiles)
+            #data_frame = self.keep_longest_smile(seq_smiles)
             data_frame=self.keep_methyled_substrate(seq_smiles)
+            data_frame.to_csv("data/seq_dataframe_new.csv")
             self.return_reactions(data_frame)
 
 
@@ -79,7 +81,7 @@ class Model_class():
             seq_df:
         :return:
         """
-        df1 = parse_data.get_substrate_chebi("data/Rhea-ec_2_1_1.tsv")
+        df1 = parse_data.get_substrate_chebi("data/rawdata/Rhea-ec_2_1_1.tsv")
         df1 = parse_data.get_smile(df1)
         df1.index = df1.index.map(lambda x: x.split(":")[1])
         df1["RHEA_ID"] = df1.index
@@ -168,15 +170,17 @@ class Model_class():
             if (sub != pro) and sub !=0 and pro !=0:
                 reaction1 = reaction(substrates=sub, products=pro)
                 #print(dataframe.loc[index,"RHEA_ID"])
-                rxn_file_name = "data/rxn_picture/{}".format(dataframe_rr.loc[index,"Entry"])
+                #rxn_file_name = "data/rxn_picture/{}".format(dataframe_rr.loc[index,"Entry"])
                 #r1 = reaction1.get_reaction_sites(rxn_object=rxn,file_name=rxn_file_name)
-                r2, index_list, mainsub_mol = reaction1.get_reactant_atom()
                 print("index: {}".format(index))
+                r2, index_list, mainsub_mol = reaction1.get_reactant_atom()
 
+                Draw.MolToFile(mainsub_mol,"data/substrate_mol_picture/{}.png".format(index),size=(600,600))
                 #save atom index(methylation site) from substrate in dataframe
                 site = ",".join(index_list)
                 print(site)
                 dataframe_rr.loc[index,"mainsub_mol"] = mainsub_mol
+
             else:
                 site = ""
             if site != "":
@@ -224,8 +228,8 @@ class Model_class():
 
                 #set label
                 sy_index = (atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum()))
-                #print(sy_index)
-                #print(atom_object_dictionary[index])
+                # print(sy_index)
+                # print(atom_object_dictionary[index])
                 if sy_index in atom_object_dictionary[index]:
                     #print(sy_index)
                     label = 1
@@ -260,6 +264,8 @@ class Model_class():
                         input_dataframe.loc[current_index, "label"] = label
                         input_dataframe.loc[current_index, "Entry"] = \
                         sauce_data.loc[index, "Entry"]
+                        input_dataframe.loc[current_index, "methyl_type"] = \
+                        sauce_data.loc[index, "methyl_type"]
                         current_index += 1
                 else:
                     #resrt atom index and then build fingerprint
@@ -277,10 +283,12 @@ class Model_class():
                     input_dataframe.loc[current_index, "molecular_id"] = "m"+str(index)
                     input_dataframe.loc[current_index,"label"] = label
                     input_dataframe.loc[current_index,"Entry"] = sauce_data.loc[index,"Entry"]
+                    input_dataframe.loc[current_index, "methyl_type"] = \
+                        sauce_data.loc[index, "methyl_type"]
                     current_index += 1
         print(input_dataframe)
         if drop_atoms:
-            input_dataframe.to_csv("data/input_dataframe_withoutstructure_dropatoms{}.gz".format(file_name),compression=gzip)
+            input_dataframe.to_csv("data/input_dataframe_withoutstructure_dropatoms{}.csv".format(file_name))
             with open("data/input_dataframe_withoutstructure_dropatoms{}".format(file_name), "wb") as dill_file:
                 dill.dump(input_dataframe, dill_file)
         else:
@@ -288,10 +296,7 @@ class Model_class():
             with open("data/input_dataframe_withoutstructure_{}".format(file_name), "wb") as dill_file:
                 dill.dump(input_dataframe, dill_file)
         return input_dataframe
-    #
-    # def sequences_feature_to_dataframe(substratedata,whole_data):
-    #     for index in substratedata.index:
-    #
+
 
     def fingerprint_df_preapare(self,substrate_mol_df,num_bits: int = 2048,radius: int = 3):
         """
@@ -357,26 +362,49 @@ class Model_class():
         #X_test = test[list(test.columns)[:-2]]
         X_test = (copy.deepcopy(test)).drop(columns=["Entry", "molecular_id", "label"])
         Y_test = test["label"]
-        print(X_train, X_test, Y_train, Y_test)
+        #print(X_train, X_test, Y_train, Y_test)
         return X_train, X_test, Y_train, Y_test
 
 
     def run_PCA(self,datasets):
-        data_with_site = copy.deepcopy(datasets)
+        """
+
+        :param datasets:
+        :return:
+        """
+
+        data_with_site = copy.deepcopy(datasets).drop(columns=["methyl_type"])
+        map_dictionary = {}
+        colours = []
+        for type in datasets["methyl_type"].unique():
+            colour = random.randint(0,255)
+            while colour in colours:
+                colour = random.randint(0, 255)
+            map_dictionary[type] = colour
+            colours.append(colour)
+        colour_label = datasets["methyl_type"].map(map_dictionary)
+        print(colour_label)
         V = []
         PC = []
         for i in range(len(data_with_site.columns)):
             PC.append("PC" + str(i + 1))
             V.append("V" + str(i + 1))
-        pca_fit =PCA(random_state=42).fit(data_with_site)
+            if i ==521:
+                break
 
-        pca_loadings = pd.DataFrame(pca_fit.components_.T,
-                                    index=data_with_site.columns, columns=V)
-        pca_df = pd.DataFrame(pca_fit.fit_transform(data_with_site), columns=PC,
-                              index=data_with_site.index)
-        fig, ax = plt.subplots()
-        plt.scatter(pca_df.PC1, pca_df.PC2,  s=5)
+        pca_fit =PCA(n_components=len(PC),random_state=42).fit(data_with_site)
+
+        # pca_loadings = pd.DataFrame(pca_fit.components_.T,
+        #                             index=data_with_site.columns, columns=V)
+
+        pca_df = pd.DataFrame(pca_fit.fit_transform(data_with_site),index=data_with_site.index, columns=PC)
+        #fig, ax = plt.subplots()
+        plt.scatter(pca_df.PC1, pca_df.PC2,  s=5,c=colour_label)
+        plt.xlabel("pc1")
+        plt.ylabel("pc2")
         plt.show()
+        plt.savefig("pca_for encoding sequences and fingerprint")
+
     def RF_model(self,X_train, X_test, y_train, y_test,file_name=""):
         """
 
@@ -386,24 +414,24 @@ class Model_class():
         :param y_test:
         :return: randomforest model
         """
-        # hyperparameters = {'n_estimators': [300, 30],
-        #                    'max_features': [0.3,0.5,1.0]
-        #                    }
-        #
-        # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
-        #                      hyperparameters,
-        #                      cv=10,
-        #                      verbose=True,
-        #                      n_jobs=-1)
-        #
-        # rf_cv.fit(X_train, y_train)
-        # print(rf_cv.best_params_)
-        #
-        # y_pred = rf_cv.best_estimator_.predict(X_test)
-        # cm = confusion_matrix(y_test, y_pred)
-        # cm_display = ConfusionMatrixDisplay(cm).plot()
-        # cm_display.figure_.savefig('cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
+        hyperparameters = {'n_estimators': [100, 50],
+                           'max_features': [0.3,0.5,1.0]
+                           }
 
+        rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
+                             hyperparameters,
+                             cv=5,
+                             verbose=True,
+                             n_jobs=-1)
+
+        rf_cv.fit(X_train, y_train)
+        print(rf_cv.best_params_)
+
+        y_pred = rf_cv.best_estimator_.predict(X_test)
+        cm = confusion_matrix(y_test, y_pred)
+        cm_display = ConfusionMatrixDisplay(cm).plot()
+        cm_display.figure_.savefig('cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
+        '''
         #use the best parameters from cross validation redo RF
         rf = RandomForestClassifier(random_state=1,
                                     n_estimators=30,max_features=0.5,
@@ -419,8 +447,8 @@ class Model_class():
         cm_display.figure_.savefig('cm_{}.png'.format(file_name), dpi=300)
         plt.title("RF confusion matrix with best parameters")
         plt.show()
-
-        fi = pd.DataFrame(data=rf.feature_importances_, index=X_train.columns,
+        '''
+        fi = pd.DataFrame(data=rf_cv.best_estimator_.feature_importances_, index=X_train.columns,
                           columns=['Importance']) \
             .sort_values(by=['Importance'], ascending=False)
 
@@ -432,9 +460,9 @@ class Model_class():
         plt.show()
         fig.savefig('feature_importance{}.png'.format(file_name))
         # #save model
-        filename = 'data/model/rf_test_model_cv{}'.format(file_name)
-        joblib.dump(rf, filename)
-        return rf
+        # filename = 'data/model/rf_test_model_cv{}'.format(file_name)
+        # joblib.dump(rf_cv, filename)
+        return rf_cv
 
 
     def predict(self,substrate_smile_df,enzyme_sequences:str="", inputmodel = None,num_bits: int = 2048):
@@ -497,6 +525,46 @@ class Model_class():
             input = input.append(methyl_site_data)
         print(input)
         return copy.deepcopy(input)
+
+    def group_by_site(self,all_dataset=""):
+        if all_dataset=="":
+            with open('data/seq_smiles_all', 'rb') as file1:
+                all_dataset = dill.load(file1)
+        #add methyl_type
+        for index in all_dataset.index:
+            try:
+                rec_sites = (all_dataset.loc[index,"reactant_site"]).split(",")
+                sites=set()
+                for i in rec_sites:
+                    atom= list(i)
+                    sites.add("".join(x for x in atom if x.isalpha()))
+                print("".join(list(sites)))
+                sites="_".join(list(sites))
+                #only return alpha-->methyl atom symbol
+                #["".join(x for x in rec_sites if x.isalpha())]
+                all_dataset.loc[index, "methyl_type"] =sites
+            except:
+                all_dataset.loc[index, "methyl_type"] = 'NA'
+        #save all data with methyl type
+        with open('data/seq_smiles_all', 'wb') as dill_file:
+            dill.dump(all_dataset,dill_file)
+        seprate_dataset = all_dataset.groupby(by=["methyl_type"])
+        for groups in seprate_dataset.groups:
+            sub_df = seprate_dataset.get_group(groups)
+            print(sub_df)
+            sub_atom_object_dictionary = {}
+            group = sub_df["methyl_type"].unique()
+            print(group)
+            for index in sub_df.index:
+                sub_atom_object_dictionary[index]=sub_df.loc[index,"reactant_site"]
+            print(sub_atom_object_dictionary)
+            with open("data/group_data/seq_smiles_all{}".format(group), "wb") as dill_file:
+                dill.dump(sub_df, dill_file)
+            with open("data/group_data/diction_atom_all{}".format(group), "wb") as dill_file:
+                dill.dump(sub_atom_object_dictionary, dill_file)
+
+
+
     def multidata_predict(self,dataset=None,inputmodel = None):
         if (dataset == None) or (inputmodel == None):
         #then do with test data

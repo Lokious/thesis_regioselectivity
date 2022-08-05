@@ -106,8 +106,8 @@ def get_substrate_chebi(file):
     rhea_dataframe = pd.read_table(file, header=0, index_col=0,
                                           sep='\t')
     #ignore H(+)
-    #remove_item = ["CHEBI:15378"]
-    remove_item = []
+    remove_item = ["CHEBI:15378"]
+    #remove_item = []
     for id in list(rhea_dataframe.index):
         equation = rhea_dataframe.loc[id,"Equation"]
         subtrates = equation.split("=")[0]
@@ -154,7 +154,7 @@ def get_smile(datasets)->pd.DataFrame:
         products = list(filter(None, products))
         smiles = []
         mols_list = []
-        j = 0
+        j = {}
         for sub in substrate:
             #some of the mol file is missing in the directory whihc download from rhea
             try:
@@ -170,7 +170,7 @@ def get_smile(datasets)->pd.DataFrame:
                 print("downloading the missing file: {},pleaze rerun the code".format(sub.replace(":","_")))
             if mol:
                 mol_ob = molecular()
-                mol,j = mol_ob.mol_with_atom_index(mol_object=mol,index=j)
+                mol,j = mol_ob.mol_with_atom_index(mol_object=mol,index={})
                 smile = Chem.MolToSmiles(mol)
                 smiles.append(smile)
                 mols_list.append(mol)
@@ -178,7 +178,7 @@ def get_smile(datasets)->pd.DataFrame:
             datasets.at[i,"sub_mols"] = mols_list
         smiles = []
         mols_list = []
-        j = 0
+        j = {}
         for pro in products:
             #some of the mol file is missing in the directory which download from rhea
 
@@ -195,7 +195,7 @@ def get_smile(datasets)->pd.DataFrame:
                 print("downloading the missing file: {},pleaze rerun the code".format(pro.replace(":","_")))
             if mol:
                 mol_ob = molecular()
-                mol,j = mol_ob.mol_with_atom_index(mol_object=mol, index=j)
+                mol,j = mol_ob.mol_with_atom_index(mol_object=mol, index={})
                 smile = Chem.MolToSmiles(mol)
                 smiles.append(smile)
                 mols_list.append(mol)
@@ -295,7 +295,7 @@ def read_msa_and_encoding(file_name=""):
     :param file:
     :return:
     """
-    file = "data/align/Keeplength/{}_align_addmodel_rm".format(file_name)
+    file = "data/align/Keeplength/{}_align_addmodel".format(file_name)
     import numpy as np
     from sklearn.preprocessing import OneHotEncoder
     align = AlignIO.read(file, "fasta")
@@ -379,7 +379,7 @@ def merge_uniprot_emebeding():
 
 
     "replace the NA with 0, cause the difference in aeq length"
-    umiprot_df=umiprot_df.fillna(0)
+    umiprot_df=(umiprot_df.fillna(int(0)))
 
     #umiprot_df=umiprot_df.reset_index()
     #some sequences aligned to different hmm,only keep one
@@ -387,6 +387,39 @@ def merge_uniprot_emebeding():
     umiprot_df=(umiprot_df.drop_duplicates(subset="Entry",keep="first")).reset_index(drop=True)
     umiprot_df.to_csv("data/protein_encoding/protein_seq_simple_encoding_bi.csv")
     return umiprot_df
+
+
+def create_inputdata(directory, num_bit: int = 2048):
+    from script.molecular_class import molecular, reaction
+    from script.Model_class import Model_class
+    mo_del = Model_class()
+
+    file_name1 = list(glob.iglob(directory + '/seq_smiles_all*'))
+    file_name2 = list(glob.iglob(directory + '/diction_atom_all*'))
+    print(file_name1)
+    print(file_name2)
+    assert len(file_name1) == len(file_name2)
+
+    for i, file in enumerate(file_name1):
+        name1 = file.split("\\")[-1]
+        name2 = (file_name2[i]).split("\\")[-1]
+        with open('{}/{}'.format(directory, name1), 'rb') as file1:
+            data_with_site = dill.load(file1)
+        with open('{}/{}'.format(directory, name2), 'rb') as file2:
+            diction_atom = dill.load(file2)
+        print(diction_atom)
+        X = mo_del.save_fingerprints_to_dataframe(data_with_site, diction_atom,
+                                                  num_bit, 3,
+                                                  drop_atoms=True,
+                                                  file_name="{}_{}_withentry_drop_atom_type".format(
+                                                      str(num_bit),
+                                                      name1.split("[")[-1]))
+        print(X)
+        print(
+            "succesfully saved the fingerprint{}".format(name1.split("[")[-1]))
+        merge_sequence_and_fingerprint(x=X,
+                                       filename=name1.split("[")[-1],
+                                       num_bit=num_bit, add_dataframe="")
 def main():
     unittest.main()
 if __name__ == "__main__":
