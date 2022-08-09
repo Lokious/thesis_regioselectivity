@@ -17,7 +17,7 @@ class sequences():
     def get_acative_site(self,seq = "",num_AA:int=0):
         """
         This function is for return the sepreate aa sequences around acative site
-        :param seq:
+        :param seq
         :return:
         """
         print("unfinihed function")

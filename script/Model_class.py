@@ -227,11 +227,12 @@ class Model_class():
 
 
                 #set label
-                sy_index = (atom.GetSymbol() + str(atom.GetIdx())+":"+str(atom.GetAtomMapNum()))
+
+                sy_index =(atom.GetSymbol() + str(atom.GetAtomMapNum()) + ":" + str(atom.GetIsotope()))
                 # print(sy_index)
                 # print(atom_object_dictionary[index])
                 if sy_index in atom_object_dictionary[index]:
-                    #print(sy_index)
+                    print(sy_index)
                     label = 1
                 else:
                     label = 0
@@ -366,46 +367,167 @@ class Model_class():
         return X_train, X_test, Y_train, Y_test
 
 
-    def run_PCA(self,datasets):
+
+    def _get_colors(self,num_colors):
+        import colorsys
+        colors = []
+        for i in np.arange(0., 360., 360. / num_colors):
+            hue = i / 360.
+            lightness = (50 + np.random.rand() * 10) / 100.
+            saturation = (90 + np.random.rand() * 10) / 100.
+            colors.append(colorsys.hls_to_rgb(hue, lightness, saturation))
+        return colors
+
+    def run_PCA(self,datasets,y_label,file_name=""):
         """
 
         :param datasets:
         :return:
         """
+        #show pca result based on methylation type
+        import matplotlib.patches as mpatches
+        data_with_site = copy.deepcopy(datasets).drop(
+            columns=["methyl_type"])
+        def label_with_methylation_type():
 
-        data_with_site = copy.deepcopy(datasets).drop(columns=["methyl_type"])
-        map_dictionary = {}
-        colours = []
-        for type in datasets["methyl_type"].unique():
-            colour = random.randint(0,255)
-            while colour in colours:
-                colour = random.randint(0, 255)
-            map_dictionary[type] = colour
-            colours.append(colour)
-        colour_label = datasets["methyl_type"].map(map_dictionary)
-        print(colour_label)
+            map_dictionary = {}
+
+            colours = self._get_colors(len(datasets["methyl_type"].unique()))
+            for type in datasets["methyl_type"].unique():
+                map_dictionary[type] = colours.pop(0)
+            colour_label = datasets["methyl_type"].map(map_dictionary)
+            print(colour_label)
+            return colour_label,map_dictionary
+        def label_with_label():
+
+            map_dictionary = {}
+            label_df = copy.deepcopy(y_label)
+            colours = self._get_colors(len(label_df.unique()))
+            for type in label_df.unique():
+                map_dictionary[type] = colours.pop(0)
+            colour_label = label_df.map(map_dictionary)
+            print(colour_label)
+            return colour_label,map_dictionary
+        colour_label, map_dictionary=label_with_methylation_type()
         V = []
         PC = []
+        #the most is 522 for pca
         for i in range(len(data_with_site.columns)):
             PC.append("PC" + str(i + 1))
             V.append("V" + str(i + 1))
             if i ==521:
                 break
 
-        pca_fit =PCA(n_components=len(PC),random_state=42).fit(data_with_site)
+        pca_fit = PCA(n_components=len(PC),random_state=42).fit(data_with_site)
 
         # pca_loadings = pd.DataFrame(pca_fit.components_.T,
         #                             index=data_with_site.columns, columns=V)
 
         pca_df = pd.DataFrame(pca_fit.fit_transform(data_with_site),index=data_with_site.index, columns=PC)
-        #fig, ax = plt.subplots()
-        plt.scatter(pca_df.PC1, pca_df.PC2,  s=5,c=colour_label)
+        fig, ax = plt.subplots()
+        plt.scatter(pca_df.PC1, pca_df.PC2, c=colour_label, s=5)
+        handle_list=[]
+        for key in map_dictionary.keys():
+            handle_list.append(mpatches.Patch(color=map_dictionary[key], label=key))
+        ax.legend(
+            handles=handle_list)
+
+        #plt.scatter(pca_df.PC1, pca_df.PC2,  s=5,c=colour_label)
         plt.xlabel("pc1")
         plt.ylabel("pc2")
+        plt.title("First two component of PCA coloured by methylation type")
+        plt.savefig(
+            "pca_for encoding sequences and fingerprint_{}".format(file_name))
         plt.show()
-        plt.savefig("pca_for encoding sequences and fingerprint")
+        plt.plot(list(range(1, len(pca_df.columns) + 1)),
+                 pca_fit.explained_variance_ratio_, '-ro')
+        plt.ylabel('Proportion of Variance Explained_{}'.format(file_name))
+        plt.xlabel("components")
+        plt.savefig(
+            'Proportion of Variance Explained_{}'.format(file_name))
+        plt.show()
+        plt.plot(list(range(1, len(pca_df.columns) + 1)),
+                 np.cumsum(pca_fit.explained_variance_ratio_), '-o')
+        plt.ylabel('Cumulative Proportion of Variance Explained_{}'.format(file_name))
+        plt.xlabel("components")
+        plt.savefig(
+            'Cumulative Proportion of Variance Explained_{}'.format(file_name))
+        plt.show()
+        ##pac with label
+        colour_label, map_dictionary = label_with_label()
+        V = []
+        PC = []
+        # the most is 522 for pca
+        for i in range(len(data_with_site.columns)):
+            PC.append("PC" + str(i + 1))
+            V.append("V" + str(i + 1))
+            if i == 521:
+                break
 
-    def RF_model(self,X_train, X_test, y_train, y_test,file_name=""):
+        pca_fit = PCA(n_components=len(PC), random_state=42).fit(
+            data_with_site)
+
+        pca_df = pd.DataFrame(pca_fit.fit_transform(data_with_site),
+                              index=data_with_site.index, columns=PC)
+        fig, ax = plt.subplots()
+        plt.scatter(pca_df.PC1, pca_df.PC2, c=colour_label, s=5)
+        handle_list = []
+        for key in map_dictionary.keys():
+            handle_list.append(
+                mpatches.Patch(color=map_dictionary[key], label=key))
+        ax.legend(
+            handles=handle_list)
+
+        # plt.scatter(pca_df.PC1, pca_df.PC2,  s=5,c=colour_label)
+        plt.xlabel("pc1")
+        plt.ylabel("pc2")
+        plt.title("First two component of PCA coloured by label type")
+        plt.savefig(
+            "pca_for encoding sequences and fingerprint for label_{}".format(file_name))
+        plt.show()
+        plt.plot(list(range(1, len(pca_df.columns) + 1)),
+                 pca_fit.explained_variance_ratio_, '-ro')
+        plt.ylabel('Proportion of Variance Explained for label_{}'.format(file_name))
+        plt.xlabel("components")
+        plt.savefig(
+            'Proportion of Variance Explained_{}'.format(file_name))
+        plt.show()
+        plt.plot(list(range(1, len(pca_df.columns) + 1)),
+                 np.cumsum(pca_fit.explained_variance_ratio_), '-o')
+        plt.ylabel(
+            'Cumulative Proportion of Variance Explained foe label_{}'.format(file_name))
+        plt.xlabel("components")
+        plt.savefig(
+            'Cumulative Proportion of Variance Explained foe label_{}'.format(file_name))
+        plt.show()
+    def three_D_pca(self,datasets,y_label,file_name=""):
+
+        import plotly.express as px
+        from sklearn.decomposition import PCA
+
+        df = px.data.iris()
+        X = copy.deepcopy(datasets).drop(
+            columns=["methyl_type"])
+        pca = PCA(n_components=3)
+        components = pca.fit_transform(X)
+
+
+        total_var = pca.explained_variance_ratio_.sum() * 100
+
+        fig = px.scatter_3d(
+            components, x=0, y=1, z=2, color=datasets["methyl_type"],
+            title=f'Total Explained Variance: {total_var:.2f}%',
+            labels={'0': 'PC 1', '1': 'PC 2', '2': 'PC 3'}
+        )
+        fig.show()
+        fig = px.scatter_3d(
+            components, x=0, y=1, z=2, color=y_label,
+            title=f'Total Explained Variance: {total_var:.2f}%',
+            labels={'0': 'PC 1', '1': 'PC 2', '2': 'PC 3'}
+        )
+        fig.show()
+
+    def RF_model(self,X_train, X_test, y_train, y_test,file_name="",i):
         """
 
         :param X_train:
@@ -414,27 +536,28 @@ class Model_class():
         :param y_test:
         :return: randomforest model
         """
-        hyperparameters = {'n_estimators': [100, 50],
-                           'max_features': [0.3,0.5,1.0]
-                           }
+        # hyperparameters = {'n_estimators': [100, 50],
+        #                    'max_features': [0.3,0.5]
+        #                    }
+        # #n_jobs number of cores used for it
+        # #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
+        # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
+        #                      hyperparameters, scoring='roc_auc_ovr_weighted',
+        #                      cv=5,
+        #                      verbose=True,
+        #                      n_jobs=6)
+        #
+        # rf_cv.fit(X_train, y_train)
+        # print(rf_cv.best_params_)
+        #
+        # y_pred = rf_cv.best_estimator_.predict(X_test)
+        # cm = confusion_matrix(y_test, y_pred)
+        # cm_display = ConfusionMatrixDisplay(cm).plot()
+        # cm_display.figure_.savefig('cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
 
-        rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
-                             hyperparameters,
-                             cv=5,
-                             verbose=True,
-                             n_jobs=-1)
-
-        rf_cv.fit(X_train, y_train)
-        print(rf_cv.best_params_)
-
-        y_pred = rf_cv.best_estimator_.predict(X_test)
-        cm = confusion_matrix(y_test, y_pred)
-        cm_display = ConfusionMatrixDisplay(cm).plot()
-        cm_display.figure_.savefig('cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
-        '''
         #use the best parameters from cross validation redo RF
-        rf = RandomForestClassifier(random_state=1,
-                                    n_estimators=30,max_features=0.5,
+        rf = RandomForestClassifier(random_state=i,
+                                    n_estimators=100,max_features=0.5,
                                     oob_score=True)
         rf.fit(X_train, y_train)
         y_pred = rf.predict(X_test)
@@ -446,9 +569,11 @@ class Model_class():
         cm_display = ConfusionMatrixDisplay(cm).plot()
         cm_display.figure_.savefig('cm_{}.png'.format(file_name), dpi=300)
         plt.title("RF confusion matrix with best parameters")
+        cm_display.figure_.savefig(
+            'cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
         plt.show()
-        '''
-        fi = pd.DataFrame(data=rf_cv.best_estimator_.feature_importances_, index=X_train.columns,
+
+        fi = pd.DataFrame(data=rf.feature_importances_, index=X_train.columns,
                           columns=['Importance']) \
             .sort_values(by=['Importance'], ascending=False)
 
@@ -457,12 +582,13 @@ class Model_class():
         ax = sns.barplot(data=fi.head(20), x="Importance", y=(fi.head(20)).index).set_title(
             "feature importance for RF model")
         fig = ax.get_figure()
-        plt.show()
         fig.savefig('feature_importance{}.png'.format(file_name))
+        plt.show()
+
         # #save model
         # filename = 'data/model/rf_test_model_cv{}'.format(file_name)
         # joblib.dump(rf_cv, filename)
-        return rf_cv
+        # return rf_cv
 
 
     def predict(self,substrate_smile_df,enzyme_sequences:str="", inputmodel = None,num_bits: int = 2048):
@@ -536,7 +662,7 @@ class Model_class():
                 rec_sites = (all_dataset.loc[index,"reactant_site"]).split(",")
                 sites=set()
                 for i in rec_sites:
-                    atom= list(i)
+                    atom = list(i)
                     sites.add("".join(x for x in atom if x.isalpha()))
                 print("".join(list(sites)))
                 sites="_".join(list(sites))

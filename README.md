@@ -12,3 +12,4 @@ seaborn 0.11.2
 matplotlib 3.5.0
 biopython
 bio-embedding
+plotly-5.9.0 
