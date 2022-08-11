@@ -296,15 +296,16 @@ def read_msa_and_encoding(file_name=""):
     :param file:
     :return:
     """
-    file = "data/align/Keeplength/{}_align_addmodel".format(file_name)
+    file = "data/align/Keeplength/{}_addmodel_rm".format(file_name)
     import numpy as np
     from sklearn.preprocessing import OneHotEncoder
+    #read alignment
     align = AlignIO.read(file, "fasta")
     align_array = np.array([list(rec) for rec in align], np.character)
-    #the length of aligned sequence
-    seq_length = len(align[0])
-    print(seq_length)
+
+
     char_list = np.unique(align_array)
+
     char_dictionary = {}
     for i,char in enumerate(char_list):
         char_dictionary[char] = (i+1)
@@ -313,81 +314,79 @@ def read_msa_and_encoding(file_name=""):
     id = list(rec.id for rec in align)
     align_pd = pd.DataFrame(data=align_array,index=id)
     align_pd = align_pd.drop_duplicates()
-    # print(align_pd)
-
+    print(align_pd)
+    #drop columns which for over 80% sequences is gap
+    from collections import Counter
+    for column in list(align_pd.columns):
+        gap_num = Counter(align_pd[column])[b"-"]
+        gap_percentage = (gap_num/len(align_pd.index))
+        #print(gap_percentage)
+        if gap_percentage > 0.8:
+            print("drop")
+            align_pd.drop(columns=[column],inplace=True)
+    #print(align_pd)
+    # the length of aligned sequence after remove some columns contains a lot of gaps
+    seq_length=len(align_pd.columns)
+    print("seq_length:{}".format(seq_length))
     encode_dictionary = {}
-    """"
+
     for key in char_dictionary.keys():
         align_pd = align_pd.mask(align_pd == key,char_dictionary[key])
-        encoding_list = [0]*len(char_dictionary)
-        encoding_list[char_dictionary[key]] = 1
+        encoding_list = [0]*len(char_dictionary.keys())
+        encoding_list[char_dictionary[key]-1] = 1
         encode_dictionary[char_dictionary[key]] = encoding_list
-    """
-    # convert number to binary to shorten the size
-    for key in char_dictionary.keys():
-        align_pd = align_pd.mask(align_pd == key,char_dictionary[key])
-        if key != "-":
-            bi = [int(x) for x in bin(char_dictionary[key])[2:]]
-            encode_dictionary[char_dictionary[key]] = ((6-len(bi))*[0]+bi)
-            print(encode_dictionary)
-        else:
-            encode_dictionary[char_dictionary[key]] = [0]*6
-
-    encode_seq = pd.DataFrame(seq_length * 6 * [],
-                              columns=list(range(seq_length * 6)))
+    #print(encode_dictionary)
+    encode_seq = pd.DataFrame(seq_length * len(char_list) * [],
+                              columns=list(range(seq_length * len(char_list))))
 
 
-    # X = one_hot_encoder.fit_transform(align_pd)
-    # print(X)
-    #print(len(align_pd.index))
-    print(encode_seq.columns)
     for index in align_pd.index:
         line = []
         for aa in list(align_pd.loc[index]):
             line += encode_dictionary[aa]
-            print(len(line))
         encode_seq.loc[index] = line
 
     encode_seq["Entry"] = encode_seq.index
+    # encode_seq["domain"] = len(encode_seq.index)*[file_name]
     encode_seq = (encode_seq.reset_index()).drop(columns='index')
-    #print(encode_seq)
-    with open("data/protein_encoding/{}_simple_encoding_bi".format(file_name),
+    print(encode_seq)
+    with open("data/protein_encoding/{}_onehot_encoding".format(file_name),
               "wb") as dill_file:
         dill.dump(encode_seq, dill_file)
-    encode_seq.to_csv("data/protein_encoding/{}_simple_encoding_bi.csv".format(file_name))
+    encode_seq.to_csv("data/protein_encoding/{}_onehot_encoding.csv".format(file_name))
     return encode_seq
 
 def clean_seq():
     #remove duplicate sequneces in fasta file
-    file_list = ["PF05175","PF08241","PF08242","PF13489","PF13649","PF13847"]
+    file_list = ["PF08241","PF05175","PF08242","PF13489","PF13649","PF13847"]
     seq = sequences()
     seq.remove_duplicate(file_list)
 
-def merge_uniprot_emebeding():
-    file_list = ["PF05175", "PF08241", "PF08242", "PF13489", "PF13649",
-                 "PF13847"]
-    umiprot_df = pd.DataFrame()
-    for file in file_list:
-        try:
-            with open("data/protein_encoding/{}_simple_encoding_bi".format(file), 'rb') as file1:
-                df = dill.load(file1)
-            # df = pd.read_csv("data/protein_encoding/{}_simple_encoding.csv".format(file),header=0,index_col=0)
-            # print(df)
-        except:
-            df = read_msa_and_encoding("{}".format(file))
-        umiprot_df = pd.concat([umiprot_df,df],axis=0,join='outer')
-        #umiprot_df.index=umiprot_df["Entry"]
-
-
-    "replace the NA with 0, cause the difference in aeq length"
-    umiprot_df=(umiprot_df.fillna(int(0)))
-
-    #umiprot_df=umiprot_df.reset_index()
-    #some sequences aligned to different hmm,only keep one
-    print(umiprot_df.drop_duplicates(subset="Entry",keep="first"))
-    umiprot_df=(umiprot_df.drop_duplicates(subset="Entry",keep="first")).reset_index(drop=True)
-    umiprot_df.to_csv("data/protein_encoding/protein_seq_simple_encoding_bi.csv")
-    return umiprot_df
+# def merge_uniprot_emebeding():
+#     file_list = ["PF08241","PF05175",  "PF08242", "PF13489", "PF13649",
+#                  "PF13847"]
+#     umiprot_df = pd.DataFrame()
+#     for file in file_list:
+#         try:
+#             with open("data/protein_encoding/{}_onehot_encoding".format(file), 'rb') as file1:
+#                 df = dill.load(file1)
+#             # df = pd.read_csv("data/protein_encoding/{}_simple_encoding.csv".format(file),header=0,index_col=0)
+#             # print(df)
+#         except:
+#             df = read_msa_and_encoding("{}".format(file))
+#         umiprot_df = pd.concat([umiprot_df,df],axis=0,join='outer')
+#         #umiprot_df.index=umiprot_df["Entry"]
+#
+#
+#     "replace the NA with 0, cause the difference in aeq length"
+#     umiprot_df=(umiprot_df.fillna(int(0)))
+#
+#     #umiprot_df=umiprot_df.reset_index()
+#     #some sequences aligned to different hmm,only keep one
+#     print(umiprot_df.drop_duplicates(subset="Entry",keep="first"))
+#     umiprot_df=(umiprot_df.drop_duplicates(subset="Entry",keep="first")).reset_index(drop=True)
+#     umiprot_df.to_csv("data/protein_encoding/protein_seq_simple_encoding_bi.csv")
+#     return umiprot_df
 
 
 def create_inputdata(directory, num_bit: int = 2048):
@@ -411,60 +410,84 @@ def create_inputdata(directory, num_bit: int = 2048):
         name1 = file.split("[")[-1]
         #name2 = (file_name2[i]).split("/")[-1]
         try:
-            print("loading data-------")
-            X = pd.read_csv("data/input_data/input_dataframe_withoutstructure_dropatoms_{}_{}_withentry_drop_atom_type.csv".format(
-                                                      str(num_bit),
-                                                      name1), header=0, index_col=0)
-            print(X)
+            input_data = pd.read_csv(
+                "data/input_data/input{0}fg_dpna_{1}.csv".format(
+                    str(num_bit),
+                    name1), header=0, index_col=0)
+            print(input_data)
         except:
-            with open('{}/seq_smiles_all[{}'.format(directory, name1), 'rb') as file1:
-                data_with_site = dill.load(file1)
-            with open('{}/diction_atom_all[{}'.format(directory, name1), 'rb') as file2:
-                diction_atom = dill.load(file2)
-            print(diction_atom)
-            X = mo_del.save_fingerprints_to_dataframe(data_with_site, diction_atom,
-                                                      num_bit, 3,
-                                                      drop_atoms=True,
-                                                      file_name="{}_{}_withentry_drop_atom_type".format(
-                                                          str(num_bit),
-                                                          name1))
-            print(X)
-            print(
-                "succesfully saved the fingerprint{}".format(name1))
-        merge_sequence_and_fingerprint(x=X,
+            print("data/input_data/input{0}fg_dpna_{1}.csv is missing".format(
+                    str(num_bit),
+                    name1))
+            try:
+                print("loading data-------")
+                X = pd.read_csv(
+                    "data/input_dataframe_withoutstructure_dropatoms{}_{}_withentry_drop_atom_type.csv".format(
+                        str(num_bit),
+                        name1), header=0, index_col=0)
+                print(X)
+            except:
+                print("data/input_dataframe_withoutstructure_dropatoms{}_{}_withentry_drop_atom_type.csv is missing".format(
+                        str(num_bit),
+                        name1))
+                print("creat fingerprint-------")
+                with open('{}/seq_smiles_all[{}'.format(directory, name1),
+                          'rb') as file1:
+                    data_with_site = dill.load(file1)
+                with open('{}/diction_atom_all[{}'.format(directory, name1),
+                          'rb') as file2:
+                    diction_atom = dill.load(file2)
+                print(diction_atom)
+                X = mo_del.save_fingerprints_to_dataframe(data_with_site,
+                                                          diction_atom,
+                                                          num_bit, 3,
+                                                          drop_atoms=True,
+                                                          file_name="{}_{}_withentry_drop_atom_type".format(
+                                                              str(num_bit),
+                                                              name1))
+                print(X)
+                print(
+                    "succesfully saved the fingerprint{}".format(name1))
+            merge_sequence_and_fingerprint(x=X,
                                        filename=name1,
-                                       num_bit=num_bit, add_dataframe="data/protein_encoding/protein_seq_simple_encoding_bi_ri_{}.csv".format(str(num_bit)))
-        input_data = pd.read_csv("data/input_data/input{0}fg_dpna_bi_{1}.csv".format(str(num_bit),
+                                       num_bit=num_bit, add_dataframe="data/protein_encoding/6_seed_onehot_encoding_rn_{}fg.csv".format(str(num_bit)))
+            input_data = pd.read_csv("data/input_data/input{0}fg_dpna_{1}.csv".format(str(num_bit),
                                                             name1), header=0, index_col=0)
         print(input_data)
-        # run_model_for_group_data(
-        #     input_data, filename="", num_bit=2048)
+        run_model_for_group_data(
+            input_data, filename=name1, num_bit=128)
 def merge_sequence_and_fingerprint(x:pd.DataFrame,filename:str="",num_bit:int=2048, add_dataframe=""):
 
     if add_dataframe == "":
         add_dataframe = pd.read_csv(
-            "data/protein_encoding/protein_seq_simple_encoding_bi_ri.csv",
+            "data/protein_encoding/6_seed_onehot_encoding.csv",
             header=0, index_col=0)
     else:
         try:
             add_dataframe = pd.read_csv("{}".format(add_dataframe), header=0, index_col=0)
         except:
             add_dataframe = pd.read_csv(
-                "data/protein_encoding/protein_seq_simple_encoding_bi_ri.csv",
+                "data/protein_encoding/6_seed_onehot_encoding.csv",
                 header=0, index_col=0)
 
     print(add_dataframe)
-    start_index = num_bit
+    start_index = (num_bit*2-1)
     #print(start_index)
-    if list(add_dataframe.columns)[0]!=str(int(start_index)+1):
+    if list(add_dataframe.columns)[0] != str(int(start_index)+1):
+        map_dictionary = {}
         for col in add_dataframe.columns:
             if (col != "Entry") and (col != "index"):
-                print(col)
-                add_dataframe=add_dataframe.rename(columns={col:str(int(col)+int(start_index)+1)})
+
+                map_dictionary[col] = str(int(col) + int(start_index))
+
             else:
                 continue
+        add_dataframe = add_dataframe.rename(columns=map_dictionary)
     add_dataframe.to_csv(
-            "data/protein_encoding/protein_seq_simple_encoding_bi_ri_{}.csv".format(str(num_bit)))
+            "data/protein_encoding/6_seed_onehot_encoding_rn_{}fg.csv".format(str(num_bit)))
+    add_dataframe = pd.read_csv(
+        "data/protein_encoding/6_seed_onehot_encoding_rn_{}fg.csv".format(str(num_bit)),
+        header=0, index_col=0)
     input_dataframe = x.merge(add_dataframe, on="Entry", how="left")
 
     #drop NA need larger memory
@@ -472,12 +495,11 @@ def merge_sequence_and_fingerprint(x:pd.DataFrame,filename:str="",num_bit:int=20
     col = [i for i in input_dataframe.columns if
            i not in ["Entry", "label", "molecular_id", "methyl_type"]]
     input_dataframe[col] = input_dataframe[col].astype('int32')
-    print(input_dataframe)
     input_dataframe = (input_dataframe.reset_index()).drop(columns=["index"])
     print(input_dataframe)
     #
-    input_dataframe.to_csv("data/input_data/input{0}fg_dpna_bi_{1}.csv".format(str(num_bit),filename))
-    with open("data/input_data/input{0}fg_dpna_bi_{1}".format(str(num_bit),filename), "wb") as dill_file:
+    input_dataframe.to_csv("data/input_data/input{0}fg_dpna_{1}.csv".format(str(num_bit),filename))
+    with open("data/input_data/input{0}fg_dpna_{1}".format(str(num_bit),filename), "wb") as dill_file:
         dill.dump(input_dataframe, dill_file)
 def run_model_for_group_data(input:pd.DataFrame,filename:str="",num_bit:int=2048):
 

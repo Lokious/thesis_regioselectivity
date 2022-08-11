@@ -12,17 +12,17 @@ mo_del = Model_class()
 today = date.today()
 # dd/mm/YY
 d1 = today.strftime("%d_%m_%Y")
-with open("data/input_data/input128fg_dpna_bi_{}".format(d1), 'rb') as file1:
-    input_dataframe = dill.load(file1)
+for i in range(5):
+    input_dataframe = pd.read_csv("data/input_data/input128fg_dpna.csv", header=0, index_col=0)
 
-X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
-    input_dataframe)
+    X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
+        input_dataframe)
 
-# mo_del.three_D_pca(X_train, y_train, "128fg")
-mo_del.run_PCA(X_train, y_train, "128fg")
-X_train = X_train.drop(columns=["methyl_type"])
-X_test = X_test.drop(columns=["methyl_type"])
-y_train = y_train.drop(columns=["methyl_type"])
-y_test = y_test.drop(columns=["methyl_type"])
-model = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                        "_input128fg_bi_type_{}".format(d1))
+    # mo_del.three_D_pca(X_train, y_train, "128fg")
+    #mo_del.run_PCA(X_train, y_train, "128fg")
+    X_train = X_train.drop(columns=["methyl_type"])
+    X_test = X_test.drop(columns=["methyl_type"])
+    y_train = y_train.drop(columns=["methyl_type"])
+    y_test = y_test.drop(columns=["methyl_type"])
+    model = mo_del.RF_model(X_train, X_test, y_train, y_test,
+                            "_input128fg_bi_type_{}".format(d1),i=i)

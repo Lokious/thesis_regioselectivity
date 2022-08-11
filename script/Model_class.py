@@ -343,7 +343,7 @@ class Model_class():
         return fingerprint_dataframe
 
 
-    def prepare_train_teat_data(self,df,test:float=0.2,group_column:str='molecular_id'):
+    def prepare_train_teat_data(self,df,test:float=0.2,group_column:str='molecular_id',i:int=0):
         """
         simply sepreate train and test data
         :param data:
@@ -351,7 +351,7 @@ class Model_class():
         """
 
 
-        splitter = GroupShuffleSplit(test_size=test, n_splits=1, random_state=1)
+        splitter = GroupShuffleSplit(test_size=test, n_splits=1, random_state=i)
         split = splitter.split(df, groups=df[group_column])
         train_inds, test_inds = next(split)
         train = df.iloc[train_inds]
@@ -406,27 +406,43 @@ class Model_class():
             for type in label_df.unique():
                 map_dictionary[type] = colours.pop(0)
             colour_label = label_df.map(map_dictionary)
-            print(colour_label)
+
             return colour_label,map_dictionary
         colour_label, map_dictionary=label_with_methylation_type()
         V = []
         PC = []
         #the most is 522 for pca
+
         for i in range(len(data_with_site.columns)):
             PC.append("PC" + str(i + 1))
             V.append("V" + str(i + 1))
-            if i ==521:
+            if i == min(521,(len(datasets.index)-1)):
                 break
 
         pca_fit = PCA(n_components=len(PC),random_state=42).fit(data_with_site)
 
-        # pca_loadings = pd.DataFrame(pca_fit.components_.T,
-        #                             index=data_with_site.columns, columns=V)
+        pca_loadings = pd.DataFrame(pca_fit.components_.T,
+                                    index=data_with_site.columns, columns=V)
+        #show the lodings
+        V1_PCA = pd.DataFrame(data=pca_loadings.abs(),
+                              index=pca_loadings.index,
+                              columns=["V1","V2"])
 
+        V1_PCA['V_sum'] = V1_PCA.apply(lambda x: (x.abs()).sum(), axis=1)
+        V1_PCA = V1_PCA.sort_values(by=["V_sum"], ascending=False)
+        sns.barplot(data=V1_PCA.iloc[:30], x="V_sum", y=V1_PCA.index[:30]).set(
+            title='Sum of first 2 loading value of PCA')
+
+        plt.savefig("Sum_of_first_2_loading_value_of_PCA_{}".format(file_name))
+
+        plt.close()
         pca_df = pd.DataFrame(pca_fit.fit_transform(data_with_site),index=data_with_site.index, columns=PC)
+
         fig, ax = plt.subplots()
         plt.scatter(pca_df.PC1, pca_df.PC2, c=colour_label, s=5)
-        handle_list=[]
+
+        #show explained variance
+        handle_list = []
         for key in map_dictionary.keys():
             handle_list.append(mpatches.Patch(color=map_dictionary[key], label=key))
         ax.legend(
@@ -438,21 +454,23 @@ class Model_class():
         plt.title("First two component of PCA coloured by methylation type")
         plt.savefig(
             "pca_for encoding sequences and fingerprint_{}".format(file_name))
-        plt.show()
+        plt.clf()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
                  pca_fit.explained_variance_ratio_, '-ro')
         plt.ylabel('Proportion of Variance Explained_{}'.format(file_name))
         plt.xlabel("components")
         plt.savefig(
             'Proportion of Variance Explained_{}'.format(file_name))
-        plt.show()
+
+        plt.clf()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
                  np.cumsum(pca_fit.explained_variance_ratio_), '-o')
         plt.ylabel('Cumulative Proportion of Variance Explained_{}'.format(file_name))
         plt.xlabel("components")
         plt.savefig(
             'Cumulative Proportion of Variance Explained_{}'.format(file_name))
-        plt.show()
+
+        plt.clf()
         ##pac with label
         colour_label, map_dictionary = label_with_label()
         V = []
@@ -461,7 +479,7 @@ class Model_class():
         for i in range(len(data_with_site.columns)):
             PC.append("PC" + str(i + 1))
             V.append("V" + str(i + 1))
-            if i == 521:
+            if i == min(521,(len(datasets.index)-1)):
                 break
 
         pca_fit = PCA(n_components=len(PC), random_state=42).fit(
@@ -484,14 +502,16 @@ class Model_class():
         plt.title("First two component of PCA coloured by label type")
         plt.savefig(
             "pca_for encoding sequences and fingerprint for label_{}".format(file_name))
-        plt.show()
+        #plt.show()
+        plt.close()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
                  pca_fit.explained_variance_ratio_, '-ro')
         plt.ylabel('Proportion of Variance Explained for label_{}'.format(file_name))
         plt.xlabel("components")
         plt.savefig(
             'Proportion of Variance Explained_{}'.format(file_name))
-        plt.show()
+        #plt.show()
+        plt.clf()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
                  np.cumsum(pca_fit.explained_variance_ratio_), '-o')
         plt.ylabel(
@@ -499,13 +519,14 @@ class Model_class():
         plt.xlabel("components")
         plt.savefig(
             'Cumulative Proportion of Variance Explained foe label_{}'.format(file_name))
-        plt.show()
+        #plt.show()
+        plt.close()
     def three_D_pca(self,datasets,y_label,file_name=""):
 
         import plotly.express as px
         from sklearn.decomposition import PCA
 
-        df = px.data.iris()
+
         X = copy.deepcopy(datasets).drop(
             columns=["methyl_type"])
         pca = PCA(n_components=3)
@@ -527,7 +548,9 @@ class Model_class():
         )
         fig.show()
 
-    def RF_model(self,X_train, X_test, y_train, y_test,file_name="",i):
+
+
+    def RF_model(self,X_train, X_test, y_train, y_test,file_name="",i:int=0):
         """
 
         :param X_train:
@@ -536,61 +559,109 @@ class Model_class():
         :param y_test:
         :return: randomforest model
         """
-        # hyperparameters = {'n_estimators': [100, 50],
-        #                    'max_features': [0.3,0.5]
-        #                    }
-        # #n_jobs number of cores used for it
-        # #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
-        # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
-        #                      hyperparameters, scoring='roc_auc_ovr_weighted',
-        #                      cv=5,
-        #                      verbose=True,
-        #                      n_jobs=6)
-        #
-        # rf_cv.fit(X_train, y_train)
-        # print(rf_cv.best_params_)
-        #
-        # y_pred = rf_cv.best_estimator_.predict(X_test)
-        # cm = confusion_matrix(y_test, y_pred)
-        # cm_display = ConfusionMatrixDisplay(cm).plot()
-        # cm_display.figure_.savefig('cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
 
-        #use the best parameters from cross validation redo RF
-        rf = RandomForestClassifier(random_state=i,
-                                    n_estimators=100,max_features=0.5,
-                                    oob_score=True)
-        rf.fit(X_train, y_train)
-        y_pred = rf.predict(X_test)
-        print("Train/test accuracy: {}/{}".format(
-            accuracy_score(rf.predict(X_train), y_train),
-            accuracy_score(rf.predict(X_test), y_test)))
-        print()
+        hyperparameters = {'n_estimators': [100, 50],
+                           'max_features': [0.3,0.5]
+                           }
+        #n_jobs number of cores used for it
+        #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
+        rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
+                             hyperparameters, scoring='roc_auc_ovr_weighted',
+                             cv=5,
+                             verbose=True,
+                             n_jobs=8)
+
+        rf_cv.fit(X_train, y_train)
+        print(rf_cv.best_params_)
+        y_probs = rf_cv.best_estimator.predict_proba(X_test)
+        # keep probabilities for the positive outcome only
+        yhat = y_probs[:, 1]
+        # calculate roc curves
+        fpr, tpr, thresholds = roc_curve(y_test, yhat)
+        # calculate the g-mean for each threshold
+        gmeans = sqrt(tpr * (1 - fpr))
+        # locate the index of the largest g-mean
+        ix = argmax(gmeans)
+        print('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
+        # plot the roc curve for the model
+        plt.plot([0, 1], [0, 1], linestyle='--', label='No Skill')
+        plt.plot(fpr, tpr, marker='.', label='Logistic')
+        plt.scatter(fpr[ix], tpr[ix], marker='o', color='black',
+                       label='Best')
+        # axis labels
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.legend()
+        # show the plot
+        plt.savefig("ROC_curve{}".format(file_name))
+        plt.show()
+        plt.close()
+        y_pred = rf_cv.best_estimator_.predict(X_test)
         cm = confusion_matrix(y_test, y_pred)
         cm_display = ConfusionMatrixDisplay(cm).plot()
-        cm_display.figure_.savefig('cm_{}.png'.format(file_name), dpi=300)
-        plt.title("RF confusion matrix with best parameters")
-        cm_display.figure_.savefig(
-            'cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
+        cm_display.figure_.savefig('cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
+        plt.close()
+        #
+        plt.figure()
+        sns.lineplot(y=rf_cv.cv_results_["mean_test_score"],
+                     x=rf_cv.cv_results_['param_max_features'].data,
+                     hue=rf_cv.cv_results_['param_n_estimators']).set_xticks(
+            range(22))
+        plt.xlabel("max features")
+        plt.ylabel("Accuracy (mean 10-fold CV)")
+        plt.title(
+            "Accuracy with different estimators and features for Amacrine RF model")
         plt.show()
-
-        fi = pd.DataFrame(data=rf.feature_importances_, index=X_train.columns,
-                          columns=['Importance']) \
-            .sort_values(by=['Importance'], ascending=False)
-
+        #use the best parameters from cross validation redo RF
+        # rf = RandomForestClassifier(random_state=i,
+        #                             n_estimators=100,max_features=0.5,
+        #                             oob_score=True, n_jobs=6)
+        # rf.fit(X_train, y_train)
+        # y_pred = rf.predict(X_test)
+        # print("Train/test accuracy: {}/{}".format(
+        #     accuracy_score(rf.predict(X_train), y_train),
+        #     accuracy_score(rf.predict(X_test), y_test)))
+        #
+        # print()
+        # cm = confusion_matrix(y_test, y_pred)
+        # cm_display = ConfusionMatrixDisplay(cm).plot()
+        # cm_display.figure_.savefig('cm_{}.png'.format(file_name), dpi=300)
+        # plt.title("RF confusion matrix with best parameters")
+        # cm_display.figure_.savefig(
+        #     'cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
+        # plt.show()
+        #
+        # fi = pd.DataFrame(data=rf.feature_importances_, index=X_train.columns,
+        #                   columns=['Importance']) \
+        #     .sort_values(by=['Importance'], ascending=False)
+        #
         # And visualize
-        plt.figure(figsize=(200, 600))
-        ax = sns.barplot(data=fi.head(20), x="Importance", y=(fi.head(20)).index).set_title(
+        sns.barplot(data=fi.head(20), x="Importance", y=(fi.head(20)).index).set_title(
             "feature importance for RF model")
-        fig = ax.get_figure()
-        fig.savefig('feature_importance{}.png'.format(file_name))
+        #fig = ax.get_figure()
+        plt.savefig('feature_importance{}.png'.format(file_name))
         plt.show()
+        # #ROC curve
+        # fig, axes = plt.subplots(2, 2, figsize=(10, 10))
+        # self.show_roc(y_test, y_pred,  axes[1, 1],file_name)
+        # plt.savefig()
+        # show()
 
         # #save model
         # filename = 'data/model/rf_test_model_cv{}'.format(file_name)
         # joblib.dump(rf_cv, filename)
         # return rf_cv
-
-
+    def show_roc(self,y_test,y_pred,ax,file_name):
+        from sklearn.metrics import precision_score, accuracy_score, plot_roc_curve, RocCurveDisplay, \
+            ConfusionMatrixDisplay, roc_auc_score, roc_curve
+        fpr_rod, tpr_rod, _ = roc_curve(y_test, y_pred)
+        auc_rod = roc_auc_score(y_test, y_pred)
+        RocCurveDisplay(fpr=fpr_rod, tpr=tpr_rod, roc_auc=auc_rod,
+                        estimator_name='Random forest prediction').plot(
+            ax=ax)
+        ax.set_title("Random forest on {}".format(file_name), fontsize=15)
+        fig.suptitle(' ROC Curves at 0.5 threshold', fontsize=16)
+        return fig,ax
     def predict(self,substrate_smile_df,enzyme_sequences:str="", inputmodel = None,num_bits: int = 2048):
         """
 

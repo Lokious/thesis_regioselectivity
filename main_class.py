@@ -25,6 +25,7 @@ def main():
     mo_del = Model_class()
     #mo_del.check_file_exist()
     #split dataset by methyl type
+
     '''
     mo_del.group_by_site()
     #
@@ -48,11 +49,11 @@ def main():
                                 drop_atoms=True, file_name="128_drop_duplicate_withentry_drop_atom_withtype")
     print(X)
     '''
-    '''
-    X = pd.read_csv("data/input_dataframe_withoutstructure_dropatoms128_drop_duplicate_withentry_drop_atom_withtype.csv", header=0, index_col=0)
 
-    print(X)
-    '''
+    # X = pd.read_csv("data/input_dataframe_withoutstructure_dropatoms128_drop_duplicate_withentry_drop_atom_withtype.csv", header=0, index_col=0)
+    #
+    # print(X)
+
     # """manual data"""
     # with open("data/mannual_data", "rb") as dill_file:
     #     manual_data = dill.load(dill_file)
@@ -70,26 +71,30 @@ def main():
     #
     #X = pd.read_csv("data/input_dataframe_withoutstructure_dropatomsmanual_2048_drop_atom_tpye.csv", header=0, index_col=0)
     #
-    #add_dataframe = parse_data.merge_uniprot_emebeding()
-    '''
-    add_dataframe = pd.read_csv("data/protein_encoding/protein_seq_simple_encoding_bi_ri_128.csv", header=0, index_col=0)
+    #add_dataframe = parse_data.read_msa_and_encoding("6_seed")
+    """
+    add_dataframe = pd.read_csv("data/protein_encoding/6_seed_onehot_encoding.csv", header=0, index_col=0)
     print(add_dataframe)
-    '''
-    # start_index = 128
-    # #print(start_index)
-    #
-    # for col in add_dataframe.columns:
-    #     if (col != "Entry") and (col != "index"):
-    #         print(col)
-    #         add_dataframe=add_dataframe.rename(columns={col: str(int(col)+int(start_index)+1)})
-    #     else:
-    #         continue
-    # add_dataframe.to_csv(
-    #         "data/protein_encoding/protein_seq_simple_encoding_bi_ri_128.csv")
 
-    # add_dataframe = pd.read_csv(
-    #     "data/protein_encoding/protein_seq_simple_encoding_bi_ri.csv",
-    #     header=0, index_col=0)
+    start_index = 255
+    #print(start_index)
+    map_dictionary ={}
+    for col in add_dataframe.columns:
+        if (col != "Entry") and (col != "index"):
+
+            map_dictionary[col] = str(int(col)+int(start_index))
+
+        else:
+            continue
+    add_dataframe = add_dataframe.rename(columns=map_dictionary)
+    print(add_dataframe)
+    add_dataframe.to_csv(
+            "data/protein_encoding/6_seed_onehot_encoding_rn_128fg.csv")
+
+    add_dataframe = pd.read_csv(
+        "data/protein_encoding/6_seed_onehot_encoding_rn_128fg.csv",
+        header=0, index_col=0)
+
     # add_dataframe_forPCA = add_dataframe.drop(columns=["Entry"])
     #parse_data.create_inputdata(r"data/group_data", num_bit=128)
 
@@ -98,52 +103,50 @@ def main():
     # add_dataframe["Entry"]=add_dataframe["Entry"].astype(object)
 
     #
-    # input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
-    # print(input_dataframe)
-    # input_dataframe = input_dataframe.dropna(axis=0,how="any")
-    # print(input_dataframe)
+    input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
+    print(input_dataframe)
+    input_dataframe = input_dataframe.dropna(axis=0,how="any")
+    print(input_dataframe)
 
     #
-    #input_dataframe.to_csv("data/input_data/input128fg_dpna_bi.csv")
+    input_dataframe.to_csv("data/input_data/input128fg_dpna.csv")
     
     
-    #parse_data.create_inputdata(r"data/group_data", num_bit= 128)
+    
 
 
-
+    """
+    parse_data.create_inputdata(r"data/group_data", num_bit= 128)
     #drop NA need larger memory
 
 
 
 
-
-    input_dataframe = pd.read_csv("data/input_data/input128fg_dpna_bi.csv", header=0, index_col=0)
-    # with open("data/input_data/input128fg_dpna_bi_{}".format(d1), 'rb') as file1:
-    #     input_dataframe = dill.load(file1)
-    # col = [i for i in input_dataframe.columns if i not in ["Entry","label","molecular_id","methyl_type"]]
-    # input_dataframe[col] = input_dataframe[col].astype('int32')
-    print(input_dataframe)
-    # input_dataframe = input_dataframe.reset_index()
-    # input_dataframe.drop(columns=["index"],inplace=True)
-    # print(input_dataframe)
-    # with open("data/input_data/input128fg_dpna_bi_{}".format(d1), "wb") as dill_file:
-    #     dill.dump(input_dataframe, dill_file)
-    # input_dataframe.to_csv("data/input_data/input128fg_dpna_bi.csv")
-    for i in range(5):
-        X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(input_dataframe)
-        # mo_del.three_D_pca(X_train,y_train,"128fg")
-        # mo_del.run_PCA(X_train, y_train, "128fg")
-        X_train = X_train.drop(columns=["methyl_type"])
-        X_test = X_test.drop(columns=["methyl_type"])
-        y_train = y_train.drop(columns=["methyl_type"])
-        y_test = y_test.drop(columns=["methyl_type"])
-        model = mo_del.RF_model(X_train, X_test, y_train, y_test,"_input128fg_bi_type_{}".format(i),i)
-
-    # print(input_dataframe)
+    # input_dataframe = pd.read_csv("data/input_data/input128fg_dpna.csv", header=0, index_col=0)
+    # # with open("data/input_data/input128fg_dpna_bi_{}".format(d1), 'rb') as file1:
+    # #     input_dataframe = dill.load(file1)
+    # # col = [i for i in input_dataframe.columns if i not in ["Entry","label","molecular_id","methyl_type"]]
+    # # input_dataframe[col] = input_dataframe[col].astype('int32')
+    # # print(input_dataframe)
+    # # input_dataframe = input_dataframe.reset_index()
+    # # input_dataframe.drop(columns=["index"],inplace=True)
+    # # print(input_dataframe)
+    # # with open("data/input_data/input128fg_dpna_{}".format(d1), "wb") as dill_file:
+    # #     dill.dump(input_dataframe, dill_file)
+    # # input_dataframe.to_csv("data/input_data/input128fg_dpna.csv")
+    # X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(input_dataframe,i=1)
+    # #protein_pca_data = copy.deepcopy(X_train).drop(columns=X_train.columns[:254])
+    # #mo_del.three_D_pca(X_train,y_train,"128fg_sub_seq")
+    # #mo_del.run_PCA(X_train, y_train, "128fg_sub_seq")
+    # #mo_del.three_D_pca(protein_pca_data,y_train,"protein_encoding_pca")
+    # #mo_del.run_PCA(protein_pca_data, y_train, "protein_encoding_pca")
     #
-    #
-
-
+    # X_train = X_train.drop(columns=["methyl_type"])
+    # print(X_train.columns)
+    # X_test = X_test.drop(columns=["methyl_type"])
+    # y_train = y_train.drop(columns=["methyl_type"])
+    # y_test = y_test.drop(columns=["methyl_type"])
+    # model = mo_del.RF_model(X_train, X_test, y_train, y_test,"_input128fg_type_withoutstructure{}".format(1),1)
 
 
 if __name__ == "__main__":
