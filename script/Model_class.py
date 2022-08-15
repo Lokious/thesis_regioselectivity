@@ -41,19 +41,30 @@ from sklearn.metrics import confusion_matrix, mean_squared_error, mean_absolute_
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.decomposition import PCA
-
+from sklearn.metrics import precision_score, accuracy_score, plot_roc_curve, RocCurveDisplay,ConfusionMatrixDisplay, roc_auc_score, roc_curve
+from sklearn.svm import SVC
+from sklearn.svm import SVC
+import matplotlib.patches as mpatches
+from math import sqrt
+import unittest
 
 class Model_class():
 
     #def __init__(self):
         #self.check_file_exist()
 
-    def check_file_exist(self):
+    def check_file_exist(self,file1='data/seq_smiles_all_MANUAL.csv',file2='data/diction_atom_all'):
+        """
+        This function is used to check if the file exit, otherwise create the files
+
+        :param file1: path of csv file, which includes substrates and sequneces information
+        :param file2: object file, which is a dictionary includes index from
+        file1 as key and atom object(which is methylated in substrate molecular) as value
+        :return: None
+        """
+
 
         try:
-            file1 = 'data/seq_smiles_all'
-            file2 = 'data/diction_atom_all'
-
             assert pathlib.Path(file1).exists()==True
             assert pathlib.Path(file2).exists()==True
 
@@ -68,7 +79,7 @@ class Model_class():
             seq_smiles = self.merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
             #data_frame = self.keep_longest_smile(seq_smiles)
             data_frame=self.keep_methyled_substrate(seq_smiles)
-            data_frame.to_csv("data/seq_dataframe_new.csv")
+            data_frame.to_csv("data/seq_dataframe.csv")
             self.return_reactions(data_frame)
 
 
@@ -77,8 +88,8 @@ class Model_class():
         """
         combine sequence and substrate smile in onefile and save to csv file
         :param
-            rheauniprot_dataframe:
-            seq_df:
+            rheauniprot_dataframe:pd dataframe includes uniprot entry and rhea id
+            seq_df: dataframe which includes sequences and uniprot entry
         :return:
         """
         df1 = parse_data.get_substrate_chebi("data/rawdata/Rhea-ec_2_1_1.tsv")
@@ -100,13 +111,6 @@ class Model_class():
 
         return complete_data
 
-
-    def drop_useless_column(self,dataframe):
-
-        dataframe = dataframe.loc[:,["Sequence","sub_mols","pro_mols","sub_smiles","pro_smiles"]]
-        #print(dataframe)
-
-
     def keep_longest_smile(self,dataframe_before):
 
         dataframe_before["main_sub"] = pd.DataFrame(
@@ -122,8 +126,8 @@ class Model_class():
 
     def keep_methyled_substrate(self,dataframe_before):
         """
-        exclude H+,
-        :param dataframe_before:
+        exclude H+,keep the substrate whihc is methylated not the methyl donor
+        :param dataframe_before: substrate includes mainsubstrates
         :return:
         """
         #UNFINISHED
@@ -156,7 +160,7 @@ class Model_class():
         """
 
         :param dataframe:
-        :return:
+        :return:None
         """
         atom_object_dictionary = {}
         dataframe_rr["reactant_site"] = pd.DataFrame(
@@ -196,7 +200,7 @@ class Model_class():
                                 dill.dump(dataframe_rr, dill_file)
             with open("data/diction_atom_all", "wb") as dill_file:
                 dill.dump(atom_object_dictionary, dill_file)
-            dataframe_rr.to_csv("data/diction_atom_all.csv")
+            dataframe_rr.to_csv("data/seq_smiles_all.csv")
 
 
     def save_fingerprints_to_dataframe(self,sauce_data,atom_object_dictionary,num_bits: int = 2048,radius: int = 3,drop_atoms=False,file_name=""):
@@ -217,7 +221,7 @@ class Model_class():
         for index in sauce_data.index:
 
             print(index)
-            sub_mol = sauce_data.loc[index,"mainsub_mol"]
+            sub_mol = Chem.MolFromSmiles(sauce_data.loc[index,"main_sub"])
             # print(sub_mol)
             #Draw.ShowMol(sub_mol, size=(600, 600))
             sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(mol_object=copy.deepcopy(sub_mol))
@@ -252,11 +256,14 @@ class Model_class():
                         # add fingerprint atom index ebedding sequences and label to dataframe
                         for i, item in enumerate(fingerprint_mol):
                             newrow[i] = item
+
                         for j, item in enumerate(fingerprint_atom):
-                            newrow[j + i] = item
+                            newrow[j + i+1] = item
+
                         # newrow['atom_index'] = atom_index_sub
                         add_dataframe = pd.DataFrame(newrow,
                                                      index=[current_index])
+
                         input_dataframe = pd.concat(
                             [input_dataframe, add_dataframe], axis=
                             0)
@@ -275,10 +282,13 @@ class Model_class():
                     #add fingerprint atom index ebedding sequences and label to dataframe
                     for i,item in enumerate(fingerprint_mol):
                         newrow[i] = item
+
                     for j,item in enumerate(fingerprint_atom):
-                        newrow[j+i] = item
+                        newrow[j+i+1] = item
+
                     #newrow['atom_index'] = atom_index_sub
                     add_dataframe = pd.DataFrame(newrow,index=[current_index])
+
                     input_dataframe=pd.concat([input_dataframe,add_dataframe],axis=
                                               0)
                     input_dataframe.loc[current_index, "molecular_id"] = "m"+str(index)
@@ -287,7 +297,6 @@ class Model_class():
                     input_dataframe.loc[current_index, "methyl_type"] = \
                         sauce_data.loc[index, "methyl_type"]
                     current_index += 1
-        print(input_dataframe)
         if drop_atoms:
             input_dataframe.to_csv("data/input_dataframe_withoutstructure_dropatoms{}.csv".format(file_name))
             with open("data/input_dataframe_withoutstructure_dropatoms{}".format(file_name), "wb") as dill_file:
@@ -385,7 +394,6 @@ class Model_class():
         :return:
         """
         #show pca result based on methylation type
-        import matplotlib.patches as mpatches
         data_with_site = copy.deepcopy(datasets).drop(
             columns=["methyl_type"])
         def label_with_methylation_type():
@@ -439,14 +447,14 @@ class Model_class():
         pca_df = pd.DataFrame(pca_fit.fit_transform(data_with_site),index=data_with_site.index, columns=PC)
 
         fig, ax = plt.subplots()
-        plt.scatter(pca_df.PC1, pca_df.PC2, c=colour_label, s=5)
+        plt.scatter(pca_df.PC1, pca_df.PC2, c=colour_label, s=3)
 
         #show explained variance
         handle_list = []
         for key in map_dictionary.keys():
             handle_list.append(mpatches.Patch(color=map_dictionary[key], label=key))
         ax.legend(
-            handles=handle_list)
+            handles=handle_list,loc="upper right",title="Sizes")
 
         #plt.scatter(pca_df.PC1, pca_df.PC2,  s=5,c=colour_label)
         plt.xlabel("pc1")
@@ -560,58 +568,57 @@ class Model_class():
         :return: randomforest model
         """
 
-        hyperparameters = {'n_estimators': [100, 50],
-                           'max_features': [0.3,0.5]
+        hyperparameters = {'n_estimators': [50,100,200],
+                           'max_features': [0.3,0.5,0.7],
+
                            }
         #n_jobs number of cores used for it
         #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
-        rf_cv = GridSearchCV(RandomForestClassifier(random_state=0),
+        rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
                              hyperparameters, scoring='roc_auc_ovr_weighted',
                              cv=5,
-                             verbose=True,
+                             verbose=3,
                              n_jobs=8)
 
         rf_cv.fit(X_train, y_train)
         print(rf_cv.best_params_)
-        y_probs = rf_cv.best_estimator.predict_proba(X_test)
+        y_probs = rf_cv.best_estimator_.predict_proba(X_test)
         # keep probabilities for the positive outcome only
         yhat = y_probs[:, 1]
+        print(yhat)
         # calculate roc curves
         fpr, tpr, thresholds = roc_curve(y_test, yhat)
         # calculate the g-mean for each threshold
-        gmeans = sqrt(tpr * (1 - fpr))
-        # locate the index of the largest g-mean
-        ix = argmax(gmeans)
-        print('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
+        print("fpr:{},tpr:{},threehold:{}".format(fpr,tpr,thresholds))
+        # gmeans = sqrt(tpr * (1 - fpr))
+        # # locate the index of the largest g-mean
+        # ix = argmax(gmeans)
+        # print('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
         # plot the roc curve for the model
         plt.plot([0, 1], [0, 1], linestyle='--', label='No Skill')
-        plt.plot(fpr, tpr, marker='.', label='Logistic')
-        plt.scatter(fpr[ix], tpr[ix], marker='o', color='black',
-                       label='Best')
-        # axis labels
+        plt.plot(fpr, tpr, marker='.', label='RF')
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
         plt.legend()
         # show the plot
-        plt.savefig("ROC_curve{}".format(file_name))
-        plt.show()
+        plt.savefig("trainmodel_output_figure/ROC_curve_RF{}".format(file_name))
+
         plt.close()
         y_pred = rf_cv.best_estimator_.predict(X_test)
         cm = confusion_matrix(y_test, y_pred)
         cm_display = ConfusionMatrixDisplay(cm).plot()
-        cm_display.figure_.savefig('cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
+        cm_display.figure_.savefig('trainmodel_output_figure/RF_cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
         plt.close()
-        #
         plt.figure()
         sns.lineplot(y=rf_cv.cv_results_["mean_test_score"],
                      x=rf_cv.cv_results_['param_max_features'].data,
-                     hue=rf_cv.cv_results_['param_n_estimators']).set_xticks(
-            range(22))
+                     hue=rf_cv.cv_results_['param_n_estimators'])
         plt.xlabel("max features")
-        plt.ylabel("Accuracy (mean 10-fold CV)")
+        plt.ylabel("roc_auc_ovr_weighted (mean 5-fold CV)")
         plt.title(
-            "Accuracy with different estimators and features for Amacrine RF model")
-        plt.show()
+            "Accuracy with different estimators and features for RF model")
+        plt.savefig("trainmodel_output_figure/Accuracy with different estimators and features for RF model_{}".format(file_name))
+        #plt.show()
         #use the best parameters from cross validation redo RF
         # rf = RandomForestClassifier(random_state=i,
         #                             n_estimators=100,max_features=0.5,
@@ -631,16 +638,19 @@ class Model_class():
         #     'cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
         # plt.show()
         #
-        # fi = pd.DataFrame(data=rf.feature_importances_, index=X_train.columns,
-        #                   columns=['Importance']) \
-        #     .sort_values(by=['Importance'], ascending=False)
-        #
-        # And visualize
+        plt.close()
+        plt.figure()
+        fi = pd.DataFrame(data=rf_cv.best_estimator_.feature_importances_, index=X_train.columns,
+                          columns=['Importance']) \
+            .sort_values(by=['Importance'], ascending=False)
+
+        #And visualize
         sns.barplot(data=fi.head(20), x="Importance", y=(fi.head(20)).index).set_title(
             "feature importance for RF model")
         #fig = ax.get_figure()
         plt.savefig('feature_importance{}.png'.format(file_name))
-        plt.show()
+        plt.close()
+        #plt.show()
         # #ROC curve
         # fig, axes = plt.subplots(2, 2, figsize=(10, 10))
         # self.show_roc(y_test, y_pred,  axes[1, 1],file_name)
@@ -651,15 +661,39 @@ class Model_class():
         # filename = 'data/model/rf_test_model_cv{}'.format(file_name)
         # joblib.dump(rf_cv, filename)
         # return rf_cv
+    def SVM(self,X_train, X_test, y_train, y_test,file_name="",i:int=0):
+        pars = [{'C': [ 0.01, 0.1, 1, 10]},
+                {'kernel':['poly','rbf','sigmoid','precomputed']},
+                {'class_weight':["balanced", None]}]
+        # The same probability calibration procedure is available for all estimators via the CalibratedClassifierCV (see Probability calibration).
+        # In the case of SVC and NuSVC, this procedure is builtin in libsvm which is used under the hood, so it does not rely on scikit-learn’s CalibratedClassifierCV.
+        svc = GridSearchCV(SVC(class_weight="balanced",random_state=0,probability=True),
+                           pars, cv=5, scoring="accuracy",verbose=3,n_jobs=6)
+
+        svc.fit(X_train, y_train)
+        print(svc.best_params_)
+        y_pred = svc.best_estimator_.predict(X_test)
+        cm = confusion_matrix(y_test, y_pred)
+        cm_display = ConfusionMatrixDisplay(cm).plot()
+        cm_display.figure_.savefig('cm_svc_best_parameters{}.png'.format(file_name), dpi=300)
+        plt.close()
+        plt.figure()
+        print("svc.cv_results_:{}".format(svc.cv_results_))
+        sns.lineplot(y=svc.cv_results_["mean_test_score"],
+                     x=svc.cv_results_['param_C'].data,
+                     hue=svc.cv_results_['param_kernel'])
+        plt.xlabel("max features")
+        plt.ylabel("Accuracy (mean 5-fold CV)")
+        plt.title(
+            "Accuracy with different estimators and features for SVC model")
+        plt.savefig("Accuracy with different estimators and features for SVC model_{}".format(file_name))
     def show_roc(self,y_test,y_pred,ax,file_name):
-        from sklearn.metrics import precision_score, accuracy_score, plot_roc_curve, RocCurveDisplay, \
-            ConfusionMatrixDisplay, roc_auc_score, roc_curve
         fpr_rod, tpr_rod, _ = roc_curve(y_test, y_pred)
         auc_rod = roc_auc_score(y_test, y_pred)
         RocCurveDisplay(fpr=fpr_rod, tpr=tpr_rod, roc_auc=auc_rod,
                         estimator_name='Random forest prediction').plot(
             ax=ax)
-        ax.set_title("Random forest on {}".format(file_name), fontsize=15)
+        ax.set_title("SVM on {}".format(file_name), fontsize=15)
         fig.suptitle(' ROC Curves at 0.5 threshold', fontsize=16)
         return fig,ax
     def predict(self,substrate_smile_df,enzyme_sequences:str="", inputmodel = None,num_bits: int = 2048):
@@ -725,8 +759,9 @@ class Model_class():
 
     def group_by_site(self,all_dataset=""):
         if all_dataset=="":
-            with open('data/seq_smiles_all', 'rb') as file1:
-                all_dataset = dill.load(file1)
+            all_dataset = pd.read_csv("data/seq_smiles_all_MANUAL.csv",
+                                         header=0, index_col=0)
+
         #add methyl_type
         for index in all_dataset.index:
             try:
@@ -743,8 +778,8 @@ class Model_class():
             except:
                 all_dataset.loc[index, "methyl_type"] = 'NA'
         #save all data with methyl type
-        with open('data/seq_smiles_all', 'wb') as dill_file:
-            dill.dump(all_dataset,dill_file)
+        # with open('data/seq_smiles_all', 'wb') as dill_file:
+        #     dill.dump(all_dataset,dill_file)
         seprate_dataset = all_dataset.groupby(by=["methyl_type"])
         for groups in seprate_dataset.groups:
             sub_df = seprate_dataset.get_group(groups)
@@ -772,100 +807,8 @@ class Model_class():
 
 
 def main():
+    unittest.main()
 
-    #run with command line
-    # rh_file = argv[1]
-    #run with pycharm
-
-
-
-
-    data_with_site_drop_du = copy.deepcopy(data_with_site).drop_duplicates(['main_sub'])
-
-    #
-    # #read manual_data
-    # parse_data.read_mannual_data()
-    # with open("data/mannual_data", "rb") as dill_file:
-    #     manual_data = dill.load(dill_file)
-    # #save csv file to for check
-    # with open("data/methyl_site_dictionary", "rb") as dill_file:
-    #     methyl_site_dictionary = dill.load(dill_file)
-    # #drop NA
-    # indexNames = manual_data[manual_data['mainsub_mol'] == 'NA'].index
-    # # Delete these row indexes from dataFrame
-    # manual_data.drop(indexNames, inplace=True)
-    # print(manual_data)
-
-    # manual_fg = save_fingerprints_to_dataframe(manual_data,methyl_site_dictionary,2048,3,file_name="manual_2048")
-    # print(manual_fg)
-    # duplicate_1_class(manual_fg)
-
-
-    #X = pd.read_csv("data/input_dataframe_withoutstructure_2048_drop_duplicate_all.csv",header=0,index_col=0)
-    #X = duplicate_1_class(X,2)
-
-    # merge manual data and rhea data
-
-    #only use substrate then drop the duplicate
-
-
-    #X_train, X_test, y_train, y_test = prepare_train_teat_data(X)
-
-    #down sampling
-    # from imblearn.under_sampling import TomekLinks
-    # undersample = TomekLinks()
-    # X_train, y_train = undersample.fit_resample(X_train, y_train)
-    # #train RF model
-    # model = RF_model(X_train, X_test, y_train, y_test,"_2048_drop_duplicate_double_true_label")
-    # #multidata_predict()
-
-    #print(id_seq_dataframe)
-    #link the sequences and reaction participant put in one csv file
-    #fulldata = id_seq_dataframe.join(rheauniprot_dataframe)
-    # print(fulldata)
-    # groups_uniprotid = fulldata.groupby(["Entry"])
-    # for group in groups_uniprotid:
-    #     print(group)
-    #save to file
-    # file_name = input("please input file name and directory")
-    # fulldata.to_csv(file_name)
-    #convert rheaid to uniprot entry, as there are no direct link between Rhea id to sequences
-    #read rhea id file
-    #rhea = open("data/Rhea-ec_2.1.1.list").readlines()
-    #uniprot_list = rheaid_touniprot(rhea, rheauniprot_dataframe)
-    #print(uniprot_list)
-    # file = open("uniprot_list.txt","w")
-    # for index,entry in enumerate(uniprot_list):
-    #     if isinstance(entry, str):
-    #         file.write("{},{}\n".format(entry,rhea[index]))
-    #     else:
-    #         entry.to_csv("uniprot_list.txt", mode='a',header=False)
-    # print(uniprot_list)
-
-    #if the nmbering from rdkit is following the carbon numbering rules?
-    # molclass = molecular()
-    # smile1='C1CC2=NC1=CC3=CC=C(N3)C=C4C=CC(=N4)C=C5C=CC(=C2)N5'
-    # smile2="C1=CC(=C(C=C1C=CC(=O)O)O)O"
-    # mol,index = molclass.mol_with_atom_index(smile=smile2)
-    # smile_withindex = Chem.MolToSmiles(mol)
-    # for atom in mol.GetAtoms():
-    #     atom.SetIsotope(0)
-    # Draw.ShowMol(mol,size=(600,600))
-    # smiles_with_atom_mappings = Chem.MolToSmiles(mol)
-
-
-
-    #remove_duplicated_id("data/hmm_out/top_ten_hits_exclude_nomethylrelated/hmmscantbout_top_6_hit.pfam")
-
-    # uniprot_entry = remove_duplicated_id(r"E:\Download\regioselectivity_prediction\data\hmm_out")
-    # rheaid_to_uniprot(uniprot_entry, rheauniprot_dataframe)
-    # draw_smile = pikachu.general.draw_smiles(smile_withindex)
-
-    # rxn = AllChem.ReactionFromSmarts(r"[C:1]-[C:2]>>[C:1].[C:2]")
-    # img = Draw.ReactionToImage(rxn,returnPNG=True)
-    # #?
-    # with open("test.png",'wb') as handle:
-    #     handle.write(img)
 
 
 if __name__ == "__main__":

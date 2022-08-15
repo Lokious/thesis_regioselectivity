@@ -23,7 +23,7 @@ import glob
 import dill
 from Bio import AlignIO
 from script.sequence import sequences
-from script.Model_class import Model_class
+
 def target_sequences(file):
     """
     This function is used to return Uniprot entry of target sequences from hmmscan
@@ -296,7 +296,7 @@ def read_msa_and_encoding(file_name=""):
     :param file:
     :return:
     """
-    file = "data/align/Keeplength/{}_addmodel_rm".format(file_name)
+    file = "data/align/Keeplength/{}_addmodel".format(file_name)
     import numpy as np
     from sklearn.preprocessing import OneHotEncoder
     #read alignment
@@ -389,131 +389,7 @@ def clean_seq():
 #     return umiprot_df
 
 
-def create_inputdata(directory, num_bit: int = 2048):
-    """
 
-    :param directory:
-    :param num_bit:
-    :return:
-    """
-    from script.molecular_class import molecular, reaction
-    from script.Model_class import Model_class
-    mo_del = Model_class()
-
-    file_name1 = list(glob.iglob(directory + '/seq_smiles_all*'))
-    file_name2 = list(glob.iglob(directory + '/diction_atom_all*'))
-    print(file_name1)
-    print(file_name2)
-    assert len(file_name1) == len(file_name2)
-
-    for i, file in enumerate(file_name1):
-        name1 = file.split("[")[-1]
-        #name2 = (file_name2[i]).split("/")[-1]
-        try:
-            input_data = pd.read_csv(
-                "data/input_data/input{0}fg_dpna_{1}.csv".format(
-                    str(num_bit),
-                    name1), header=0, index_col=0)
-            print(input_data)
-        except:
-            print("data/input_data/input{0}fg_dpna_{1}.csv is missing".format(
-                    str(num_bit),
-                    name1))
-            try:
-                print("loading data-------")
-                X = pd.read_csv(
-                    "data/input_dataframe_withoutstructure_dropatoms{}_{}_withentry_drop_atom_type.csv".format(
-                        str(num_bit),
-                        name1), header=0, index_col=0)
-                print(X)
-            except:
-                print("data/input_dataframe_withoutstructure_dropatoms{}_{}_withentry_drop_atom_type.csv is missing".format(
-                        str(num_bit),
-                        name1))
-                print("creat fingerprint-------")
-                with open('{}/seq_smiles_all[{}'.format(directory, name1),
-                          'rb') as file1:
-                    data_with_site = dill.load(file1)
-                with open('{}/diction_atom_all[{}'.format(directory, name1),
-                          'rb') as file2:
-                    diction_atom = dill.load(file2)
-                print(diction_atom)
-                X = mo_del.save_fingerprints_to_dataframe(data_with_site,
-                                                          diction_atom,
-                                                          num_bit, 3,
-                                                          drop_atoms=True,
-                                                          file_name="{}_{}_withentry_drop_atom_type".format(
-                                                              str(num_bit),
-                                                              name1))
-                print(X)
-                print(
-                    "succesfully saved the fingerprint{}".format(name1))
-            merge_sequence_and_fingerprint(x=X,
-                                       filename=name1,
-                                       num_bit=num_bit, add_dataframe="data/protein_encoding/6_seed_onehot_encoding_rn_{}fg.csv".format(str(num_bit)))
-            input_data = pd.read_csv("data/input_data/input{0}fg_dpna_{1}.csv".format(str(num_bit),
-                                                            name1), header=0, index_col=0)
-        print(input_data)
-        run_model_for_group_data(
-            input_data, filename=name1, num_bit=128)
-def merge_sequence_and_fingerprint(x:pd.DataFrame,filename:str="",num_bit:int=2048, add_dataframe=""):
-
-    if add_dataframe == "":
-        add_dataframe = pd.read_csv(
-            "data/protein_encoding/6_seed_onehot_encoding.csv",
-            header=0, index_col=0)
-    else:
-        try:
-            add_dataframe = pd.read_csv("{}".format(add_dataframe), header=0, index_col=0)
-        except:
-            add_dataframe = pd.read_csv(
-                "data/protein_encoding/6_seed_onehot_encoding.csv",
-                header=0, index_col=0)
-
-    print(add_dataframe)
-    start_index = (num_bit*2-1)
-    #print(start_index)
-    if list(add_dataframe.columns)[0] != str(int(start_index)+1):
-        map_dictionary = {}
-        for col in add_dataframe.columns:
-            if (col != "Entry") and (col != "index"):
-
-                map_dictionary[col] = str(int(col) + int(start_index))
-
-            else:
-                continue
-        add_dataframe = add_dataframe.rename(columns=map_dictionary)
-    add_dataframe.to_csv(
-            "data/protein_encoding/6_seed_onehot_encoding_rn_{}fg.csv".format(str(num_bit)))
-    add_dataframe = pd.read_csv(
-        "data/protein_encoding/6_seed_onehot_encoding_rn_{}fg.csv".format(str(num_bit)),
-        header=0, index_col=0)
-    input_dataframe = x.merge(add_dataframe, on="Entry", how="left")
-
-    #drop NA need larger memory
-    input_dataframe = input_dataframe.dropna(axis=0, how="any")
-    col = [i for i in input_dataframe.columns if
-           i not in ["Entry", "label", "molecular_id", "methyl_type"]]
-    input_dataframe[col] = input_dataframe[col].astype('int32')
-    input_dataframe = (input_dataframe.reset_index()).drop(columns=["index"])
-    print(input_dataframe)
-    #
-    input_dataframe.to_csv("data/input_data/input{0}fg_dpna_{1}.csv".format(str(num_bit),filename))
-    with open("data/input_data/input{0}fg_dpna_{1}".format(str(num_bit),filename), "wb") as dill_file:
-        dill.dump(input_dataframe, dill_file)
-def run_model_for_group_data(input:pd.DataFrame,filename:str="",num_bit:int=2048):
-
-    mo_del = Model_class()
-    X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
-        input)
-
-    mo_del.run_PCA(X_train,y_train,filename)
-    X_train = X_train.drop(columns=["methyl_type"])
-    X_test = X_test.drop(columns=["methyl_type"])
-    y_train = y_train.drop(columns=["methyl_type"])
-    y_test = y_test.drop(columns=["methyl_type"])
-    model = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                            "_{}_{}".format(filename,str(num_bit)))
 def main():
     unittest.main()
 if __name__ == "__main__":
