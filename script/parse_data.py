@@ -268,28 +268,6 @@ def read_mannual_data(file=r"E:\Download\regioselectivity_prediction\data\mannua
     with open("data/methyl_site_dictionary", "wb") as dill_file:
         dill.dump(methyl_site_dictionary, dill_file)
 
-def group_by_domain(directory,dataframe):
-
-    file_name = glob.iglob(directory + '/*.tsv')
-    datafrmae_dict = {}
-    for i in file_name:
-
-        df = target_sequences(i)
-        seed = (i.split("\\")[-1]).split("_")[0]
-        datafrmae_dict[seed] = dataframe.loc[dataframe["Entry"].isin(list(df["id"]))]
-    with open("data/dictionary_with_sepreate_datasets_by_seeds", "wb") as dill_file:
-        dill.dump(datafrmae_dict, dill_file)
-    for key in datafrmae_dict.keys():
-        f = open("data/{}.fasta".format(key), "a")
-        for index in datafrmae_dict[key].index:
-
-            entry = datafrmae_dict[key].loc[index,"Entry"]
-            f.write(">{}\n".format(entry))
-            f.write("{}\n".format(datafrmae_dict[key].loc[index,"Sequence"]))
-        f.close()
-    keys = datafrmae_dict.keys()
-
-    return datafrmae_dict
 
 def read_msa_and_encoding(file_name=""):
     """

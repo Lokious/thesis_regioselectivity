@@ -24,52 +24,7 @@ from rdkit.Chem.Draw import IPythonConsole
 from rdkit import Chem
 import glob
 
-def merge_sequence_and_fingerprint(x:pd.DataFrame,filename:str="",num_bit:int=2048, add_dataframe=""):
-    seq_file_name=add_dataframe
-    if add_dataframe == "":
-        add_dataframe = pd.read_csv(
-            "data/protein_encoding/6_seed_onehot_encoding.csv",
-            header=0, index_col=0)
-    else:
-        try:
-            add_dataframe = pd.read_csv("{}".format(add_dataframe), header=0, index_col=0)
-        except:
-            print("{}is not exit...,read 6_seed_onehot_encoding.csv instead, or stop and check the data".format(add_dataframe) )
-            add_dataframe = pd.read_csv(
-                "data/protein_encoding/6_seed_onehot_encoding.csv",
-                header=0, index_col=0)
 
-    print(add_dataframe)
-    start_index = (num_bit*2-1)
-    #print(start_index)
-    if list(add_dataframe.columns)[0] != str(int(start_index)+1):
-        map_dictionary = {}
-        for col in add_dataframe.columns:
-            if (col != "Entry") and (col != "index"):
-
-                map_dictionary[col] = str(int(col) + int(start_index))
-
-            else:
-                continue
-        add_dataframe = add_dataframe.rename(columns=map_dictionary)
-    add_dataframe.to_csv(
-            "{}".format(seq_file_name))
-    add_dataframe = pd.read_csv(
-        "{}".format(seq_file_name),
-        header=0, index_col=0)
-    input_dataframe = x.merge(add_dataframe, on="Entry", how="left")
-
-    #drop NA need larger memory
-    input_dataframe = input_dataframe.dropna(axis=0, how="any")
-    col = [i for i in input_dataframe.columns if
-           i not in ["Entry", "label", "molecular_id", "methyl_type"]]
-    input_dataframe[col] = input_dataframe[col].astype('int32')
-    input_dataframe = (input_dataframe.reset_index()).drop(columns=["index"])
-    print(input_dataframe)
-    #
-    input_dataframe.to_csv("data/input_data/input{0}fg_dpna_{1}.csv".format(str(num_bit),filename))
-    with open("data/input_data/manual_together/input{0}fg_dpna_{1}".format(str(num_bit),filename), "wb") as dill_file:
-        dill.dump(input_dataframe, dill_file)
 def run_model_for_group_data(input:pd.DataFrame,filename:str="",num_bit:int=2048):
 
     mo_del = Model_class()
@@ -143,10 +98,10 @@ def sepreate_input(file="",numbit:int=2048,bond:int=2):
     seprate_dataset = input_dataall.groupby(by=["methyl_type"])
     for group in seprate_dataset.groups:
         sub_df = seprate_dataset.get_group(group)
-        print(sub_df)
         group = sub_df["methyl_type"].unique()
         print(group)
-        sub_df.reset_index(inplace=True)
+        sub_df.reset_index(drop=True,inplace=True)
+
         sub_df.to_csv("data/input_data/group/{}_{}_{}.csv".format(group,str(numbit),str(bond)))
 def main():
     today = date.today()
@@ -155,7 +110,7 @@ def main():
     mo_del = Model_class()
     #parse_data.read_msa_and_encoding(file_name="uniprot_and_manual_align")
     # mo_del.group_by_site()
-    sepreate_input(file="data/input_data/input128fg_dpna_bond2.csv", numbit = 128, bond= 2)
+    #sepreate_input(file="data/input_data/input2048fg_dpna_bond2.csv", numbit = 2048, bond= 2)
     #create_inputdata("data/group_data",128,"6_seed")
     # data_with_site = pd.read_csv("data/seq_smiles_all_MANUAL.csv", header=0,
     #                              index_col=0)
@@ -268,22 +223,22 @@ def main():
     # #protein_pca_data = copy.deepcopy(X_train).drop(columns=X_train.columns[:254])
     # #mo_del.three_D_pca(X_train,y_train,"128fg_sub_seq")
 
-    #input_dataframe = pd.read_csv("data/input_dataframe_withoutstructure_dropatoms128_drop_duplicate_drop_atom_withtype_bond3.csv", header=0, index_col=0)
-    #
-    #
-    #X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(input_dataframe,i=1)
+    input_dataframe = pd.read_csv("data/input_data/input1024fg_dpna_bond2.csv", header=0, index_col=0)
+
+
+    X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(input_dataframe,i=1)
     # print(X_train)
     # mo_del.run_PCA(X_train, y_train, "128fg_bond3")
     # mo_del.three_D_pca(X_train, y_train, "128fg_bond3")
-
-    #mo_del.run_PCA(protein_pca_data, y_train, "protein_encoding_pca")
     #
-    # X_train = X_train.drop(columns=["methyl_type"])
-    # print(X_train.columns)
-    # X_test = X_test.drop(columns=["methyl_type"])
-    # y_train = y_train.drop(columns=["methyl_type"])
-    # y_test = y_test.drop(columns=["methyl_type"])
-    #model = mo_del.RF_model(X_train, X_test, y_train, y_test,"_input128fg_type_withoutstructure{}".format(1),1)
+    # mo_del.run_PCA(protein_pca_data, y_train, "protein_encoding_pca")
+
+    X_train = X_train.drop(columns=["methyl_type"])
+    print(X_train.columns)
+    X_test = X_test.drop(columns=["methyl_type"])
+    y_train = y_train.drop(columns=["methyl_type"])
+    y_test = y_test.drop(columns=["methyl_type"])
+    model = mo_del.RF_model(X_train, X_test, y_train, y_test,"_input1024fg_bond2",1)
 
 
 if __name__ == "__main__":

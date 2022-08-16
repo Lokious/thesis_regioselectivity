@@ -551,13 +551,13 @@ class Model_class():
             title=f'Total Explained Variance: {total_var:.2f}%',
             labels={'0': 'PC 1', '1': 'PC 2', '2': 'PC 3'}
         )
-        fig.show()
+        #fig.show()
         fig = px.scatter_3d(
             components, x=0, y=1, z=2, color=y_label,
             title=f'Total Explained Variance: {total_var:.2f}%',
             labels={'0': 'PC 1', '1': 'PC 2', '2': 'PC 3'}
         )
-        fig.show()
+        #fig.show()
 
 
 
@@ -687,7 +687,8 @@ class Model_class():
         plt.scatter(y=neg_pro, x=range(len(neg_pro)),c="green")
         plt.savefig("probability for two label{}".format(file_name))
         plt.show()
-        threshold=0.5
+        threshold=(sum(pos_pro)/len(pos_pro))
+        print(threshold)
         y_pre_threshold=[]
         for point in rf.predict_proba(X_test):
             if point[1]>threshold:
@@ -702,7 +703,7 @@ class Model_class():
             plt.title("RF confusion matrix with best parameters")
             cm_display.figure_.savefig(
                 'cm_threshold{}_{}.png'.format(threshold,file_name), dpi=300)
-            plt.show()
+            #plt.show()
 
             plt.close()
         cm = confusion_matrix(y_test, y_pred)
@@ -711,7 +712,7 @@ class Model_class():
         plt.title("RF confusion matrix with best parameters")
         cm_display.figure_.savefig(
             'cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
-        plt.show()
+        #plt.show()
 
         plt.close()
         plt.figure()
