@@ -23,6 +23,8 @@ import glob
 import dill
 from Bio import AlignIO
 from script.sequence import sequences
+import numpy as np
+
 
 def target_sequences(file):
     """
@@ -293,12 +295,11 @@ def read_msa_and_encoding(file_name=""):
     """
     simpliest encoding by transfer aminoacide to number and encode it to binary arrary
 
-    :param file:
+    :param file_name: string, the file name for aligned sequences
     :return:
     """
     file = "data/align/Keeplength/{}_addmodel".format(file_name)
-    import numpy as np
-    from sklearn.preprocessing import OneHotEncoder
+
     #read alignment
     align = AlignIO.read(file, "fasta")
     align_array = np.array([list(rec) for rec in align], np.character)
@@ -314,15 +315,15 @@ def read_msa_and_encoding(file_name=""):
     id = list(rec.id for rec in align)
     align_pd = pd.DataFrame(data=align_array,index=id)
     align_pd = align_pd.drop_duplicates()
-    print(align_pd)
+
     #drop columns which for over 80% sequences is gap
     from collections import Counter
     for column in list(align_pd.columns):
         gap_num = Counter(align_pd[column])[b"-"]
         gap_percentage = (gap_num/len(align_pd.index))
-        #print(gap_percentage)
+
         if gap_percentage > 0.8:
-            print("drop")
+
             align_pd.drop(columns=[column],inplace=True)
     #print(align_pd)
     # the length of aligned sequence after remove some columns contains a lot of gaps

@@ -8,8 +8,8 @@ class TestModel_class(unittest.TestCase):
     def test0_check_file_exist(self):
         self.model.check_file_exist()
     def test1_keep_methyled_substrate(self):
-       with self.assertRaises():
-           self.model.keep_methyled_substrate()
+       with self.assertRaises(AttributeError):
+           self.model.keep_methyled_substrate(1)
     def test2_return_reactions(self):
         dataframe = pd.read_csv("data/seq_smiles_all.csv",header=0,index_col=0)
         #the first reactant site should be O49:18
@@ -20,6 +20,9 @@ class TestModel_class(unittest.TestCase):
         main_product = dataframe.loc[0,"main_sub"]
         main_substrate = dataframe.loc[0,"main_pro"]
         self.assertLess(main_substrate,main_product)
+    def test4_save_fingerprints_to_dataframe(self):
+        self.model.save_fingerprints_to_dataframe()
+
 
 def main():
     unittest.main()

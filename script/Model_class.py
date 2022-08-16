@@ -380,6 +380,7 @@ class Model_class():
     def _get_colors(self,num_colors):
         import colorsys
         colors = []
+        random.seed(0)
         for i in np.arange(0., 360., 360. / num_colors):
             hue = i / 360.
             lightness = (50 + np.random.rand() * 10) / 100.
@@ -406,6 +407,7 @@ class Model_class():
             colour_label = datasets["methyl_type"].map(map_dictionary)
             print(colour_label)
             return colour_label,map_dictionary
+
         def label_with_label():
 
             map_dictionary = {}
@@ -529,6 +531,7 @@ class Model_class():
             'Cumulative Proportion of Variance Explained foe label_{}'.format(file_name))
         #plt.show()
         plt.close()
+
     def three_D_pca(self,datasets,y_label,file_name=""):
 
         import plotly.express as px
@@ -567,7 +570,7 @@ class Model_class():
         :param y_test:
         :return: randomforest model
         """
-
+        """
         hyperparameters = {'n_estimators': [50,100,200],
                            'max_features': [0.3,0.5,0.7],
 
@@ -618,29 +621,101 @@ class Model_class():
         plt.title(
             "Accuracy with different estimators and features for RF model")
         plt.savefig("trainmodel_output_figure/Accuracy with different estimators and features for RF model_{}".format(file_name))
+        
+        fi = pd.DataFrame(data=rf_cv.best_estimator_.feature_importances_, index=X_train.columns,
+                          columns=['Importance']) \
+            .sort_values(by=['Importance'], ascending=False)
+
+        #And visualize
+        sns.barplot(data=fi.head(20), x="Importance", y=(fi.head(20)).index).set_title(
+            "feature importance for RF model")
+        #fig = ax.get_figure()
+        # plt.savefig('feature_importance{}.png'.format(file_name))
+        plt.close()
+        """
         #plt.show()
         #use the best parameters from cross validation redo RF
-        # rf = RandomForestClassifier(random_state=i,
-        #                             n_estimators=100,max_features=0.5,
-        #                             oob_score=True, n_jobs=6)
-        # rf.fit(X_train, y_train)
-        # y_pred = rf.predict(X_test)
-        # print("Train/test accuracy: {}/{}".format(
-        #     accuracy_score(rf.predict(X_train), y_train),
-        #     accuracy_score(rf.predict(X_test), y_test)))
-        #
-        # print()
-        # cm = confusion_matrix(y_test, y_pred)
-        # cm_display = ConfusionMatrixDisplay(cm).plot()
-        # cm_display.figure_.savefig('cm_{}.png'.format(file_name), dpi=300)
-        # plt.title("RF confusion matrix with best parameters")
-        # cm_display.figure_.savefig(
-        #     'cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
-        # plt.show()
-        #
+        rf = RandomForestClassifier(random_state=i,
+                                    n_estimators=300,max_features=0.5,class_weight="balanced",
+                                    oob_score=True, n_jobs=8)
+        rf.fit(X_train, y_train)
+        y_pred = rf.predict(X_test)
+        print("Train/test accuracy: {}/{}".format(
+            accuracy_score(rf.predict(X_train), y_train),
+            accuracy_score(rf.predict(X_test), y_test)))
+        from sklearn import metrics
+        y_probs = rf.predict_proba(X_test)
+        # keep probabilities for the positive outcome only
+        yhat = y_probs[:, 1]
+        print(yhat)
+        fpr, tpr, thresholds = metrics.roc_curve(y_test, yhat)
+        roc_auc = metrics.auc(fpr, tpr)
+        display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr,
+                                               roc_auc=roc_auc).plot()
+        display.figure_.savefig("RF ROC_curve{}".format(file_name))
+
+        plt.show()
+        plt.close()
+        print("fprlength:{}".format(len(fpr)))
+        plt.plot([0, 1], [0, 1], linestyle='--', label='No Skill')
+        plt.plot(fpr, tpr, marker='.', label='RF')
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.legend()
+        plt.show()
+        plt.close()
+        # show the plot
+        print("roc score:{}".format(roc_auc))
+        rf_pro = rf.predict_proba(X_train)
+        print(len(rf_pro)==len(y_train))
+        neg_pro=[]
+        pos_pro=[]
+        y_train_pred=rf.predict(X_train)
+        for i,line in enumerate(rf_pro):
+            if y_train.iloc[i]==1:
+                pos_pro.append(line[1])
+            else:
+                neg_pro.append(line[1])
+            print("{}, label:{} prelabel:{}".format(line,y_train.iloc[i],y_train_pred[i]))
+        print("mean probability for label 1 group: {}".format(sum(pos_pro)/len(pos_pro)))
+        print("mean probability for predict label 0 as 1 group: {}".format(
+            sum(neg_pro) / len(neg_pro)))
+        print("min_for label1: {}".format(min(pos_pro)))
+        print("max_for label2: {}".format(max(neg_pro)))
+
+        plt.scatter(y=pos_pro,x=range(len(pos_pro)),c="red")
+        plt.scatter(y=neg_pro, x=range(len(neg_pro)),c="green")
+        plt.savefig("probability for two label{}".format(file_name))
+        plt.show()
+        threshold=0.5
+        y_pre_threshold=[]
+        for point in rf.predict_proba(X_test):
+            if point[1]>threshold:
+                y_pre_threshold.append(1)
+            else:
+                y_pre_threshold.append(0)
+        else:
+            cm = confusion_matrix(y_test, y_pre_threshold)
+            cm_display = ConfusionMatrixDisplay(cm).plot()
+            cm_display.figure_.savefig('cm_{}_{}.png'.format(threshold,file_name),
+                                       dpi=300)
+            plt.title("RF confusion matrix with best parameters")
+            cm_display.figure_.savefig(
+                'cm_threshold{}_{}.png'.format(threshold,file_name), dpi=300)
+            plt.show()
+
+            plt.close()
+        cm = confusion_matrix(y_test, y_pred)
+        cm_display = ConfusionMatrixDisplay(cm).plot()
+        cm_display.figure_.savefig('cm_{}.png'.format(file_name), dpi=300)
+        plt.title("RF confusion matrix with best parameters")
+        cm_display.figure_.savefig(
+            'cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
+        plt.show()
+
         plt.close()
         plt.figure()
-        fi = pd.DataFrame(data=rf_cv.best_estimator_.feature_importances_, index=X_train.columns,
+        fi = pd.DataFrame(data=rf.feature_importances_, index=X_train.columns,
                           columns=['Importance']) \
             .sort_values(by=['Importance'], ascending=False)
 
@@ -662,20 +737,21 @@ class Model_class():
         # joblib.dump(rf_cv, filename)
         # return rf_cv
     def SVM(self,X_train, X_test, y_train, y_test,file_name="",i:int=0):
-        pars = [{'C': [ 0.01, 0.1, 1, 10]},
-                {'kernel':['poly','rbf','sigmoid','precomputed']},
-                {'class_weight':["balanced", None]}]
-        # The same probability calibration procedure is available for all estimators via the CalibratedClassifierCV (see Probability calibration).
-        # In the case of SVC and NuSVC, this procedure is builtin in libsvm which is used under the hood, so it does not rely on scikit-learn’s CalibratedClassifierCV.
-        svc = GridSearchCV(SVC(class_weight="balanced",random_state=0,probability=True),
-                           pars, cv=5, scoring="accuracy",verbose=3,n_jobs=6)
-
-        svc.fit(X_train, y_train)
-        print(svc.best_params_)
+        # pars = [{'C': [ 0.1]},
+        #         {'kernel':['poly','rbf','sigmoid']},
+        #         {'class_weight':["balanced", None]}]
+        # # The same probability calibration procedure is available for all estimators via the CalibratedClassifierCV (see Probability calibration).
+        # # In the case of SVC and NuSVC, this procedure is builtin in libsvm which is used under the hood, so it does not rely on scikit-learn’s CalibratedClassifierCV.
+        # svc = GridSearchCV(SVC(class_weight="balanced",random_state=0,probability=True),
+        #                    pars, cv=5, scoring="accuracy",verbose=3,n_jobs=2)
+        svc=SVC(cache_size=1024,kernel="linear",class_weight="balanced",random_state=0,probability=True)
+        svc_result=svc.fit(X_train, y_train)
+        print(svc_result)
         y_pred = svc.best_estimator_.predict(X_test)
         cm = confusion_matrix(y_test, y_pred)
         cm_display = ConfusionMatrixDisplay(cm).plot()
-        cm_display.figure_.savefig('cm_svc_best_parameters{}.png'.format(file_name), dpi=300)
+        #cm_display.figure_.savefig('cm_svc_best_parameters{}.png'.format(file_name), dpi=300)
+        plt.show()
         plt.close()
         plt.figure()
         print("svc.cv_results_:{}".format(svc.cv_results_))
@@ -686,14 +762,21 @@ class Model_class():
         plt.ylabel("Accuracy (mean 5-fold CV)")
         plt.title(
             "Accuracy with different estimators and features for SVC model")
-        plt.savefig("Accuracy with different estimators and features for SVC model_{}".format(file_name))
+        #plt.savefig("Accuracy with different estimators and features for SVC model_{}".format(file_name))
+    def svc_linear(self):
+        from sklearn.svm import LinearSVC
+        from sklearn.pipeline import make_pipeline
+        from sklearn.preprocessing import StandardScaler
+        from sklearn.datasets import make_classification
     def show_roc(self,y_test,y_pred,ax,file_name):
+        from sklearn import metrics
         fpr_rod, tpr_rod, _ = roc_curve(y_test, y_pred)
-        auc_rod = roc_auc_score(y_test, y_pred)
+        #auc_rod = roc_auc_score(y_test, y_pred)
+        auc_rod = metrics.auc(fpr_rod, tpr_rod)
         RocCurveDisplay(fpr=fpr_rod, tpr=tpr_rod, roc_auc=auc_rod,
                         estimator_name='Random forest prediction').plot(
             ax=ax)
-        ax.set_title("SVM on {}".format(file_name), fontsize=15)
+        ax.set_title("RF on {}".format(file_name), fontsize=15)
         fig.suptitle(' ROC Curves at 0.5 threshold', fontsize=16)
         return fig,ax
     def predict(self,substrate_smile_df,enzyme_sequences:str="", inputmodel = None,num_bits: int = 2048):
@@ -756,44 +839,6 @@ class Model_class():
             input = input.append(methyl_site_data)
         print(input)
         return copy.deepcopy(input)
-
-    def group_by_site(self,all_dataset=""):
-        if all_dataset=="":
-            all_dataset = pd.read_csv("data/seq_smiles_all_MANUAL.csv",
-                                         header=0, index_col=0)
-
-        #add methyl_type
-        for index in all_dataset.index:
-            try:
-                rec_sites = (all_dataset.loc[index,"reactant_site"]).split(",")
-                sites=set()
-                for i in rec_sites:
-                    atom = list(i)
-                    sites.add("".join(x for x in atom if x.isalpha()))
-                print("".join(list(sites)))
-                sites="_".join(list(sites))
-                #only return alpha-->methyl atom symbol
-                #["".join(x for x in rec_sites if x.isalpha())]
-                all_dataset.loc[index, "methyl_type"] =sites
-            except:
-                all_dataset.loc[index, "methyl_type"] = 'NA'
-        #save all data with methyl type
-        # with open('data/seq_smiles_all', 'wb') as dill_file:
-        #     dill.dump(all_dataset,dill_file)
-        seprate_dataset = all_dataset.groupby(by=["methyl_type"])
-        for groups in seprate_dataset.groups:
-            sub_df = seprate_dataset.get_group(groups)
-            print(sub_df)
-            sub_atom_object_dictionary = {}
-            group = sub_df["methyl_type"].unique()
-            print(group)
-            for index in sub_df.index:
-                sub_atom_object_dictionary[index]=sub_df.loc[index,"reactant_site"]
-            print(sub_atom_object_dictionary)
-            with open("data/group_data/seq_smiles_all{}".format(group), "wb") as dill_file:
-                dill.dump(sub_df, dill_file)
-            with open("data/group_data/diction_atom_all{}".format(group), "wb") as dill_file:
-                dill.dump(sub_atom_object_dictionary, dill_file)
 
 
 
