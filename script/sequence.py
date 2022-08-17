@@ -8,20 +8,62 @@ Dependencies:   Python3.9
 This code is to parse sequence data
 """
 import sys
+import unittest
+import pandas as pd
 from Bio import SeqIO
+from os import path
 class sequences():
 
     def __init__(self, msa_model=None):
         self.model = msa_model
 
-    def get_acative_site(self,seq = "",num_AA:int=0):
+    def group_seq_based_on_methylated_type(self,inputfile="data/seq_smiles_all_MANUAL.csv",save_directory="data/sequences"):
         """
-        This function is for return the sepreate aa sequences around acative site
-        :param seq
+
+        :param inputfile:
+        :param save_directory:
         :return:
         """
-        print("unfinihed function")
+        whole_data = pd.read_csv(inputfile,header=0,index_col=0)
 
+        seq_type_df = pd.DataFrame()
+        seq_type_df["Sequence"] = whole_data["Sequence"]
+        seq_type_df["methyl_type"] = whole_data["methyl_type"]
+        seq_type_df["Entry"]= whole_data["Entry"]
+        seprate_dataset = seq_type_df.groupby(by=["methyl_type"])
+        for group in seprate_dataset.groups:
+            sub_df = seprate_dataset.get_group(group)
+            group = sub_df["methyl_type"].unique()[0]
+            print(group)
+            if path.exists("{}/{}.fasta".format(save_directory,group)):
+                print("{}/{}.fasta is already exit".format(save_directory,group))
+                continue
+            else:
+                for index in sub_df.index:
+                    file = open("{}/{}.fasta".format(save_directory,group),"a")
+                    file.write(">{}\n".format(sub_df.loc[index,"Entry"]))
+                    file.write("{}\n".format(sub_df.loc[index,"Sequence"]))
+                else:
+                    #close the file when fiinihsed writing
+                    file.close()
+
+    def group_fg_based_on_methylated_type(self,inputfile,numbit:int=2048,bond:int=2):
+        """
+
+        :param inputfile:
+        :param numbit:
+        :param bond:
+        :return:
+        """
+        input_df = pd.read_csv(inputfile,header=0,index_col=0)
+        seprate_dataset = input_df.groupby(by=["methyl_type"])
+        for group in seprate_dataset.groups:
+            sub_df = seprate_dataset.get_group(group)
+            group = sub_df["methyl_type"].unique()
+            print(group)
+            sub_df.reset_index(drop=True, inplace=True)
+            sub_df.to_csv(
+                "data/group/input_dataframe_dropatoms_{}_withtype_bond{}_{}.csv".format(numbit,bond,group))
 
     def remove_duplicate(self,files):
         for file in files:
@@ -33,3 +75,7 @@ class sequences():
                         SeqIO.write(record, outFile, 'fasta')
         else:
             print("finished removing duplicate")
+def main():
+    unittest.main()
+if __name__ == "__main__":
+    main()

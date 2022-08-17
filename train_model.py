@@ -14,13 +14,13 @@ today = date.today()
 d1 = today.strftime("%d_%m_%Y")
 filename_list=["['As']","['O']","['S']","['N']","['C']"]
 for file in filename_list:
-    input_dataframe = pd.read_csv("data/input_data/group/{}_2048_2.csv".format(file), header=0, index_col=0)
+    input_dataframe = pd.read_csv("data/input_data/group/{}_128_2.csv".format(file), header=0, index_col=0)
 
     X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
         input_dataframe)
 
-    mo_del.three_D_pca(X_train, y_train, "{}_2048_2".format(file))
-    mo_del.run_PCA(X_train, y_train, "{}_2048_2".format(file))
+    # mo_del.three_D_pca(X_train, y_train, "{}_128_2".format(file))
+    # mo_del.run_PCA(X_train, y_train, "{}_128_2".format(file))
     X_train = X_train.drop(columns=["methyl_type"])
     X_test = X_test.drop(columns=["methyl_type"])
     y_train = y_train.drop(columns=["methyl_type"])
@@ -28,4 +28,4 @@ for file in filename_list:
     # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
     #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
     model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                            "_input2048fg_bi_type_bond2_rf{}_{}".format(d1,file),i=0)
+                            "_input128fg_bi_type_bond2_rf{}_{}".format(d1,file),i=0)

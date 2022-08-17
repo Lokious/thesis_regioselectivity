@@ -574,8 +574,8 @@ class Model_class():
         :param y_test:
         :return: randomforest model
         """
-        """
-        hyperparameters = {'n_estimators': [50,100,200],
+
+        hyperparameters = {'n_estimators': [100,500,2000],
                            'max_features': [0.3,0.5,0.7],
 
                            }
@@ -585,38 +585,21 @@ class Model_class():
                              hyperparameters, scoring='roc_auc_ovr_weighted',
                              cv=5,
                              verbose=3,
-                             n_jobs=8)
+                             n_jobs=12)
 
         rf_cv.fit(X_train, y_train)
         print(rf_cv.best_params_)
-        y_probs = rf_cv.best_estimator_.predict_proba(X_test)
-        # keep probabilities for the positive outcome only
-        yhat = y_probs[:, 1]
-        print(yhat)
-        # calculate roc curves
-        fpr, tpr, thresholds = roc_curve(y_test, yhat)
-        # calculate the g-mean for each threshold
-        print("fpr:{},tpr:{},threehold:{}".format(fpr,tpr,thresholds))
-        # gmeans = sqrt(tpr * (1 - fpr))
-        # # locate the index of the largest g-mean
-        # ix = argmax(gmeans)
-        # print('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
-        # plot the roc curve for the model
-        plt.plot([0, 1], [0, 1], linestyle='--', label='No Skill')
-        plt.plot(fpr, tpr, marker='.', label='RF')
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.legend()
-        # show the plot
-        plt.savefig("trainmodel_output_figure/ROC_curve_RF{}".format(file_name))
+        # roc for train data
+        threshold_train = self.show_roc(rf_cv.best_estimator_, X_train, y_train, (file_name+"train"))
+        #roc for test data
+        threshold_test = self.show_roc(rf_cv.best_estimator_, X_test, y_test, (file_name + "test"))
 
-        plt.close()
-        y_pred = rf_cv.best_estimator_.predict(X_test)
-        cm = confusion_matrix(y_test, y_pred)
-        cm_display = ConfusionMatrixDisplay(cm).plot()
-        cm_display.figure_.savefig('trainmodel_output_figure/RF_cm_cv_best_parameters{}.png'.format(file_name), dpi=300)
-        plt.close()
+        self.cm_threshold(threshold_test, X_test, y_test, rf_cv.best_estimator_, (file_name+"test"))
+        self.cm_threshold(0.5, X_test, y_test, rf_cv.best_estimator_,
+                     (file_name + "test"))
+        #lineplot the roc score with differnt hyparameters
         plt.figure()
+        print(rf_cv.cv_results_)
         sns.lineplot(y=rf_cv.cv_results_["mean_test_score"],
                      x=rf_cv.cv_results_['param_max_features'].data,
                      hue=rf_cv.cv_results_['param_n_estimators'])
@@ -624,8 +607,8 @@ class Model_class():
         plt.ylabel("roc_auc_ovr_weighted (mean 5-fold CV)")
         plt.title(
             "Accuracy with different estimators and features for RF model")
-        plt.savefig("trainmodel_output_figure/Accuracy with different estimators and features for RF model_{}".format(file_name))
-        
+        plt.savefig("Accuracy with different estimators and features for RF model_{}".format(file_name))
+        plt.show()
         fi = pd.DataFrame(data=rf_cv.best_estimator_.feature_importances_, index=X_train.columns,
                           columns=['Importance']) \
             .sort_values(by=['Importance'], ascending=False)
@@ -634,40 +617,28 @@ class Model_class():
         sns.barplot(data=fi.head(20), x="Importance", y=(fi.head(20)).index).set_title(
             "feature importance for RF model")
         #fig = ax.get_figure()
-        # plt.savefig('feature_importance{}.png'.format(file_name))
+        plt.savefig('trainmodel_output_figure/feature_importance{}.png'.format(file_name))
         plt.close()
+
+
         """
         #plt.show()
         #use the best parameters from cross validation redo RF
         rf = RandomForestClassifier(random_state=i,
-                                    n_estimators=300,max_features=0.5,class_weight="balanced",
+                                    n_estimators=1000,max_features=0.5,class_weight="balanced",
                                     oob_score=True, n_jobs=8)
         rf.fit(X_train, y_train)
+        
         y_pred = rf.predict(X_test)
         print("Train/test accuracy: {}/{}".format(
             accuracy_score(rf.predict(X_train), y_train),
             accuracy_score(rf.predict(X_test), y_test)))
-        from sklearn import metrics
-        y_probs = rf.predict_proba(X_test)
-        # keep probabilities for the positive outcome only
-        yhat = y_probs[:, 1]
-        print(yhat)
-        fpr, tpr, thresholds = metrics.roc_curve(y_test, yhat)
-        roc_auc = metrics.auc(fpr, tpr)
-        display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr,
-                                               roc_auc=roc_auc).plot()
-        display.figure_.savefig("RF ROC_curve{}".format(file_name))
-
-        plt.show()
-        plt.close()
+        # roc for train data
+        show_roc(self,rf, X_train, y_train, (file_name+"train"))
+        #roc for test data
+        show_roc(self,rf, X_test, y_test, (file_name + "test"))
         print("fprlength:{}".format(len(fpr)))
-        plt.plot([0, 1], [0, 1], linestyle='--', label='No Skill')
-        plt.plot(fpr, tpr, marker='.', label='RF')
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.legend()
-        plt.show()
-        plt.close()
+
         # show the plot
         print("roc score:{}".format(roc_auc))
         rf_pro = rf.predict_proba(X_train)
@@ -730,13 +701,8 @@ class Model_class():
         #fig = ax.get_figure()
         plt.savefig('feature_importance{}.png'.format(file_name))
         plt.close()
-        #plt.show()
-        # #ROC curve
-        # fig, axes = plt.subplots(2, 2, figsize=(10, 10))
-        # self.show_roc(y_test, y_pred,  axes[1, 1],file_name)
-        # plt.savefig()
-        # show()
 
+        """
         # #save model
         # filename = 'data/model/rf_test_model_cv{}'.format(file_name)
         # joblib.dump(rf_cv, filename)
@@ -768,22 +734,59 @@ class Model_class():
         plt.title(
             "Accuracy with different estimators and features for SVC model")
         #plt.savefig("Accuracy with different estimators and features for SVC model_{}".format(file_name))
+
     def svc_linear(self):
         from sklearn.svm import LinearSVC
         from sklearn.pipeline import make_pipeline
         from sklearn.preprocessing import StandardScaler
         from sklearn.datasets import make_classification
-    def show_roc(self,y_test,y_pred,ax,file_name):
+
+    def show_roc(self,rf,X,y,file_name):
         from sklearn import metrics
-        fpr_rod, tpr_rod, _ = roc_curve(y_test, y_pred)
-        #auc_rod = roc_auc_score(y_test, y_pred)
-        auc_rod = metrics.auc(fpr_rod, tpr_rod)
-        RocCurveDisplay(fpr=fpr_rod, tpr=tpr_rod, roc_auc=auc_rod,
-                        estimator_name='Random forest prediction').plot(
-            ax=ax)
-        ax.set_title("RF on {}".format(file_name), fontsize=15)
-        fig.suptitle(' ROC Curves at 0.5 threshold', fontsize=16)
-        return fig,ax
+        # roc for training data
+        y_probs = rf.predict_proba(X)
+        # keep probabilities for the positive outcome only
+        yhat = y_probs[:, 1]
+        print(yhat)
+        fpr, tpr, thresholds = metrics.roc_curve(y, yhat)
+        roc_auc = metrics.auc(fpr, tpr)
+        display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr,
+                                          roc_auc=roc_auc).plot()
+        display.figure_.savefig("RF ROC_curve_{}_data".format(file_name))
+        plt.show()
+        plt.close()
+
+        gmeans=[]
+        for point in range(len(fpr)):
+            gmean = sqrt(tpr[point] * (1 - fpr[point]))
+            gmeans.append(gmean)
+        # # locate the index of the largest g-mean
+        ix = np.argmax(gmeans)
+        print('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
+        return thresholds[ix]
+
+    def cm_threshold(self,threshold,x,y,rf,file_name):
+        y_pre_threshold = []
+        for point in rf.predict_proba(x):
+            if point[1] >= threshold:
+                y_pre_threshold.append(1)
+            else:
+                y_pre_threshold.append(0)
+        else:
+            cm = confusion_matrix(y, y_pre_threshold)
+            cm_display = ConfusionMatrixDisplay(cm).plot()
+            cm_display.figure_.savefig(
+                'cm_{}_{}.png'.format(threshold, file_name),
+                dpi=300)
+            plt.title(
+                "RF confusion matrix with best parameters_threshold:{}".format(
+                    threshold))
+            cm_display.figure_.savefig(
+                'trainmodel_output_figure/cm_threshold{}_{}.png'.format(
+                    threshold, file_name), dpi=300)
+            # plt.show()
+            plt.close()
+
     def predict(self,substrate_smile_df,enzyme_sequences:str="", inputmodel = None,num_bits: int = 2048):
         """
 
@@ -848,6 +851,7 @@ class Model_class():
 
 
     def multidata_predict(self,dataset=None,inputmodel = None):
+
         if (dataset == None) or (inputmodel == None):
         #then do with test data
             loded_data=pd.read_excel("data/prediction_test.xlsx", header=0, index_col=0)
