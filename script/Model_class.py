@@ -126,11 +126,12 @@ class Model_class():
 
     def keep_methyled_substrate(self,dataframe_before):
         """
-        exclude H+,keep the substrate whihc is methylated not the methyl donor
+        exclude H+,keep the substrate which is methylated not the methyl donor
+
         :param dataframe_before: substrate includes mainsubstrates
         :return:
         """
-        #UNFINISHED
+
         dataframe_before["main_sub"] = pd.DataFrame(
             len(dataframe_before.index) * [0])
         dataframe_before["main_pro"] = pd.DataFrame(
@@ -140,6 +141,7 @@ class Model_class():
             pros = (dataframe_before.loc[index,"pro_smiles"]).split(".")
             for sub in subs:
                 mol = Chem.MolFromSmiles(sub)
+                #remove very small molecular
                 if len(mol.GetAtoms())<2:
                     subs.remove(sub)
             for pro in pros:
@@ -148,6 +150,7 @@ class Model_class():
                     pros.remove(pro)
             if len(subs) == len(pros):
                 reaction_object = reaction()
+                #return the smile in list
                 smiles = reaction_object.main_substrate(subs, pros)
                 if smiles:
                     main_sub, main_pro = smiles[0],smiles[1]

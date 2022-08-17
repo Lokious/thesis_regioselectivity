@@ -30,10 +30,16 @@ class molecular ():
         smile = Chem.MolToSmiles(mol)
         self.smiles = smile
     def mol_with_atom_index(self,smile="",mol_object = None, index ={}):
-        """Return mol object with index, input could be simles or mol"""
+        """Return mol object with index, input could be simles or mol
+
+        smile: string, smile of an molecular from substrates
+        mol_object: create by rdkit or read from file
+        index: dictionary, key is atom type<O,N,...> value is the largest index for this atom type plus 1
+        """
+
+        #if the input has mol_object
         if mol_object:
             #set i here inorder to make the atom from all substrates has different mapnumber
-
             atom_type = index
             for atom in mol_object.GetAtoms():
 
@@ -49,6 +55,7 @@ class molecular ():
                 atom_type[atom_sy] += 1
 
             return mol_object,atom_type
+        #if no mol_object input, but have smile input
         elif smile:
 
             mol = Chem.MolFromSmiles(smile)
@@ -57,7 +64,7 @@ class molecular ():
                 for atom in mol.GetAtoms():
 
                     if atom.GetSymbol() not in atom_type.keys():
-                        #makesure no repeate number
+                        #makesure no repeate number for an atom type
                         atom_type[atom.GetSymbol()] = 0
                     atom.SetAtomMapNum(atom.GetIdx())
                     # save the index in isotope just for keeeping the index for later use
@@ -69,10 +76,11 @@ class molecular ():
                 return None, index
         else:
             print("missing input")
+
     def create_fingerprint_mol(self, substrate_molecular: Chem.Mol, num_bits: int = 2048,
         radius: int = 3)->np.array:
         """
-
+        This function is to create
         :param substrate_molecular:
         :param num_bits:
         :param radius:
@@ -91,7 +99,7 @@ class molecular ():
         morgan_bit_vector = AllChem.GetMorganFingerprintAsBitVect(substrate_molecular, radius,
                                                                   num_bits)
 
-        # We convert the RDKit vetor object to a numpy array.
+        # convert the RDKit vetor object to a numpy array.
         DataStructs.ConvertToNumpyArray(morgan_bit_vector, bit_fingerprint_mol)
 
         return bit_fingerprint_mol
@@ -131,8 +139,7 @@ class reaction ():
 
     def get_reaction_sites(self,rxn_object="",file_name= None ):
         """
-        Function for finding all reactanct atoms, which include all substrates
-        and products in the reaction
+        ###not use anymore, just to save the picture of reaction####
 
         :param rxn_object:
         :return:
@@ -147,17 +154,19 @@ class reaction ():
                 handle.write(img)
             handle.close()
         except:
-            print("cnnot run reaction{}".format(file_name))
+            print("canot run reaction{}".format(file_name))
 
     def perform_reaction(self):
         """
         perform reaction to get product's mol object and save, perform for each reaction
+        ###This function is not use anymore, it is before i want to get the atom map between substrate and product
+        but you should set the some atom with same mapnumber to let the program know they are the same atom###
 
         :return:
         """
         # Draw.ShowMol(self.substrates, size=(600, 600))
         # Draw.ShowMol(self.products, size=(600, 600))
-
+        #link the main substrate molecular and main product, to build a reaction template
         react = AllChem.ReactionFromSmarts(
             self.substrates + ">>" + self.products, useSmiles=True)
         mol_substrate = Chem.MolFromSmiles(self.substrates)
@@ -191,14 +200,14 @@ class reaction ():
         :return: list of atom objects which is the regioselectivity site
         """
 
-
+        #list of atom object
         atoms_list=[]
         atom_index_list = []
-
+        #the main substrate and product to mol object, here the substrates and products only contains the main one
         mol_substrate = Chem.MolFromSmiles(self.substrates)
         mol_product = Chem.MolFromSmiles(self.products)
 
-        sub_mapnumber_dict={}
+        sub_mapnumber_dict = {}
         pro_mapnumber_dict = {}
         for atom in mol_substrate.GetAtoms():
             #isotope is what is set before
@@ -215,7 +224,7 @@ class reaction ():
                 atom_pro = mol_product.GetAtomWithIdx(pro_mapnumber_dict[map_index])
             else:
                 continue
-            #if atom neibor increase and this atom is not carbon, then add it to methylation site list
+            #if atom neighbor increase and this atom is not carbon nor R group, then add it to methylation site list
             if len(atom_sub.GetNeighbors()) < len(atom_pro.GetNeighbors()):
                 if (atom_sub.GetSymbol()!="C") and (atom_sub.GetSymbol()!="*") :
                     atoms_list.append(atom_sub)
@@ -254,8 +263,16 @@ class reaction ():
             similarity = DataStructs.FingerprintSimilarity(Chem.RDKFingerprint(mol1), Chem.RDKFingerprint(mol2))
             return similarity
         return tanimoto_similarity
-    def main_substrate(self,subs,pros):
 
+
+    def main_substrate(self,subs,pros):
+        """
+        This is the function for find the substrate which is methylated among all and the product
+
+        :param subs: list of substrate smiles from one reaction
+        :param pros: list of product smiles from the same reaction
+        :return:the substrate which is methylated among all and the corresponding product
+        """
         sim_dictionary = {}
         mol_object = molecular()
         reaction_object = reaction()
@@ -273,7 +290,7 @@ class reaction ():
 
                 except:
                     return None
-                #sim_dictionary[(i,j)]=reaction_object.fingerprint_similiarity(sub_fg,pro_fg)
+
                 sim_dictionary[
                     (i, j)] = reaction_object.fingerprint_similiarity(sub_fg,pro_fg,mol1=mol1,
                                                                       mol2=mol2)
