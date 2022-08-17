@@ -161,6 +161,7 @@ class Model_class():
 
     def return_reactions(self,dataframe_rr):
         """
+        This function is to save methylated site in file
 
         :param dataframe:
         :return:None

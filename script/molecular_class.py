@@ -11,6 +11,8 @@ from rdkit import Chem
 from PIL import Image
 import numpy as np
 import dill
+import unittest
+
 class molecular ():
     def __init__(self,chembi="",rhea_comp="",inchkey="",smiles=''):
         self.chembi = chembi
@@ -228,7 +230,7 @@ class reaction ():
             else:
                 continue
             #if atom neighbor increase and this atom is not carbon nor R group, then add it to methylation site list
-            #now the problem here is the index is different in product and substrate sometime, then it will get wrong atom 
+            #now the problem here is the index is different in product and substrate sometime, then it will get wrong atom
             if len(atom_sub.GetNeighbors()) < len(atom_pro.GetNeighbors()):
                 if (atom_sub.GetSymbol()!="C") and (atom_sub.GetSymbol()!="*") :
                     atoms_list.append(atom_sub)
@@ -311,7 +313,12 @@ class reaction ():
                 return [subs[i],pros[j]]
             else:
                 continue
-
+class Testreaction_class(unittest.TestCase):
+    def test0_get_reactant_atom(self):
+        reaction_obj =reaction(substrates="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1OH:7])[4cH:4][2cH:2]1",
+                               products="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1O:7][11CH3:13])[4cH:4][2cH:2]1")
+        atom_list, index_list, mainsub_mol = reaction_obj.get_reactant_atom()
+        self.assertEqual(index_list[0],"O7:1")
 def main():
     unittest.main()
 
