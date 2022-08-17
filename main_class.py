@@ -42,7 +42,7 @@ def run_model_for_group_data(input:pd.DataFrame,filename:str="",num_bit:int=2048
     # model2 = mo_del.SVM(X_train, X_test, y_train, y_test,
     #                         "_{}_{}".format(filename,str(num_bit)))
 
-def build_different_input(x="",num_bit:int=0,radius:int=0,seqfile:str="6_seed_onehot_encoding.csv"):
+def build_different_input(x="",num_bit:int=0,radius:int=0,seqfile:str="6_seed_onehot_encoding.csv",group=""):
     """
 
     :param num_bit:
@@ -57,7 +57,7 @@ def build_different_input(x="",num_bit:int=0,radius:int=0,seqfile:str="6_seed_on
                 "data/input_dataframe_withoutstructure_dropatoms{}_drop_duplicate_drop_atom_withtype_bond{}.csv".format(
                     str(num_bit), str(radius)), header=0, index_col=0)
         else:
-            X= pd.read_csv("{}_{}_withtype_bond{}_{}.csv".format(x,numbit,bond,group))
+            X = pd.read_csv("{}_{}_withtype_bond{}_['{}'].csv".format(x,num_bit,radius,group),header=0,index_col=0)
     except:
         data_with_site = pd.read_csv("data/seq_smiles_all_MANUAL.csv", header=0, index_col=0)
         with open('data/diction_atom_all', 'rb') as file1:
@@ -113,9 +113,13 @@ def main():
     d1 = today.strftime("%d_%m_%Y")
     mo_del = Model_class()
     seq=sequences()
-    seq.group_seq_based_on_methylated_type()
+    #seq.group_seq_based_on_methylated_type()
     #seq.group_fg_based_on_methylated_type("data/input_dataframe_withoutstructure_dropatoms2048_drop_duplicate_drop_atom_withtype_bond2.csv",2048,2)
-    #build_different_input("data/group/input_dataframe_dropatoms",128,3,)
+    groups=["As", "O", "S", "N", "C","Te","Se"]
+    # for group in groups:
+    #     parse_data.read_msa_and_encoding("{}".format(group))
+    for group in groups:
+        build_different_input("data/group/input_dataframe_dropatoms",2048,2,seqfile="{}_onehot_encoding.csv".format(group),group=group)
     #parse_data.read_msa_and_encoding(file_name="uniprot_and_manual_align")
     # mo_del.group_by_site()
     #sepreate_input(file="data/input_data/input2048fg_dpna_bond2.csv", numbit = 2048, bond= 2)
