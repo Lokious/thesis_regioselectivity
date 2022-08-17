@@ -209,15 +209,18 @@ class reaction ():
 
         sub_mapnumber_dict = {}
         pro_mapnumber_dict = {}
+
+        #save the symbol and isotope as the key, and atom index as value in dictionary
         for atom in mol_substrate.GetAtoms():
             #isotope is what is set before
-            num = atom.GetSymbol()+str(atom.GetIsotope())
+            sym_and_num = atom.GetSymbol()+str(atom.GetIsotope())
             index = atom.GetIdx()
-            sub_mapnumber_dict[num]=index
+            sub_mapnumber_dict[sym_and_num]=index
         for atom in mol_product.GetAtoms():
-            num = atom.GetSymbol()+str(atom.GetIsotope())
+            sym_and_num = atom.GetSymbol()+str(atom.GetIsotope())
             index = atom.GetIdx()
-            pro_mapnumber_dict[num]=index
+            pro_mapnumber_dict[sym_and_num]=index
+
         for map_index in sub_mapnumber_dict.keys():
             atom_sub = mol_substrate.GetAtomWithIdx(sub_mapnumber_dict[map_index])
             if map_index in pro_mapnumber_dict.keys():
@@ -225,6 +228,7 @@ class reaction ():
             else:
                 continue
             #if atom neighbor increase and this atom is not carbon nor R group, then add it to methylation site list
+            #now the problem here is the index is different in product and substrate sometime, then it will get wrong atom 
             if len(atom_sub.GetNeighbors()) < len(atom_pro.GetNeighbors()):
                 if (atom_sub.GetSymbol()!="C") and (atom_sub.GetSymbol()!="*") :
                     atoms_list.append(atom_sub)
