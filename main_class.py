@@ -112,14 +112,22 @@ def main():
     # dd/mm/YY
     d1 = today.strftime("%d_%m_%Y")
     mo_del = Model_class()
+    data_with_site = pd.read_csv("data/mannual_data.csv", header=0,
+                                 index_col=0)
+    with open('data/methyl_site_dictionary', 'rb') as file1:
+        diction_atom = dill.load(file1)
+    data_with_site = data_with_site.fillna(0)
+    mo_del.save_fingerprints_to_dataframe(data_with_site,diction_atom,128,3,True,"{}_manual_drop_duplicate_drop_atom_withtype_bond{}".format(str(128),str(3)))
+
+
     seq=sequences()
     #seq.group_seq_based_on_methylated_type()
     #seq.group_fg_based_on_methylated_type("data/input_dataframe_withoutstructure_dropatoms2048_drop_duplicate_drop_atom_withtype_bond2.csv",2048,2)
     groups=["As", "O", "S", "N", "C","Te","Se"]
     # for group in groups:
     #     parse_data.read_msa_and_encoding("{}".format(group))
-    for group in groups:
-        build_different_input("data/group/input_dataframe_dropatoms",2048,2,seqfile="{}_onehot_encoding.csv".format(group),group=group)
+    # for group in groups:
+    #     build_different_input("data/group/input_dataframe_dropatoms",2048,2,seqfile="{}_onehot_encoding.csv".format(group),group=group)
     #parse_data.read_msa_and_encoding(file_name="uniprot_and_manual_align")
     # mo_del.group_by_site()
     #sepreate_input(file="data/input_data/input2048fg_dpna_bond2.csv", numbit = 2048, bond= 2)

@@ -221,86 +221,89 @@ class Model_class():
         self_defined_mol_object = molecular()
         input_dataframe = pd.DataFrame()
         current_index = 0
-
+        print(sauce_data)
         for index in sauce_data.index:
 
             print(index)
-            sub_mol = Chem.MolFromSmiles(sauce_data.loc[index,"main_sub"])
-            # print(sub_mol)
-            #Draw.ShowMol(sub_mol, size=(600, 600))
-            sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(mol_object=copy.deepcopy(sub_mol))
-            fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
-                sub_rest_mol, num_bits=num_bits, radius=radius)
-            for atom in sub_mol.GetAtoms():
+            try:
+                sub_mol = Chem.MolFromSmiles(sauce_data.loc[index,"main_sub"])
+                # print(sub_mol)
+                #Draw.ShowMol(sub_mol, size=(600, 600))
+                sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(mol_object=copy.deepcopy(sub_mol))
+                fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
+                    sub_rest_mol, num_bits=num_bits, radius=radius)
+                for atom in sub_mol.GetAtoms():
 
 
-                #set label
+                    #set label
 
-                sy_index =(atom.GetSymbol() + str(atom.GetAtomMapNum()) + ":" + str(atom.GetIsotope()))
-                # print(sy_index)
-                # print(atom_object_dictionary[index])
-                if sy_index in atom_object_dictionary[index]:
-                    print(sy_index)
-                    label = 1
-                else:
-                    label = 0
-                #atom_index_sub = atom.GetAtomMapNum()
-                newrow = {}
-                #if drop_atoms is True, filter out some Carbon whose degree is already 4
-                if drop_atoms and (label != 1):
-                    #print(atom.GetTotalDegree(),atom.GetSymbol())
-                    if (atom.GetTotalDegree() == 4) and (atom.GetSymbol()=="C"):
-                        print("drop C")
-                        continue
+                    sy_index =(atom.GetSymbol() + str(atom.GetAtomMapNum()) + ":" + str(atom.GetIsotope()))
+                    # print(sy_index)
+                    # print(atom_object_dictionary[index])
+                    if sy_index in atom_object_dictionary[index]:
+                        print(sy_index)
+                        label = 1
                     else:
-                        # resrt atom index and then build fingerprint
+                        label = 0
+                    #atom_index_sub = atom.GetAtomMapNum()
+                    newrow = {}
+                    #if drop_atoms is True, filter out some Carbon whose degree is already 4
+                    if drop_atoms and (label != 1):
+                        #print(atom.GetTotalDegree(),atom.GetSymbol())
+                        if (atom.GetTotalDegree() == 4) and (atom.GetSymbol()=="C"):
+                            print("drop C")
+                            continue
+                        else:
+                            # resrt atom index and then build fingerprint
+                            fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
+                                sub_rest_mol, atom_object=atom, num_bits=num_bits,
+                                radius=radius)
+                            # add fingerprint atom index ebedding sequences and label to dataframe
+                            for i, item in enumerate(fingerprint_mol):
+                                newrow[i] = item
+
+                            for j, item in enumerate(fingerprint_atom):
+                                newrow[j + i+1] = item
+
+                            # newrow['atom_index'] = atom_index_sub
+                            add_dataframe = pd.DataFrame(newrow,
+                                                         index=[current_index])
+
+                            input_dataframe = pd.concat(
+                                [input_dataframe, add_dataframe], axis=
+                                0)
+                            input_dataframe.loc[
+                                current_index, "molecular_id"] = "m" + str(index)
+                            input_dataframe.loc[current_index, "label"] = label
+                            input_dataframe.loc[current_index, "Entry"] = \
+                            sauce_data.loc[index, "Entry"]
+                            input_dataframe.loc[current_index, "methyl_type"] = \
+                            sauce_data.loc[index, "methyl_type"]
+                            current_index += 1
+                    else:
+                        #resrt atom index and then build fingerprint
                         fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
-                            sub_rest_mol, atom_object=atom, num_bits=num_bits,
-                            radius=radius)
-                        # add fingerprint atom index ebedding sequences and label to dataframe
-                        for i, item in enumerate(fingerprint_mol):
+                            sub_rest_mol, atom_object=atom, num_bits=num_bits, radius=radius)
+                        #add fingerprint atom index ebedding sequences and label to dataframe
+                        for i,item in enumerate(fingerprint_mol):
                             newrow[i] = item
 
-                        for j, item in enumerate(fingerprint_atom):
-                            newrow[j + i+1] = item
+                        for j,item in enumerate(fingerprint_atom):
+                            newrow[j+i+1] = item
 
-                        # newrow['atom_index'] = atom_index_sub
-                        add_dataframe = pd.DataFrame(newrow,
-                                                     index=[current_index])
+                        #newrow['atom_index'] = atom_index_sub
+                        add_dataframe = pd.DataFrame(newrow,index=[current_index])
 
-                        input_dataframe = pd.concat(
-                            [input_dataframe, add_dataframe], axis=
-                            0)
-                        input_dataframe.loc[
-                            current_index, "molecular_id"] = "m" + str(index)
-                        input_dataframe.loc[current_index, "label"] = label
-                        input_dataframe.loc[current_index, "Entry"] = \
-                        sauce_data.loc[index, "Entry"]
+                        input_dataframe=pd.concat([input_dataframe,add_dataframe],axis=
+                                                  0)
+                        input_dataframe.loc[current_index, "molecular_id"] = "m"+str(index)
+                        input_dataframe.loc[current_index,"label"] = label
+                        input_dataframe.loc[current_index,"Entry"] = sauce_data.loc[index,"Entry"]
                         input_dataframe.loc[current_index, "methyl_type"] = \
-                        sauce_data.loc[index, "methyl_type"]
+                            sauce_data.loc[index, "methyl_type"]
                         current_index += 1
-                else:
-                    #resrt atom index and then build fingerprint
-                    fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
-                        sub_rest_mol, atom_object=atom, num_bits=num_bits, radius=radius)
-                    #add fingerprint atom index ebedding sequences and label to dataframe
-                    for i,item in enumerate(fingerprint_mol):
-                        newrow[i] = item
-
-                    for j,item in enumerate(fingerprint_atom):
-                        newrow[j+i+1] = item
-
-                    #newrow['atom_index'] = atom_index_sub
-                    add_dataframe = pd.DataFrame(newrow,index=[current_index])
-
-                    input_dataframe=pd.concat([input_dataframe,add_dataframe],axis=
-                                              0)
-                    input_dataframe.loc[current_index, "molecular_id"] = "m"+str(index)
-                    input_dataframe.loc[current_index,"label"] = label
-                    input_dataframe.loc[current_index,"Entry"] = sauce_data.loc[index,"Entry"]
-                    input_dataframe.loc[current_index, "methyl_type"] = \
-                        sauce_data.loc[index, "methyl_type"]
-                    current_index += 1
+            except:
+                    continue
         if drop_atoms:
             input_dataframe.to_csv("data/input_dataframe_withoutstructure_dropatoms{}.csv".format(file_name))
             with open("data/input_dataframe_withoutstructure_dropatoms{}".format(file_name), "wb") as dill_file:
@@ -575,7 +578,7 @@ class Model_class():
         :return: randomforest model
         """
 
-        hyperparameters = {'n_estimators': [100,500,2000],
+        hyperparameters = {'n_estimators': [100,500,1000],
                            'max_features': [0.3,0.5,0.7],
 
                            }
@@ -585,7 +588,7 @@ class Model_class():
                              hyperparameters, scoring='roc_auc_ovr_weighted',
                              cv=5,
                              verbose=3,
-                             n_jobs=12)
+                             n_jobs=10)
 
         rf_cv.fit(X_train, y_train)
         print(rf_cv.best_params_)
@@ -608,7 +611,7 @@ class Model_class():
         plt.title(
             "Accuracy with different estimators and features for RF model")
         plt.savefig("Accuracy with different estimators and features for RF model_{}".format(file_name))
-        plt.show()
+        #plt.show()
         fi = pd.DataFrame(data=rf_cv.best_estimator_.feature_importances_, index=X_train.columns,
                           columns=['Importance']) \
             .sort_values(by=['Importance'], ascending=False)
@@ -722,7 +725,7 @@ class Model_class():
         cm = confusion_matrix(y_test, y_pred)
         cm_display = ConfusionMatrixDisplay(cm).plot()
         #cm_display.figure_.savefig('cm_svc_best_parameters{}.png'.format(file_name), dpi=300)
-        plt.show()
+        #plt.show()
         plt.close()
         plt.figure()
         print("svc.cv_results_:{}".format(svc.cv_results_))
@@ -753,7 +756,7 @@ class Model_class():
         display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr,
                                           roc_auc=roc_auc).plot()
         display.figure_.savefig("RF ROC_curve_{}_data".format(file_name))
-        plt.show()
+        #plt.show()
         plt.close()
 
         gmeans=[]
