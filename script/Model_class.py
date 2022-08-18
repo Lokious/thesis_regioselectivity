@@ -9,8 +9,8 @@ datafile should be put in the directory data/ ,this script should be under regio
 includes Rhea-ec_2_1_1.tsv
 """
 import dill
-from script.molecular_class import molecular, reaction
-from script import parse_data
+from molecular_class import Molecule, Reaction,main_substrate
+import parse_data
 #for data structure
 import pandas as pd
 import numpy as np
@@ -53,7 +53,7 @@ class Model_class():
     #def __init__(self):
         #self.check_file_exist()
 
-    def check_file_exist(self,file1='data/seq_smiles_all_MANUAL.csv',file2='data/diction_atom_all'):
+    def check_file_exist(self,file1='../data/seq_smiles_all_MANUAL.csv',file2='../data/diction_atom_all'):
         """
         This function is used to check if the file exit, otherwise create the files
 
@@ -71,15 +71,15 @@ class Model_class():
         except:
             print("missing file{},{}".format(file1,file2))
             print("preparing the file......")
-            rh_file = "data/rawdata/rhea2uniprot_sprot.tsv"
+            rh_file = "../data/rawdata/rhea2uniprot_sprot.tsv"
             rheauniprot_dataframe = parse_data.readrhlist(rh_file)
             #read id and sequences in dataframe
-            seq_file = "data/rawdata/id_tosequence.xlsx" # run with pycharm
+            seq_file = "../data/rawdata/id_tosequence.xlsx" # run with pycharm
             id_seq_dataframe = parse_data.read_sequence(seq_file)
             seq_smiles = self.merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
             #data_frame = self.keep_longest_smile(seq_smiles)
             data_frame=self.keep_methyled_substrate(seq_smiles)
-            data_frame.to_csv("data/seq_dataframe.csv")
+            data_frame.to_csv("../data/seq_dataframe.csv")
             self.return_reactions(data_frame)
 
 
@@ -92,7 +92,7 @@ class Model_class():
             seq_df: dataframe which includes sequences and uniprot entry
         :return:
         """
-        df1 = parse_data.get_substrate_chebi("data/rawdata/Rhea-ec_2_1_1.tsv")
+        df1 = parse_data.get_substrate_chebi("../data/rawdata/Rhea-ec_2_1_1.tsv")
         df1 = parse_data.get_smile(df1)
         df1.index = df1.index.map(lambda x: x.split(":")[1])
         df1["RHEA_ID"] = df1.index
@@ -149,9 +149,8 @@ class Model_class():
                 if len(mol.GetAtoms())<2:
                     pros.remove(pro)
             if len(subs) == len(pros):
-                reaction_object = reaction()
                 #return the smile in list
-                smiles = reaction_object.main_substrate(subs, pros)
+                smiles = main_substrate(subs, pros)
                 if smiles:
                     main_sub, main_pro = smiles[0],smiles[1]
                     dataframe_before.loc[index, "main_sub"] = main_sub
@@ -176,14 +175,14 @@ class Model_class():
             sub = dataframe_rr.loc[index, "main_sub"]
             pro = dataframe_rr.loc[index, "main_pro"]
             if (sub != pro) and sub !=0 and pro !=0:
-                reaction1 = reaction(substrates=sub, products=pro)
+                reaction1 = Reaction(substrates=sub, products=pro)
                 #print(dataframe.loc[index,"RHEA_ID"])
-                #rxn_file_name = "data/rxn_picture/{}".format(dataframe_rr.loc[index,"Entry"])
+                #rxn_file_name = "../data/rxn_picture/{}".format(dataframe_rr.loc[index,"Entry"])
                 #r1 = reaction1.get_reaction_sites(rxn_object=rxn,file_name=rxn_file_name)
                 print("index: {}".format(index))
                 r2, index_list, mainsub_mol = reaction1.get_reactant_atom()
 
-                Draw.MolToFile(mainsub_mol,"data/substrate_mol_picture/{}.png".format(index),size=(600,600))
+                Draw.MolToFile(mainsub_mol,"../data/substrate_mol_picture/{}.png".format(index),size=(600,600))
                 #save atom index(methylation site) from substrate in dataframe
                 site = ",".join(index_list)
                 print(site)
@@ -200,11 +199,11 @@ class Model_class():
             #save list of methyl site atom objects and index to a dictionary
             atom_object_dictionary[index] = site
         else:
-            with open("data/seq_smiles_all", "wb") as dill_file:
+            with open("../data/seq_smiles_all", "wb") as dill_file:
                                 dill.dump(dataframe_rr, dill_file)
-            with open("data/diction_atom_all", "wb") as dill_file:
+            with open("../data/diction_atom_all", "wb") as dill_file:
                 dill.dump(atom_object_dictionary, dill_file)
-            dataframe_rr.to_csv("data/seq_smiles_all.csv")
+            dataframe_rr.to_csv("../data/seq_smiles_all.csv")
 
 
     def save_fingerprints_to_dataframe(self,sauce_data,atom_object_dictionary,num_bits: int = 2048,radius: int = 3,drop_atoms=False,file_name=""):
@@ -218,7 +217,7 @@ class Model_class():
         :return:
         """
 
-        self_defined_mol_object = molecular()
+        self_defined_mol_object = Molecule()
         input_dataframe = pd.DataFrame()
         current_index = 0
         print(sauce_data)
@@ -305,12 +304,12 @@ class Model_class():
             except:
                     continue
         if drop_atoms:
-            input_dataframe.to_csv("data/input_dataframe_withoutstructure_dropatoms{}.csv".format(file_name))
-            with open("data/input_dataframe_withoutstructure_dropatoms{}".format(file_name), "wb") as dill_file:
+            input_dataframe.to_csv("../data/input_dataframe_withoutstructure_dropatoms{}.csv".format(file_name))
+            with open("../data/input_dataframe_withoutstructure_dropatoms{}".format(file_name), "wb") as dill_file:
                 dill.dump(input_dataframe, dill_file)
         else:
-            input_dataframe.to_csv("data/input_dataframe_withoutstructure_{}.csv".format(file_name))
-            with open("data/input_dataframe_withoutstructure_{}".format(file_name), "wb") as dill_file:
+            input_dataframe.to_csv("../data/input_dataframe_withoutstructure_{}.csv".format(file_name))
+            with open("../data/input_dataframe_withoutstructure_{}".format(file_name), "wb") as dill_file:
                 dill.dump(input_dataframe, dill_file)
         return input_dataframe
 
@@ -326,7 +325,7 @@ class Model_class():
         current_index = 0
         mol_id:int = 0
         fingerprint_dataframe = pd.DataFrame()
-        self_defined_mol_object = molecular()
+        self_defined_mol_object = Molecule()
         print(substrate_mol_df)
         for index in substrate_mol_df.index:
             substrate_mol = substrate_mol_df.loc[index,'substrate_mol']
@@ -450,7 +449,7 @@ class Model_class():
         sns.barplot(data=V1_PCA.iloc[:30], x="V_sum", y=V1_PCA.index[:30]).set(
             title='Sum of first 2 loading value of PCA')
 
-        plt.savefig("Sum_of_first_2_loading_value_of_PCA_{}".format(file_name))
+        plt.savefig("../Sum_of_first_2_loading_value_of_PCA_{}".format(file_name))
 
         plt.close()
         pca_df = pd.DataFrame(pca_fit.fit_transform(data_with_site),index=data_with_site.index, columns=PC)
@@ -470,7 +469,7 @@ class Model_class():
         plt.ylabel("pc2")
         plt.title("First two component of PCA coloured by methylation type")
         plt.savefig(
-            "pca_for encoding sequences and fingerprint_{}".format(file_name))
+            "../pca_for encoding sequences and fingerprint_{}".format(file_name))
         plt.clf()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
                  pca_fit.explained_variance_ratio_, '-ro')
@@ -518,7 +517,7 @@ class Model_class():
         plt.ylabel("pc2")
         plt.title("First two component of PCA coloured by label type")
         plt.savefig(
-            "pca_for encoding sequences and fingerprint for label_{}".format(file_name))
+            "../pca_for encoding sequences and fingerprint for label_{}".format(file_name))
         #plt.show()
         plt.close()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
@@ -526,16 +525,16 @@ class Model_class():
         plt.ylabel('Proportion of Variance Explained for label_{}'.format(file_name))
         plt.xlabel("components")
         plt.savefig(
-            'Proportion of Variance Explained_{}'.format(file_name))
+            '../Proportion of Variance Explained_{}'.format(file_name))
         #plt.show()
         plt.clf()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
                  np.cumsum(pca_fit.explained_variance_ratio_), '-o')
         plt.ylabel(
-            'Cumulative Proportion of Variance Explained foe label_{}'.format(file_name))
+            '../Cumulative Proportion of Variance Explained foe label_{}'.format(file_name))
         plt.xlabel("components")
         plt.savefig(
-            'Cumulative Proportion of Variance Explained foe label_{}'.format(file_name))
+            '../Cumulative Proportion of Variance Explained foe label_{}'.format(file_name))
         #plt.show()
         plt.close()
 
@@ -610,7 +609,7 @@ class Model_class():
         plt.ylabel("roc_auc_ovr_weighted (mean 5-fold CV)")
         plt.title(
             "Accuracy with different estimators and features for RF model")
-        plt.savefig("Accuracy with different estimators and features for RF model_{}".format(file_name))
+        plt.savefig("../Accuracy with different estimators and features for RF model_{}".format(file_name))
         #plt.show()
         fi = pd.DataFrame(data=rf_cv.best_estimator_.feature_importances_, index=X_train.columns,
                           columns=['Importance']) \
@@ -620,7 +619,7 @@ class Model_class():
         sns.barplot(data=fi.head(20), x="Importance", y=(fi.head(20)).index).set_title(
             "feature importance for RF model")
         #fig = ax.get_figure()
-        plt.savefig('trainmodel_output_figure/feature_importance{}.png'.format(file_name))
+        plt.savefig('../trainmodel_output_figure/feature_importance{}.png'.format(file_name))
         plt.close()
 
 
@@ -702,12 +701,12 @@ class Model_class():
         sns.barplot(data=fi.head(20), x="Importance", y=(fi.head(20)).index).set_title(
             "feature importance for RF model")
         #fig = ax.get_figure()
-        plt.savefig('feature_importance{}.png'.format(file_name))
+        plt.savefig('../feature_importance{}.png'.format(file_name))
         plt.close()
 
         """
         # #save model
-        # filename = 'data/model/rf_test_model_cv{}'.format(file_name)
+        # filename = '../data/model/rf_test_model_cv{}'.format(file_name)
         # joblib.dump(rf_cv, filename)
         # return rf_cv
     def SVM(self,X_train, X_test, y_train, y_test,file_name="",i:int=0):
@@ -736,7 +735,7 @@ class Model_class():
         plt.ylabel("Accuracy (mean 5-fold CV)")
         plt.title(
             "Accuracy with different estimators and features for SVC model")
-        #plt.savefig("Accuracy with different estimators and features for SVC model_{}".format(file_name))
+        #plt.savefig("../Accuracy with different estimators and features for SVC model_{}".format(file_name))
 
     def svc_linear(self):
         from sklearn.svm import LinearSVC
@@ -755,7 +754,7 @@ class Model_class():
         roc_auc = metrics.auc(fpr, tpr)
         display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr,
                                           roc_auc=roc_auc).plot()
-        display.figure_.savefig("RF ROC_curve_{}_data".format(file_name))
+        display.figure_.savefig("../RF ROC_curve_{}_data".format(file_name))
         #plt.show()
         plt.close()
 
@@ -785,7 +784,7 @@ class Model_class():
                 "RF confusion matrix with best parameters_threshold:{}".format(
                     threshold))
             cm_display.figure_.savefig(
-                'trainmodel_output_figure/cm_threshold{}_{}.png'.format(
+                '../trainmodel_output_figure/cm_threshold{}_{}.png'.format(
                     threshold, file_name), dpi=300)
             # plt.show()
             plt.close()
@@ -803,7 +802,7 @@ class Model_class():
         else:
             if enzyme_sequences=="":
                 #load model
-                model = joblib.load('data/model/rf_test_model')
+                model = joblib.load('../data/model/rf_test_model')
         #create new columns
         substrate_smile_df["substrate_mol"] = pd.DataFrame(
             len(substrate_smile_df.index) * [0]).astype('object')
@@ -813,7 +812,7 @@ class Model_class():
             try:
                 substrate = Chem.MolFromSmiles(substrate_smile)
                 #reset model index and mapnumber
-                self_defined_mol_object = molecular()
+                self_defined_mol_object = Molecule()
                 substrate, no_use_virable = self_defined_mol_object.mol_with_atom_index(mol_object =substrate)
 
                 substrate_smile_df.loc[index,"substrate_mol"] = substrate
@@ -825,7 +824,7 @@ class Model_class():
         methyl_site_atom = {}
 
         #need to chang to prepare data based on model
-        fingerprint_df=fingerprint_df_preapare(substrate_df,num_bits=num_bits,radius=3)
+        fingerprint_df=self.fingerprint_df_preapare(substrate_df,num_bits=num_bits,radius=3)
         Y = model.predict(fingerprint_df[list(fingerprint_df.columns)[:-2]])
         print(Y)
 
@@ -857,12 +856,19 @@ class Model_class():
 
         if (dataset == None) or (inputmodel == None):
         #then do with test data
-            loded_data=pd.read_excel("data/prediction_test.xlsx", header=0, index_col=0)
+            loded_data=pd.read_excel("../data/prediction_test.xlsx", header=0, index_col=0)
             print(loded_data)
-            methyl_site_atom= predict(loded_data,num_bits=1024)
+            methyl_site_atom= self.predict(loded_data,num_bits=1024)
             print(methyl_site_atom)
-
-
+class Testreaction_class(unittest.TestCase):
+    def test0_keep_methyled_substrate(self):
+        df1=pd.DataFrame()
+        df1["sub_smiles"]=["c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18OH:49])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].C[S+:1]([1CH2:2][2CH2:3][3C@H:4]([NH3+:5])[4C:6]([O-:7])=[1O:8])[5CH2:9][6C@H:10]1[2O:11][7C@@H:12]([1n:17]2[10cH:18][2n:19][11c:20]3[12c:21]2[3n:22][13cH:23][4n:24][14c:25]3[5NH2:26])[8C@H:13]([3OH:14])[9C@@H:15]1[4OH:16]"]*2
+        df1["pro_smiles"]=["c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18O:49][22CH3:57])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].[C@H]1([2OH:6])[1C@@H:1]([1OH:5])[2C@H:2]([n:7]2[4c:8]3[6c:10]([2n:12][5cH:9]2)[7c:13]([4NH2:16])[3n:15][8cH:14][1n:11]3)[O:3][3C@@H:4]1[9CH2:17][S:18][10CH2:19][11CH2:20][12C@@H:21]([13C:24]([3O-:22])=[4O:23])[5NH3+:25]"]*2
+        mol = Model_class()
+        df2=mol.keep_methyled_substrate(df1)
+        print(df2)
+        self.assertEqual(df2.loc[0,"main_sub"],"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18OH:49])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14]")
 def main():
     unittest.main()
 

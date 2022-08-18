@@ -18,11 +18,11 @@ from rdkit.Chem import RDKFingerprint, SDMolSupplier
 from rdkit.Chem.Draw import IPythonConsole
 from rdkit.Chem import Draw, AllChem, rdChemReactions
 #import pikachu
-from script.molecular_class import molecular
+from molecular_class import Molecule
 import glob
 import dill
 from Bio import AlignIO
-from script.sequence import sequences
+from sequence import sequences
 import numpy as np
 
 
@@ -172,7 +172,7 @@ def get_smile(datasets)->pd.DataFrame:
                     download.write(content)
                 print("downloading the missing file: {},pleaze rerun the code".format(sub.replace(":","_")))
             if mol:
-                mol_ob = molecular()
+                mol_ob = Molecule()
                 mol,j = mol_ob.mol_with_atom_index(mol_object=mol,index={})
                 smile = Chem.MolToSmiles(mol)
                 smiles.append(smile)
@@ -197,7 +197,7 @@ def get_smile(datasets)->pd.DataFrame:
                     download.write(content)
                 print("downloading the missing file: {},pleaze rerun the code".format(pro.replace(":","_")))
             if mol:
-                mol_ob = molecular()
+                mol_ob = Molecule()
                 mol,j = mol_ob.mol_with_atom_index(mol_object=mol, index={})
                 smile = Chem.MolToSmiles(mol)
                 smiles.append(smile)
@@ -244,7 +244,7 @@ def read_mannual_data(file=r"E:\Download\regioselectivity_prediction\data\mannua
     methyl_site_dictionary = {}
     for index in manual_data.index:
         smile = manual_data.loc[index,'substrate_smiles']
-        mol_ob = molecular()
+        mol_ob = Molecule()
         mol, j = mol_ob.mol_with_atom_index(smile=smile)
         try:
             methyl_site_dictionary[index] = (manual_data.loc[index,'reactant_site']).split(",")

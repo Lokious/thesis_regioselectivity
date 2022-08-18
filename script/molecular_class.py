@@ -36,8 +36,7 @@ class Molecule:  # classes are written in CamelCase
     def calculate_smile(self):
         smiles = Chem.MolToSmiles(mol)
         self.smiles = smiles
-        
-    def mol_with_atom_index(self, smiles="", mol_object=None, index={}):
+
     # example with `input`, with type annotations (https://docs.python.org/3/library/typing.html):
     def mol_with_atom_index(self, input: typing.Optional[typing.Union[str, Chem.Mol]] = None, index: dict = dict()): 
         """Return mol object with index, input could be smiles or mol #  it is not clear to me from the docstring what the returned index is
@@ -46,36 +45,12 @@ class Molecule:  # classes are written in CamelCase
         mol_object: create by rdkit or read from file
         index: dictionary, key is atom type<O,N,...> value is the largest index for this atom type plus 1
         """
-        # instead of evaluating two different inputs (`mol_object` and `smiles`), you can also check an `input` variable like this:
+        atom_type = index
         if isinstance(input, str): 
             # evaluate if SMILES string is valid...
-            # do something with SMILES...
-        elif isinstance(input, Chem.Mol):
-            # do something with RDKit Mol object...
-        
-        # if the input has mol_object
-        if mol_object:
-            # set i here in order to make the atom from all substrates has different mapnumber
-            atom_type = index  # why do you reassign in `index` top `atom_type`?
-            
-            for atom in mol_object.GetAtoms():
-                atom_symbol = atom.GetSymbol()  # use as little abbreviations as possible, makes code easier to understand 
-                if atom_symbol not in atom_type.keys():
-                    # make sure no repeat number  # watch the spelling
-                    atom_type[atom_symbol] = 0
-                atom.SetAtomMapNum(atom.GetIdx())
-                # save the index in isotope just for keeeping the index for later use
-                atom.SetIsotope(atom_type[atom_symbol])
-                atom_type[atom_symbol] += 1
-
-            return mol_object,atom_type
-        
-        # if no mol_object input, but have smile input
-        elif smiles:
-
             mol = Chem.MolFromSmiles(smile)
             if mol:
-                atom_type = index
+
                 for atom in mol.GetAtoms():
 
                     if atom.GetSymbol() not in atom_type.keys():
@@ -85,12 +60,30 @@ class Molecule:  # classes are written in CamelCase
                     # save the index in isotope just for keeeping the index for later use
                     atom.SetIsotope(atom_type[atom.GetSymbol()])
                     atom_type[atom.GetSymbol()] += 1
-                    
+
                 return mol, atom_type
-            
             else:
-                print(f"warning: cannot due with this smiles: {smiles}")  # what does this message mean exactly? I know this is draft code, but make sure the English is correct 
+                print(f"warning: can not deal with this SMILE: {smiles}")  # what does this message mean exactly? I know this is draft code, but make sure the English is correct
                 return None, index
+        elif isinstance(input, Chem.Mol):
+            # do something with RDKit Mol object...
+                # set i here in order to make the atom from all substrates has different mapnumber
+            for atom in mol_object.GetAtoms():
+                atom_symbol = atom.GetSymbol()  # use as little abbreviations as possible, makes code easier to understand
+                if atom_symbol not in atom_type.keys():
+                    # make sure no repeat number  # watch the spelling
+                    atom_type[atom_symbol] = 0
+                atom.SetAtomMapNum(atom.GetIdx())
+                # save the index in isotope just for keeping the index for later use
+                atom.SetIsotope(atom_type[atom_symbol])
+                atom_type[atom_symbol] += 1
+
+            return mol_object, atom_type
+        
+
+
+            
+
             
         else:
             print("missing input")
@@ -114,8 +107,7 @@ class Molecule:  # classes are written in CamelCase
         # initialize a numpy array for molecular fingerprint
         bit_fingerprint_mol = np.zeros(
             (0,),
-            dtype=int)  # (one dimention, 0 is number of rows
-       )
+            dtype=int)  # (one dimention, 0 is number of rows)
 
         #returns an RDKit vector object.
 
@@ -316,60 +308,60 @@ class Reaction:
     
     
     # I don't see `self` being used in this function and based on that alone I would make it a stand-alone function. 
-    def main_substrate(self, subs, pros):
-        """
-        This is the function for find the substrate which is methylated among all and the product
+def main_substrate(subs, pros):
+    """
+    This is the function for find the substrate which is methylated among all and the product
 
-        :param subs: list of substrate smiles from one reaction
-        :param pros: list of product smiles from the same reaction
-        :return:the substrate which is methylated among all and the corresponding product
-        """
-        sim_dictionary = {}
-        mol_object = molecular()
-        reaction_object = reaction()
-        
-        for i, mol1_smile in enumerate(subs):
+    :param subs: list of substrate smiles from one reaction
+    :param pros: list of product smiles from the same reaction
+    :return:the substrate which is methylated among all and the corresponding product
+    """
+    sim_dictionary = {}
+    mol_object = Molecule()
+    reaction_object = Reaction()
+
+    for i, mol1_smile in enumerate(subs):
+        try:
+            mol1 = Chem.MolFromSmiles(mol1_smile)
+            sub_fg = mol_object.create_fingerprint_mol(substrate_molecular=mol1)
+        except:
+            return None
+
+        for j,mol2_smile in enumerate(pros):
             try:
-                mol1 = Chem.MolFromSmiles(mol1_smile)
-                sub_fg = mol_object.create_fingerprint_mol(substrate_molecular=mol1)
+                mol2 = Chem.MolFromSmiles(mol2_smile)
+                pro_fg = mol_object.create_fingerprint_mol(substrate_molecular=mol2)
             except:
                 return None
-            
-            for j,mol2_smile in enumerate(pros):
-                try:
-                    mol2 = Chem.MolFromSmiles(mol2_smile)
-                    pro_fg = mol_object.create_fingerprint_mol(substrate_molecular=mol2)
-                except:
-                    return None
 
-                sim_dictionary[(i, j)] = reaction_object.fingerprint_similiarity(
-                    sub_fg,
-                    pro_fg,
-                    mol1=mol1,
-                    mol2=mol2
-                )
-                
-        similarity_list_top_2 = list(
-            sorted(
-                sim_dictionary.items(),
-                reverse=True,
-                key=lambda item: item[1]
+            sim_dictionary[(i, j)] = reaction_object.fingerprint_similiarity(
+                sub_fg,
+                pro_fg,
+                mol1=mol1,
+                mol2=mol2
             )
-        )[:2]
-        
-        for key in similarity_list_top_2:
-            i = key[0][0]
-            j= key[0][1]
-            
-            # the documentation below is not quite clear to me
-            
-            #this function assumed the similarity of fingerprint betwween molecular before methylation
-            #and after methylation should be higher than this molecular with other molecular
-            #the methyl donor molecular will become smaller after reaction
-            if (len(pros[j]) > len(subs[i])) and (pros[j] != 0) and (subs[i] != 0 ):
-                return [subs[i], pros[j]]
-            else:
-                continue
+
+    similarity_list_top_2 = list(
+        sorted(
+            sim_dictionary.items(),
+            reverse=True,
+            key=lambda item: item[1]
+        )
+    )[:2]
+
+    for key in similarity_list_top_2:
+        i = key[0][0]
+        j= key[0][1]
+
+        # the documentation below is not quite clear to me
+
+        #this function assumed the similarity of fingerprint betwween molecular before methylation
+        #and after methylation should be higher than this molecular with other molecular
+        #the methyl donor molecular will become smaller after reaction
+        if (len(pros[j]) > len(subs[i])) and (pros[j] != 0) and (subs[i] != 0 ):
+            return [subs[i], pros[j]]
+        else:
+            continue
                 
                 
 class Testreaction_class(unittest.TestCase):
