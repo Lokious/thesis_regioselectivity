@@ -79,7 +79,7 @@ class Model_class():
             seq_smiles = self.merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
             #data_frame = self.keep_longest_smile(seq_smiles)
             data_frame=self.keep_methyled_substrate(seq_smiles)
-            data_frame.to_csv("../data/seq_dataframe.csv")
+            data_frame.to_csv("../data/seq_smiles_all_script.csv")
             self.return_reactions(data_frame)
 
 
@@ -168,30 +168,43 @@ class Model_class():
         atom_object_dictionary = {}
         dataframe_rr["reactant_site"] = pd.DataFrame(
             len(dataframe_rr.index) * [0]).astype('object')
-        dataframe_rr["mainsub_mol"] = pd.DataFrame(
-            len(dataframe_rr.index) * [0]).astype('object')
+        # dataframe_rr["mainsub_mol"] = pd.DataFrame(
+        #     len(dataframe_rr.index) * [0]).astype('object')
         for index in dataframe_rr.index:
-            rxn = dataframe_rr.loc[index,"rxn"]
+
             sub = dataframe_rr.loc[index, "main_sub"]
             pro = dataframe_rr.loc[index, "main_pro"]
             if (sub != pro) and sub !=0 and pro !=0:
-                reaction1 = Reaction(substrates=sub, products=pro)
+                reaction1 = Reaction()
                 #print(dataframe.loc[index,"RHEA_ID"])
                 #rxn_file_name = "../data/rxn_picture/{}".format(dataframe_rr.loc[index,"Entry"])
                 #r1 = reaction1.get_reaction_sites(rxn_object=rxn,file_name=rxn_file_name)
                 print("index: {}".format(index))
-                r2, index_list, mainsub_mol = reaction1.get_reactant_atom()
-
-                Draw.MolToFile(mainsub_mol,"../data/substrate_mol_picture/{}.png".format(index),size=(600,600))
+                pro_mol,remove_methyl_smile,list_methylsite,check = reaction1.get_reaction_sites(pro,sub)
+                Draw.MolToFile(pro_mol,
+                               "../pro_fig/{}_pro.png".format(index))
+                rxn = AllChem.ReactionFromSmarts((remove_methyl_smile+">>"+Chem.MolToSmiles(pro_mol)))
+                d2d=Draw.MolDraw2DCairo(800, 800)
+                d2d.DrawReaction(rxn)
+                png = d2d.GetDrawingText()
+                open('../autodata/rxn_picture/reaction{}.png'.format(index), 'wb+').write(png)
+                #Draw.MolToFile(mainsub_mol,"../data/substrate_mol_picture/{}.png".format(index),size=(600,600))
                 #save atom index(methylation site) from substrate in dataframe
-                site = ",".join(index_list)
+                site = ",".join(list_methylsite)
                 print(site)
-                dataframe_rr.loc[index,"mainsub_mol"] = mainsub_mol
-
+                #dataframe_rr.loc[index,"mainsub_mol"] = mainsub_mol
+                dataframe_rr.loc[index, "main_sub"] =remove_methyl_smile
+                dataframe_rr.loc[index, "check"] = check
             else:
                 site = ""
             if site != "":
                 dataframe_rr.loc[index, "reactant_site"] = site
+                type = site.split(",")
+                methyl_type=""
+                for i in type:
+                    methyl_type = i.split(":")+methyl_type+"_"
+                print(methyl_type)
+                dataframe_rr.loc[index, "methyl_type"]=methyl_type
             else:
                 #because we use the largest molecular, but for some substrates, methyl donor is larger
                 #we first leave those
@@ -199,11 +212,11 @@ class Model_class():
             #save list of methyl site atom objects and index to a dictionary
             atom_object_dictionary[index] = site
         else:
-            with open("../data/seq_smiles_all", "wb") as dill_file:
+            with open("../autodata/seq_smiles_all", "wb") as dill_file:
                                 dill.dump(dataframe_rr, dill_file)
-            with open("../data/diction_atom_all", "wb") as dill_file:
+            with open("../autodata/diction_atom_all", "wb") as dill_file:
                 dill.dump(atom_object_dictionary, dill_file)
-            dataframe_rr.to_csv("../data/seq_smiles_all.csv")
+            dataframe_rr.to_csv("../autodata/seq_smiles_all.csv")
 
 
     def save_fingerprints_to_dataframe(self,sauce_data,atom_object_dictionary,num_bits: int = 2048,radius: int = 3,drop_atoms=False,file_name=""):
@@ -228,15 +241,12 @@ class Model_class():
                 sub_mol = Chem.MolFromSmiles(sauce_data.loc[index,"main_sub"])
                 # print(sub_mol)
                 #Draw.ShowMol(sub_mol, size=(600, 600))
-                sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(mol_object=copy.deepcopy(sub_mol))
+                sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(copy.deepcopy(sub_mol))
                 fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
                     sub_rest_mol, num_bits=num_bits, radius=radius)
                 for atom in sub_mol.GetAtoms():
-
-
                     #set label
-
-                    sy_index =(atom.GetSymbol() + str(atom.GetAtomMapNum()) + ":" + str(atom.GetIsotope()))
+                    sy_index =(atom.GetSymbol() + ":" + str(atom.GetIsotope()))
                     # print(sy_index)
                     # print(atom_object_dictionary[index])
                     if sy_index in atom_object_dictionary[index]:
@@ -304,12 +314,12 @@ class Model_class():
             except:
                     continue
         if drop_atoms:
-            input_dataframe.to_csv("../data/input_dataframe_withoutstructure_dropatoms{}.csv".format(file_name))
-            with open("../data/input_dataframe_withoutstructure_dropatoms{}".format(file_name), "wb") as dill_file:
+            input_dataframe.to_csv("../autodata/input_dataframe_withoutstructure_dropatoms{}.csv".format(file_name))
+            with open("../autodata/input_dataframe_withoutstructure_dropatoms{}".format(file_name), "wb") as dill_file:
                 dill.dump(input_dataframe, dill_file)
         else:
-            input_dataframe.to_csv("../data/input_dataframe_withoutstructure_{}.csv".format(file_name))
-            with open("../data/input_dataframe_withoutstructure_{}".format(file_name), "wb") as dill_file:
+            input_dataframe.to_csv("../autodata/input_dataframe_withoutstructure_{}.csv".format(file_name))
+            with open("../autodata/input_dataframe_withoutstructure_{}".format(file_name), "wb") as dill_file:
                 dill.dump(input_dataframe, dill_file)
         return input_dataframe
 
@@ -860,17 +870,19 @@ class Model_class():
             print(loded_data)
             methyl_site_atom= self.predict(loded_data,num_bits=1024)
             print(methyl_site_atom)
-class Testreaction_class(unittest.TestCase):
-    def test0_keep_methyled_substrate(self):
-        df1=pd.DataFrame()
-        df1["sub_smiles"]=["c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18OH:49])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].C[S+:1]([1CH2:2][2CH2:3][3C@H:4]([NH3+:5])[4C:6]([O-:7])=[1O:8])[5CH2:9][6C@H:10]1[2O:11][7C@@H:12]([1n:17]2[10cH:18][2n:19][11c:20]3[12c:21]2[3n:22][13cH:23][4n:24][14c:25]3[5NH2:26])[8C@H:13]([3OH:14])[9C@@H:15]1[4OH:16]"]*2
-        df1["pro_smiles"]=["c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18O:49][22CH3:57])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].[C@H]1([2OH:6])[1C@@H:1]([1OH:5])[2C@H:2]([n:7]2[4c:8]3[6c:10]([2n:12][5cH:9]2)[7c:13]([4NH2:16])[3n:15][8cH:14][1n:11]3)[O:3][3C@@H:4]1[9CH2:17][S:18][10CH2:19][11CH2:20][12C@@H:21]([13C:24]([3O-:22])=[4O:23])[5NH3+:25]"]*2
-        mol = Model_class()
-        df2=mol.keep_methyled_substrate(df1)
-        print(df2)
-        self.assertEqual(df2.loc[0,"main_sub"],"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18OH:49])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14]")
+# class Testreaction_class(unittest.TestCase):
+#     def test0_keep_methyled_substrate(self):
+#         df1=pd.DataFrame()
+#         df1["sub_smiles"]=["c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18OH:49])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].C[S+:1]([1CH2:2][2CH2:3][3C@H:4]([NH3+:5])[4C:6]([O-:7])=[1O:8])[5CH2:9][6C@H:10]1[2O:11][7C@@H:12]([1n:17]2[10cH:18][2n:19][11c:20]3[12c:21]2[3n:22][13cH:23][4n:24][14c:25]3[5NH2:26])[8C@H:13]([3OH:14])[9C@@H:15]1[4OH:16]"]*2
+#         df1["pro_smiles"]=["c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18O:49][22CH3:57])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].[C@H]1([2OH:6])[1C@@H:1]([1OH:5])[2C@H:2]([n:7]2[4c:8]3[6c:10]([2n:12][5cH:9]2)[7c:13]([4NH2:16])[3n:15][8cH:14][1n:11]3)[O:3][3C@@H:4]1[9CH2:17][S:18][10CH2:19][11CH2:20][12C@@H:21]([13C:24]([3O-:22])=[4O:23])[5NH3+:25]"]*2
+#         mol = Model_class()
+#         df2=mol.keep_methyled_substrate(df1)
+#         print(df2)
+#         self.assertEqual(df2.loc[0,"main_sub"],"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18OH:49])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14]")
 def main():
-    unittest.main()
+    #unittest.main()
+    model=Model_class()
+    model.check_file_exist("../autodata/seq_smiles_all_script.csv","../autodata/diction_atom__all")
 
 
 

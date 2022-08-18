@@ -190,7 +190,7 @@ class Reaction:
             substrate_smiles:sting,the SMILES of Molecule before methylation
         :return:
         """
-        #remove AtomMapNum and Isotope then they will not affect similarity
+        #remove AtomMapNum and Isotope, avoiding affect the similarity
         product_mol = Chem.MolFromSmiles(product_smiles)
         for atom in product_mol.GetAtoms():
             atom.SetAtomMapNum(0)
@@ -208,36 +208,44 @@ class Reaction:
         possiable_list=[]
         for atom in product_mol.GetAtoms():
             #do not consider C-methylation here
-            if atom.GetSymbol() !="C":
-                neighbours = atom.GetNeighbors()
-                for neighbour_atom in neighbours:
-                    if ((neighbour_atom.GetSymbol()=="C") and (neighbour_atom.GetDegree()==1)):
-                        #print(atom.GetIdx(),atom.GetSymbol())
-                        #mol_save_status = mol
-                        try:
-                            #save possiable atoms to a list, if remove one do not get 100% similarity substrate
-                            #the list will be use later
-                            mol = Chem.EditableMol(product_mol)
-                            mol.RemoveAtom(neighbour_atom.GetIdx())
-                            possiable_list.append(neighbour_atom.GetIdx())
-                            # Draw.ShowMol(mol.GetMol(), (600, 600))
-                            # Draw.ShowMol(substrate_mol, (600, 600))
-                        except:
-                            continue
-                        similiarity = DataStructs.FingerprintSimilarity(
-                            Chem.RDKFingerprint(mol.GetMol()),
-                            Chem.RDKFingerprint(substrate_mol))
-                        print(similiarity)
-                        if similiarity==1:
-                            atom_index_list.append(
-                                atom.GetSymbol() + ":"+str(
-                                    atom.GetIdx()))
-                            mol_remove_methylation = mol.GetMol()
-                            print("check")
-                            return product_mol,Chem.MolToSmiles(mol_remove_methylation),atom_index_list,"Pass_Check"
-                        else:
-                            #mol=mol_save_status
-                            continue
+            # if atom.GetSymbol() !="C":
+            #     neighbours = atom.GetNeighbors()
+            #     for neighbour_atom in neighbours:
+            #find -CH3 group
+            if ((atom.GetSymbol()=="C") and (atom.GetDegree()==1)):
+
+                #try to remove this -CH3 group
+                mol = Chem.EditableMol(product_mol)
+                mol.RemoveAtom(atom.GetIdx())
+                #save possiable atoms to a list, if remove one do not get 100% similarity substrate
+                #the list will be use later
+                possiable_list.append(atom.GetIdx())
+                # Draw.ShowMol(mol.GetMol(), (600, 600))
+                # Draw.ShowMol(substrate_mol, (600, 600))
+                #compare similarity between substrate and molecule after remove -CH3
+                similiarity = DataStructs.FingerprintSimilarity(
+                    Chem.RDKFingerprint(mol.GetMol()),
+                    Chem.RDKFingerprint(substrate_mol))
+                print(similiarity)
+                #if similarity equals 1, it matches the substrate,
+                if similiarity==1:
+                    #rest isotope
+                    neighbour_atom=(product_mol.GetAtomWithIdx(atom.GetIdx())).GetNeighbors()[0]
+                    atom_index_list.append(
+                        neighbour_atom.GetSymbol() + ":"+str(
+                            neighbour_atom.GetIdx()))
+                    for atom1 in product_mol.GetAtoms():
+                        atom1.SetIsotope(atom1.GetIdx())
+                    #reset the mol and remove the methlation group, keep the isotope
+                    mol=Chem.EditableMol(product_mol)
+                    mol.RemoveAtom(atom.GetIdx())
+                    mol_remove_methylation = mol.GetMol()
+                    #Draw.ShowMol(mol_remove_methylation, (600, 600))
+                    print("check")
+                    return product_mol,Chem.MolToSmiles(mol_remove_methylation),atom_index_list,"Pass_Check"
+                else:
+                    #mol=mol_save_status
+                    continue
         #remove multiple methylation group
         from itertools import combinations
         index_combination_list=list(combinations(possiable_list, 2))
@@ -255,12 +263,19 @@ class Reaction:
                 Chem.RDKFingerprint(substrate_mol))
             print(similiarity)
             if similiarity ==1:
+
                 atom = (product_mol.GetAtomWithIdx(i)).GetNeighbors()[0]
                 atom_index_list.append(
                     atom.GetSymbol() + ":"+str(
                         atom.GetIdx()))
                 print(atom.GetSymbol() + ":"+str(
                         atom.GetIdx()))
+                # rest isotope
+                for atom1 in product_mol.GetAtoms():
+                    atom1.SetIsotope(atom1.GetIdx())
+                # reset the mol and remove the methlation group, keep the isotope
+                mol = Chem.EditableMol(product_mol)
+                mol.RemoveAtom(atom.GetIdx())
                 mol_remove_methylation = mol.GetMol()
                 #Draw.ShowMol(mol.GetMol(), (600, 600))
                 print("check")

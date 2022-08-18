@@ -9,5 +9,6 @@ data/input_dataframe_withoutstructure_2048
 data/input_dataframe_withoutstructure_1024.csv
 data/input_dataframe_withoutstructure_1024
 data/*
+autodata/*
 *.png
 #data/seq_smiles.csv

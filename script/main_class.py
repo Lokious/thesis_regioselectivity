@@ -42,7 +42,7 @@ def run_model_for_group_data(input:pd.DataFrame,filename:str="",num_bit:int=2048
     # model2 = mo_del.SVM(X_train, X_test, y_train, y_test,
     #                         "_{}_{}".format(filename,str(num_bit)))
 
-def build_different_input(x="",num_bit:int=0,radius:int=0,seqfile:str="6_seed_onehot_encoding.csv",group=""):
+def build_different_input(auto="",x="",num_bit:int=0,radius:int=0,seqfile:str="6_seed_onehot_encoding.csv",group=""):
     """
 
     :param num_bit:
@@ -54,13 +54,13 @@ def build_different_input(x="",num_bit:int=0,radius:int=0,seqfile:str="6_seed_on
     try:
         if x=="":
             X = pd.read_csv(
-                "../data/input_dataframe_withoutstructure_dropatoms{}_drop_duplicate_drop_atom_withtype_bond{}.csv".format(
+                "../{}data/input_dataframe_withoutstructure_dropatoms{}_drop_duplicate_drop_atom_withtype_bond{}.csv".format(auto,
                     str(num_bit), str(radius)), header=0, index_col=0)
         else:
             X = pd.read_csv("{}_{}_withtype_bond{}_['{}'].csv".format(x,num_bit,radius,group),header=0,index_col=0)
     except:
-        data_with_site = pd.read_csv("../data/seq_smiles_all_MANUAL.csv", header=0, index_col=0)
-        with open('../data/diction_atom_all', 'rb') as file1:
+        data_with_site = pd.read_csv("../{}data/seq_smiles_all.csv".format(auto), header=0, index_col=0)
+        with open('../{}data/diction_atom_all'.format(auto), 'rb') as file1:
             diction_atom = dill.load(file1)
         X = mo_del.save_fingerprints_to_dataframe(data_with_site, diction_atom,
                                                   num_bit, radius,
@@ -68,7 +68,7 @@ def build_different_input(x="",num_bit:int=0,radius:int=0,seqfile:str="6_seed_on
                                                   file_name="{}_drop_duplicate_drop_atom_withtype_bond{}".format(str(num_bit),str(radius)))
     print(X)
 
-    add_dataframe = pd.read_csv("../data/protein_encoding/{}".format(seqfile), header=0, index_col=0)
+    add_dataframe = pd.read_csv("../{}data/protein_encoding/{}".format(auto,seqfile), header=0, index_col=0)
     print(add_dataframe)
 
     start_index = num_bit*2
@@ -87,7 +87,7 @@ def build_different_input(x="",num_bit:int=0,radius:int=0,seqfile:str="6_seed_on
         print("####rename column finished####")
         print(add_dataframe)
         add_dataframe.to_csv(
-                "data/protein_encoding/{}_{}fg.csv".format(seqfile,str(num_bit)))
+                "../{}data/protein_encoding/{}_{}fg.csv".format(auto,seqfile,str(num_bit)))
     print("merging fingerprint and sequences encoding---------")
     input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
     print(input_dataframe)
@@ -95,9 +95,9 @@ def build_different_input(x="",num_bit:int=0,radius:int=0,seqfile:str="6_seed_on
     print(input_dataframe)
     print("saving input data.......")
     #
-    input_dataframe.to_csv("../data/input_data/input{}fg_dpna_bond{}_{}.csv".format(str(num_bit),str(radius),seqfile))
+    input_dataframe.to_csv("../{}data/input_data/input{}fg_dpna_bond{}_{}.csv".format(auto,str(num_bit),str(radius),seqfile))
 
-def sepreate_input(file="",numbit:int=2048,bond:int=2):
+def sepreate_input(auto="",file="",numbit:int=2048,bond:int=2):
     input_dataall=pd.read_csv(file,header=0,index_col=0)
     seprate_dataset = input_dataall.groupby(by=["methyl_type"])
     for group in seprate_dataset.groups:
@@ -106,19 +106,19 @@ def sepreate_input(file="",numbit:int=2048,bond:int=2):
         print(group)
         sub_df.reset_index(drop=True,inplace=True)
 
-        sub_df.to_csv("../data/input_data/group/{}_{}_{}.csv".format(group,str(numbit),str(bond)))
+        sub_df.to_csv("../{}data/input_data/group/{}_{}_{}.csv".format(auto,group,str(numbit),str(bond)))
 def main():
     today = date.today()
     # dd/mm/YY
     d1 = today.strftime("%d_%m_%Y")
     mo_del = Model_class()
-    data_with_site = pd.read_csv("../data/mannual_data.csv", header=0,
-                                 index_col=0)
-    with open('../data/methyl_site_dictionary', 'rb') as file1:
-        diction_atom = dill.load(file1)
-    data_with_site = data_with_site.fillna(0)
-    mo_del.save_fingerprints_to_dataframe(data_with_site,diction_atom,128,3,True,"{}_manual_drop_duplicate_drop_atom_withtype_bond{}".format(str(128),str(3)))
-
+    # data_with_site = pd.read_csv("../data/mannual_data.csv", header=0,
+    #                              index_col=0)
+    # with open('../data/methyl_site_dictionary', 'rb') as file1:
+    #     diction_atom = dill.load(file1)
+    # data_with_site = data_with_site.fillna(0)
+    # mo_del.save_fingerprints_to_dataframe(data_with_site,diction_atom,128,3,True,"{}_manual_drop_duplicate_drop_atom_withtype_bond{}".format(str(128),str(3)))
+    #
 
     seq=sequences()
     #seq.group_seq_based_on_methylated_type()
@@ -143,7 +143,7 @@ def main():
     #           "wb") as dill_file:
     #     dill.dump(site_dict, dill_file)
     #mo_del.check_file_exist()
-    #build_different_input(128, 2,"uniprot_and_manual_align_onehot_encoding.csv")
+    build_different_input("auto","",128, 3)
     # build_different_input(1024, 2)
     #parse_data.build_different_input(1024, 3)
     # print("saved input for 128bit fingerprint")

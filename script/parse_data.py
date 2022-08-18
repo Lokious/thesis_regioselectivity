@@ -24,7 +24,7 @@ import dill
 from Bio import AlignIO
 from sequence import sequences
 import numpy as np
-
+import unittest
 
 def target_sequences(file):
     """
@@ -161,19 +161,19 @@ def get_smile(datasets)->pd.DataFrame:
         for sub in substrate:
             #some of the mol file is missing in the directory whihc download from rhea
             try:
-                mol = Chem.MolFromMolFile("data/mol/"+str(sub.replace(":","_")) +".mol")
+                mol = Chem.MolFromMolFile("../data/mol/"+str(sub.replace(":","_")) +".mol")
             except:
                 url = "https://www.ebi.ac.uk/chebi/saveStructure.do?defaultImage=true&chebiId={}&imageId=0".format(sub.split(":")[1])
                 # Download from URL.
                 with urlopen(url) as webpage:
                     content = webpage.read()
                 # Save to file.
-                with open("data/mol/"+str(sub.replace(":","_")) +".mol", 'wb') as download:
+                with open("../data/mol/"+str(sub.replace(":","_")) +".mol", 'wb') as download:
                     download.write(content)
                 print("downloading the missing file: {},pleaze rerun the code".format(sub.replace(":","_")))
             if mol:
                 mol_ob = Molecule()
-                mol,j = mol_ob.mol_with_atom_index(mol_object=mol,index={})
+                mol,j = mol_ob.mol_with_atom_index(mol,index={})
                 smile = Chem.MolToSmiles(mol)
                 smiles.append(smile)
                 mols_list.append(mol)
@@ -186,19 +186,19 @@ def get_smile(datasets)->pd.DataFrame:
             #some of the mol file is missing in the directory which download from rhea
 
             try:
-                mol = Chem.MolFromMolFile("data/mol/"+str(pro.replace(":","_")) +".mol")
+                mol = Chem.MolFromMolFile("../data/mol/"+str(pro.replace(":","_")) +".mol")
             except:
                 url = "https://www.ebi.ac.uk/chebi/saveStructure.do?defaultImage=true&chebiId={}&imageId=0".format(pro.split(":")[1])
                 # Download from URL.
                 with urlopen(url) as webpage:
                     content = webpage.read()
                 # Save to file.
-                with open("data/mol/"+str(pro.replace(":","_")) +".mol", 'wb') as download:
+                with open("../data/mol/"+str(pro.replace(":","_")) +".mol", 'wb') as download:
                     download.write(content)
                 print("downloading the missing file: {},pleaze rerun the code".format(pro.replace(":","_")))
             if mol:
                 mol_ob = Molecule()
-                mol,j = mol_ob.mol_with_atom_index(mol_object=mol, index={})
+                mol,j = mol_ob.mol_with_atom_index(mol, index={})
                 smile = Chem.MolToSmiles(mol)
                 smiles.append(smile)
                 mols_list.append(mol)
