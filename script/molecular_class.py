@@ -1,8 +1,8 @@
 """
-class for saving the properties for each molecular
+class for saving the properties for each molecular  # this docstring is not clear to me
 """
+import typing
 import pandas as pd
-#from pikachu.general import draw_smiles
 from rdkit.Chem import AllChem, rdmolops
 from rdkit.Chem.Draw import IPythonConsole
 from IPython.display import SVG, display, Image
@@ -13,8 +13,9 @@ import numpy as np
 import dill
 import unittest
 
-class molecular ():
-    def __init__(self,chembi="",rhea_comp="",inchkey="",smiles=''):
+
+class Molecule:  # classes are written in CamelCase
+    def __init__(self, chembi="", rhea_comp="", inchkey="", smiles=""):
         self.chembi = chembi
         self.rhea_comp = rhea_comp
         self.inchkey = inchkey
@@ -22,43 +23,55 @@ class molecular ():
 
     def get_chembi(self):
         return self.chembi
+    
     def get_rhea_comp(self):
         return self.rhea_comp
+    
     def get_inchkey(self):
         return self.inchkey
+    
     def get_smiles(self):
         return self.smiles
+    
     def calculate_smile(self):
-        smile = Chem.MolToSmiles(mol)
-        self.smiles = smile
-    def mol_with_atom_index(self,smile="",mol_object = None, index ={}):
-        """Return mol object with index, input could be simles or mol
+        smiles = Chem.MolToSmiles(mol)
+        self.smiles = smiles
+        
+    def mol_with_atom_index(self, smiles="", mol_object=None, index={}):
+    # example with `input`, with type annotations (https://docs.python.org/3/library/typing.html):
+    def mol_with_atom_index(self, input: typing.Optional[typing.Union[str, Chem.Mol]] = None, index: dict = dict()): 
+        """Return mol object with index, input could be smiles or mol #  it is not clear to me from the docstring what the returned index is
 
         smile: string, smile of an molecular from substrates
         mol_object: create by rdkit or read from file
         index: dictionary, key is atom type<O,N,...> value is the largest index for this atom type plus 1
         """
-
-        #if the input has mol_object
+        # instead of evaluating two different inputs (`mol_object` and `smiles`), you can also check an `input` variable like this:
+        if isinstance(input, str): 
+            # evaluate if SMILES string is valid...
+            # do something with SMILES...
+        elif isinstance(input, Chem.Mol):
+            # do something with RDKit Mol object...
+        
+        # if the input has mol_object
         if mol_object:
-            #set i here inorder to make the atom from all substrates has different mapnumber
-            atom_type = index
+            # set i here in order to make the atom from all substrates has different mapnumber
+            atom_type = index  # why do you reassign in `index` top `atom_type`?
+            
             for atom in mol_object.GetAtoms():
-
-                atom_sy = atom.GetSymbol()
-                if atom_sy not in atom_type.keys():
-                    # makesure no repeate number
-                    atom_type[atom_sy] = 0
-                # print(atom_type[atom_sy])
-                # print(atom.GetSymbol())
+                atom_symbol = atom.GetSymbol()  # use as little abbreviations as possible, makes code easier to understand 
+                if atom_symbol not in atom_type.keys():
+                    # make sure no repeat number  # watch the spelling
+                    atom_type[atom_symbol] = 0
                 atom.SetAtomMapNum(atom.GetIdx())
                 # save the index in isotope just for keeeping the index for later use
-                atom.SetIsotope(atom_type[atom_sy])
-                atom_type[atom_sy] += 1
+                atom.SetIsotope(atom_type[atom_symbol])
+                atom_type[atom_symbol] += 1
 
             return mol_object,atom_type
-        #if no mol_object input, but have smile input
-        elif smile:
+        
+        # if no mol_object input, but have smile input
+        elif smiles:
 
             mol = Chem.MolFromSmiles(smile)
             if mol:
@@ -66,73 +79,100 @@ class molecular ():
                 for atom in mol.GetAtoms():
 
                     if atom.GetSymbol() not in atom_type.keys():
-                        #makesure no repeate number for an atom type
+                        # make sure no repeat number for an atom type  # repeat number?
                         atom_type[atom.GetSymbol()] = 0
                     atom.SetAtomMapNum(atom.GetIdx())
                     # save the index in isotope just for keeeping the index for later use
                     atom.SetIsotope(atom_type[atom.GetSymbol()])
                     atom_type[atom.GetSymbol()] += 1
-                return mol,atom_type
+                    
+                return mol, atom_type
+            
             else:
-                print("warning:cannot due with this smile:{}".format(smile))
+                print(f"warning: cannot due with this smiles: {smiles}")  # what does this message mean exactly? I know this is draft code, but make sure the English is correct 
                 return None, index
+            
         else:
             print("missing input")
 
     def create_fingerprint_mol(self, substrate_molecular: Chem.Mol, num_bits: int = 2048,
-        radius: int = 3)->np.array:
+        radius: int = 3) -> np.array:
         """
-        This function is to create
+        This function is to create  # to create what? :)
+        
         :param substrate_molecular:
         :param num_bits:
         :param radius:
         :return:
         """
         #sanitize molecular
-        Chem.SanitizeMol(substrate_molecular,
-                         sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+        Chem.SanitizeMol(
+            substrate_molecular,
+            sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE
+        )
         rdmolops.SanitizeFlags.SANITIZE_NONE
-        #inisilize a numpy array for molecular fingerprint
-        bit_fingerprint_mol = np.zeros((0,),
-                                   dtype=int)  # (one dimention, 0 is number of rows)
+        # initialize a numpy array for molecular fingerprint
+        bit_fingerprint_mol = np.zeros(
+            (0,),
+            dtype=int)  # (one dimention, 0 is number of rows
+       )
 
         #returns an RDKit vector object.
 
-        morgan_bit_vector = AllChem.GetMorganFingerprintAsBitVect(substrate_molecular, radius,
-                                                                  num_bits)
+        morgan_bit_vector = AllChem.GetMorganFingerprintAsBitVect(
+            substrate_molecular, 
+            radius,
+            num_bits
+        )
 
         # convert the RDKit vetor object to a numpy array.
         DataStructs.ConvertToNumpyArray(morgan_bit_vector, bit_fingerprint_mol)
 
         return bit_fingerprint_mol
 
-    def create_fingerprint_atom(self, substrate_molecular: Chem.Mol,atom_object: Chem.Atom, num_bits: int = 2048,
-        radius: int = 3)->np.array:
+    def create_fingerprint_atom(
+        self, 
+        substrate_molecular: Chem.Mol,
+        atom_object: Chem.Atom, 
+        num_bits: int = 2048,
+        radius: int = 3
+    ) -> np.array:
+        """
+        documentation?
+        """
         atom_index = atom_object.GetIdx()
-        atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(substrate_molecular, radius,
-                                                                 atom_index)
+        atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(
+            substrate_molecular, 
+            radius,
+            atom_index
+        )
         atom_map = {}
         submol = Chem.PathToSubmol(substrate_molecular, atom_environment, atomMap=atom_map)
-        #sanitize molecular
+        # sanitize molecule
         Chem.SanitizeMol(submol,
                          sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE)
         rdmolops.SanitizeFlags.SANITIZE_NONE
         #inisilize a numpy array for molecular fingerprint
-        bit_fingerprint_atom = np.zeros((0,),
-                                   dtype=int)  # (one dimention, 0 is number of rows)
+        bit_fingerprint_atom = np.zeros(
+            (0,),
+            dtype=int  # (one dimention, 0 is number of rows)
+        )
 
         #returns an RDKit vector object.
-
-        morgan_bit_vector = AllChem.GetMorganFingerprintAsBitVect(submol, radius,
-                                                                  num_bits)
-
+        morgan_bit_vector = AllChem.GetMorganFingerprintAsBitVect(
+            submol, 
+            radius,
+            num_bits
+        )
+        
         # We convert the RDKit vetor object to a numpy array.
         DataStructs.ConvertToNumpyArray(morgan_bit_vector, bit_fingerprint_atom)
 
         return bit_fingerprint_atom
 
-class reaction ():
-    def __init__(self,substrates="", products="",rxn_object=None):
+    
+class Reaction:
+    def __init__(self, substrates="", products="", rxn_object=None):
         self.substrates = substrates
         self.products = products
         self.rxn_object = rxn_object
@@ -146,7 +186,10 @@ class reaction ():
         :param rxn_object:
         :return:
         """
+        raise RuntimeError("function `get_reaction_sites()` is deprecated")
+        
         rxn_object.Initialize()
+        
         try:
             reacting_atom_set = rxn_object.GetReactingAtoms()
             print(reacting_atom_set)
@@ -166,6 +209,8 @@ class reaction ():
 
         :return:
         """
+        raise RuntimeError("function `get_reaction_sites()` is deprecated")
+        
         # Draw.ShowMol(self.substrates, size=(600, 600))
         # Draw.ShowMol(self.products, size=(600, 600))
         #link the main substrate molecular and main product, to build a reaction template
@@ -193,7 +238,7 @@ class reaction ():
                     # atom.SetIsotope(0)
                 result1 = Chem.MolToSmiles(mol_product)
         self.mol_product = mol_product
-
+        
     def get_reactant_atom(self):
         """
         This function only consider the large substrate and product, it assume
@@ -201,7 +246,6 @@ class reaction ():
 
         :return: list of atom objects which is the regioselectivity site
         """
-
         #list of atom object
         atoms_list=[]
         atom_index_list = []
@@ -269,9 +313,10 @@ class reaction ():
             similarity = DataStructs.FingerprintSimilarity(Chem.RDKFingerprint(mol1), Chem.RDKFingerprint(mol2))
             return similarity
         return tanimoto_similarity
-
-
-    def main_substrate(self,subs,pros):
+    
+    
+    # I don't see `self` being used in this function and based on that alone I would make it a stand-alone function. 
+    def main_substrate(self, subs, pros):
         """
         This is the function for find the substrate which is methylated among all and the product
 
@@ -282,46 +327,67 @@ class reaction ():
         sim_dictionary = {}
         mol_object = molecular()
         reaction_object = reaction()
-        for i,mol1_smile in enumerate(subs):
+        
+        for i, mol1_smile in enumerate(subs):
             try:
                 mol1 = Chem.MolFromSmiles(mol1_smile)
                 sub_fg = mol_object.create_fingerprint_mol(substrate_molecular=mol1)
-
             except:
                 return None
+            
             for j,mol2_smile in enumerate(pros):
                 try:
                     mol2 = Chem.MolFromSmiles(mol2_smile)
                     pro_fg = mol_object.create_fingerprint_mol(substrate_molecular=mol2)
-
                 except:
                     return None
 
-                sim_dictionary[
-                    (i, j)] = reaction_object.fingerprint_similiarity(sub_fg,pro_fg,mol1=mol1,
-                                                                      mol2=mol2)
+                sim_dictionary[(i, j)] = reaction_object.fingerprint_similiarity(
+                    sub_fg,
+                    pro_fg,
+                    mol1=mol1,
+                    mol2=mol2
+                )
+                
         similarity_list_top_2 = list(
-            sorted(sim_dictionary.items(),reverse=True,key=lambda item: item[1]))[:2]
+            sorted(
+                sim_dictionary.items(),
+                reverse=True,
+                key=lambda item: item[1]
+            )
+        )[:2]
+        
         for key in similarity_list_top_2:
             i = key[0][0]
             j= key[0][1]
-
+            
+            # the documentation below is not quite clear to me
+            
             #this function assumed the similarity of fingerprint betwween molecular before methylation
             #and after methylation should be higher than this molecular with other molecular
             #the methyl donor molecular will become smaller after reaction
-            if (len(pros[j])>len(subs[i])) and (pros[j] != 0) and (subs[i] != 0 ):
-                return [subs[i],pros[j]]
+            if (len(pros[j]) > len(subs[i])) and (pros[j] != 0) and (subs[i] != 0 ):
+                return [subs[i], pros[j]]
             else:
                 continue
+                
+                
 class Testreaction_class(unittest.TestCase):
     def test0_get_reactant_atom(self):
-        reaction_obj =reaction(substrates="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1OH:7])[4cH:4][2cH:2]1",
-                               products="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1O:7][11CH3:13])[4cH:4][2cH:2]1")
+        """
+        don't forget documentation for the test :)
+        """
+        reaction_obj =reaction(
+            substrates="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1OH:7])[4cH:4][2cH:2]1",
+            products="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1O:7][11CH3:13])[4cH:4][2cH:2]1"
+        )
         atom_list, index_list, mainsub_mol = reaction_obj.get_reactant_atom()
-        self.assertEqual(index_list[0],"O7:1")
+        self.assertEqual(index_list[0], "O7:1")
+        
+        
 def main():
     unittest.main()
 
+    
 if __name__ == "__main__":
     main()
-
