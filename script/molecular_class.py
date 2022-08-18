@@ -1,6 +1,7 @@
 """
 class for saving the properties for each molecular  # this docstring is not clear to me
 """
+import copy
 import typing
 import pandas as pd
 from rdkit.Chem import AllChem, rdmolops
@@ -32,13 +33,8 @@ class Molecule:  # classes are written in CamelCase
     
     def get_smiles(self):
         return self.smiles
-    
-    def calculate_smile(self):
-        smiles = Chem.MolToSmiles(mol)
-        self.smiles = smiles
 
-    # example with `input`, with type annotations (https://docs.python.org/3/library/typing.html):
-    def mol_with_atom_index(self, input: typing.Optional[typing.Union[str, Chem.Mol]] = None, index: dict = dict()): 
+    def mol_with_atom_index(self, input: typing.Optional[typing.Union[str, Chem.Mol]] = None, index: dict = dict()):
         """Return mol object with index, input could be smiles or mol #  it is not clear to me from the docstring what the returned index is
 
         smile: string, smile of an molecular from substrates
@@ -48,7 +44,7 @@ class Molecule:  # classes are written in CamelCase
         atom_type = index
         if isinstance(input, str): 
             # evaluate if SMILES string is valid...
-            mol = Chem.MolFromSmiles(smile)
+            mol = Chem.MolFromSmiles(input)
             if mol:
 
                 for atom in mol.GetAtoms():
@@ -63,12 +59,12 @@ class Molecule:  # classes are written in CamelCase
 
                 return mol, atom_type
             else:
-                print(f"warning: can not deal with this SMILE: {smiles}")  # what does this message mean exactly? I know this is draft code, but make sure the English is correct
+                print(f"warning: can not deal with this SMILES: {input}")  # what does this message mean exactly? I know this is draft code, but make sure the English is correct
                 return None, index
         elif isinstance(input, Chem.Mol):
             # do something with RDKit Mol object...
                 # set i here in order to make the atom from all substrates has different mapnumber
-            for atom in mol_object.GetAtoms():
+            for atom in input.GetAtoms():
                 atom_symbol = atom.GetSymbol()  # use as little abbreviations as possible, makes code easier to understand
                 if atom_symbol not in atom_type.keys():
                     # make sure no repeat number  # watch the spelling
@@ -78,13 +74,7 @@ class Molecule:  # classes are written in CamelCase
                 atom.SetIsotope(atom_type[atom_symbol])
                 atom_type[atom_symbol] += 1
 
-            return mol_object, atom_type
-        
-
-
-            
-
-            
+            return input, atom_type
         else:
             print("missing input")
 
@@ -171,7 +161,7 @@ class Reaction:
         self.mol_product = None
         self.mol_substrate = None
 
-    def get_reaction_sites(self,rxn_object="",file_name= None ):
+    def perform_reaction(self,rxn_object="",file_name= None ):
         """
         ###not use anymore, just to save the picture of reaction####
 
@@ -193,43 +183,97 @@ class Reaction:
         except:
             print("canot run reaction{}".format(file_name))
 
-    def perform_reaction(self):
+    def get_reaction_sites(self,product_smiles:str="",substrate_smiles:str=""):
         """
-        perform reaction to get product's mol object and save, perform for each reaction
-        ###This function is not use anymore, it is before i want to get the atom map between substrate and product
-        but you should set the some atom with same mapnumber to let the program know they are the same atom###
-
+        finding methylation atoms by removing -CH3 group and compare the similarity between substrate and product
+        :param product_smiles:sting,the SMILES of Molecule after methylation
+            substrate_smiles:sting,the SMILES of Molecule before methylation
         :return:
         """
-        raise RuntimeError("function `get_reaction_sites()` is deprecated")
-        
-        # Draw.ShowMol(self.substrates, size=(600, 600))
-        # Draw.ShowMol(self.products, size=(600, 600))
-        #link the main substrate molecular and main product, to build a reaction template
-        react = AllChem.ReactionFromSmarts(
-            self.substrates + ">>" + self.products, useSmiles=True)
-        mol_substrate = Chem.MolFromSmiles(self.substrates)
-
-        self.mol_substrate = mol_substrate
-        for atom in mol_substrate.GetAtoms():
+        #remove AtomMapNum and Isotope then they will not affect similarity
+        product_mol = Chem.MolFromSmiles(product_smiles)
+        for atom in product_mol.GetAtoms():
+            atom.SetAtomMapNum(0)
             atom.SetIsotope(0)
-        # print(self.products)
-        # print(self.substrates)
-        react.Initialize()
-        print(self.products)
-        print(self.substrates)
-        # There should be only one product molecular,
-        # the RunReactants function just for keep the atom map to find the reactant atom
-        for result in react.RunReactants((mol_substrate,)):
-            # perform reaction and get the product
-            for mol_product in result:
-                #Draw.ShowMol(mol_product, size=(600, 600))
-                for atom in mol_product.GetAtoms():
-                    atom.SetAtomMapNum(atom.GetIsotope())
-                    print(atom.GetAtomMapNum())
-                    # atom.SetIsotope(0)
-                result1 = Chem.MolToSmiles(mol_product)
-        self.mol_product = mol_product
+        substrate_mol = Chem.MolFromSmiles(substrate_smiles)
+        for atom in substrate_mol.GetAtoms():
+            atom.SetAtomMapNum(0)
+            atom.SetIsotope(0)
+        #Draw.ShowMol(product_mol,(600,600))
+
+        #get editable mol for removing methylation group
+        mol = Chem.EditableMol(product_mol)
+        atom_index_list = []
+        similiarity = 0
+        possiable_list=[]
+        for atom in product_mol.GetAtoms():
+            #do not consider C-methylation here
+            if atom.GetSymbol() !="C":
+                neighbours = atom.GetNeighbors()
+                for neighbour_atom in neighbours:
+                    if ((neighbour_atom.GetSymbol()=="C") and (neighbour_atom.GetDegree()==1)):
+                        #print(atom.GetIdx(),atom.GetSymbol())
+                        #mol_save_status = mol
+                        try:
+                            #save possiable atoms to a list, if remove one do not get 100% similarity substrate
+                            #the list will be use later
+                            mol = Chem.EditableMol(product_mol)
+                            mol.RemoveAtom(neighbour_atom.GetIdx())
+                            possiable_list.append(neighbour_atom.GetIdx())
+                            # Draw.ShowMol(mol.GetMol(), (600, 600))
+                            # Draw.ShowMol(substrate_mol, (600, 600))
+                        except:
+                            continue
+                        similiarity = DataStructs.FingerprintSimilarity(
+                            Chem.RDKFingerprint(mol.GetMol()),
+                            Chem.RDKFingerprint(substrate_mol))
+                        print(similiarity)
+                        if similiarity==1:
+                            atom_index_list.append(
+                                atom.GetSymbol() + ":"+str(
+                                    atom.GetIdx()))
+                            mol_remove_methylation = mol.GetMol()
+                            print("check")
+                            return product_mol,Chem.MolToSmiles(mol_remove_methylation),atom_index_list,"Pass_Check"
+                        else:
+                            #mol=mol_save_status
+                            continue
+        #remove multiple methylation group
+        from itertools import combinations
+        index_combination_list=list(combinations(possiable_list, 2))
+        index_combination_list += list(combinations(possiable_list, 3))
+        print(list(combinations(possiable_list, 2)))
+        for items in index_combination_list:
+            mol=Chem.EditableMol(product_mol)
+            remove_atom=sorted(list(items),reverse=True)
+            #remove from larger index
+            for i in remove_atom:
+                mol.RemoveAtom(i)
+            #Draw.ShowMol(mol.GetMol(), (600, 600))
+            similiarity = DataStructs.FingerprintSimilarity(
+                Chem.RDKFingerprint(mol.GetMol()),
+                Chem.RDKFingerprint(substrate_mol))
+            print(similiarity)
+            if similiarity ==1:
+                atom = (product_mol.GetAtomWithIdx(i)).GetNeighbors()[0]
+                atom_index_list.append(
+                    atom.GetSymbol() + ":"+str(
+                        atom.GetIdx()))
+                print(atom.GetSymbol() + ":"+str(
+                        atom.GetIdx()))
+                mol_remove_methylation = mol.GetMol()
+                #Draw.ShowMol(mol.GetMol(), (600, 600))
+                print("check")
+                return product_mol, Chem.MolToSmiles(
+                    mol_remove_methylation), atom_index_list, "Pass_Check"
+
+        mol_remove_methylation=mol.GetMol()
+
+        #print(similiarity)
+        #raise RuntimeError("function `get_reaction_sites()` is deprecated")
+
+        return product_mol,Chem.MolToSmiles(
+            mol_remove_methylation), atom_index_list, "unCheck"
         
     def get_reactant_atom(self):
         """
@@ -280,13 +324,15 @@ class Reaction:
 
         return atoms_list, atom_index_list,mol_substrate
 
-    def fingerprint_similiarity(self,mol1_fprint,mol2_fprint,mol1:Chem.Mol,mol2:Chem.Mol):
+    def fingerprint_similiarity(self,mol1_fprint="",mol2_fprint="",mol1:Chem.Mol=None,mol2:Chem.Mol=None):
+
+
 
         # First we check if the dimensions of both fingerprints are correct.
         if len(mol1_fprint.shape) != 1:
             raise ValueError(f"expected dimensionality (N,) for `first_fingerprint`, got: {mol1_fprint.shape}")
         if len(mol2_fprint.shape) != 1:
-            raise ValueError(f"expected dimensionality (N,) for `second_fingerprint`, got: {second_fingerprint.shape}")
+            raise ValueError(f"expected dimensionality (N,) for `second_fingerprint`, got: {mol2_fprint.shape}")
 
         # We also check if the lengths of both fingerprints are equal.
         if mol1_fprint.shape[0] != mol2_fprint.shape[0]:
@@ -305,9 +351,7 @@ class Reaction:
             similarity = DataStructs.FingerprintSimilarity(Chem.RDKFingerprint(mol1), Chem.RDKFingerprint(mol2))
             return similarity
         return tanimoto_similarity
-    
-    
-    # I don't see `self` being used in this function and based on that alone I would make it a stand-alone function. 
+
 def main_substrate(subs, pros):
     """
     This is the function for find the substrate which is methylated among all and the product
@@ -364,22 +408,44 @@ def main_substrate(subs, pros):
             continue
                 
                 
-class Testreaction_class(unittest.TestCase):
-    def test0_get_reactant_atom(self):
-        """
-        don't forget documentation for the test :)
-        """
-        reaction_obj =reaction(
-            substrates="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1OH:7])[4cH:4][2cH:2]1",
-            products="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1O:7][11CH3:13])[4cH:4][2cH:2]1"
-        )
-        atom_list, index_list, mainsub_mol = reaction_obj.get_reactant_atom()
-        self.assertEqual(index_list[0], "O7:1")
-        
-        
+# class Testreaction_class(unittest.TestCase):
+#     def test0_get_reactant_atom(self):
+#         """
+#         don't forget documentation for the test :)
+#         """
+#         reaction_obj =Reaction(
+#             substrates="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1OH:7])[4cH:4][2cH:2]1",
+#             products="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1O:7][11CH3:13])[4cH:4][2cH:2]1"
+#         )
+#         atom_list, index_list, mainsub_mol = reaction_obj.get_reactant_atom()
+#         self.assertEqual(index_list[0], "O7:1")
+#
+#
 def main():
-    unittest.main()
-
-    
+    #unittest.main()
+    reaction = Reaction()
+    df = pd.read_csv("../data/seq_smiles_all_test_codefor_finding_methylsite.csv",header=0,index_col=0)
+    df.dropna(inplace=True)
+    df_save=copy.deepcopy(df)
+    df_save["remove_methylation"]=pd.DataFrame(
+            len(df_save.index) * [0]).astype('object')
+    df_save["list_methylsite"]=pd.DataFrame(
+            len(df_save.index) * [0]).astype('object')
+    df_save["check"]=pd.DataFrame(
+            len(df_save.index) * [0]).astype('object')
+    for index in df.index:
+        print(index)
+        main_sub_smile = df.loc[index,"main_sub"]
+        main_pro_smile = df.loc[index,"main_pro"]
+        pro_mol,remove_methyl_smile,list_methylsite,check=reaction.get_reaction_sites(main_pro_smile,main_sub_smile)
+        if check=="check":
+            Draw.MolToFile(Chem.MolFromSmiles(remove_methyl_smile), "../pro_fig/{}_remove.png".format(index))
+        Draw.MolToFile(pro_mol,
+                       "../pro_fig/{}_pro.png".format(index))
+        df_save.loc[index,"remove_methylation"]=remove_methyl_smile
+        df_save.loc[index,"list_methylsite"]=",".join(list_methylsite)
+        df_save.loc[index,"check"]=check
+    print(df_save)
+    df_save.to_csv("test_finding_methylation_site.csv")
 if __name__ == "__main__":
     main()
