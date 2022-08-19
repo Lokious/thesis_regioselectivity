@@ -191,7 +191,7 @@ class Model_class():
                 #Draw.MolToFile(mainsub_mol,"../data/substrate_mol_picture/{}.png".format(index),size=(600,600))
                 #save atom index(methylation site) from substrate in dataframe
                 site = ",".join(list_methylsite)
-                print(site)
+                #print(site)
                 #dataframe_rr.loc[index,"mainsub_mol"] = mainsub_mol
                 dataframe_rr.loc[index, "main_sub"] =remove_methyl_smile
                 dataframe_rr.loc[index, "check"] = check
@@ -199,13 +199,10 @@ class Model_class():
                 site = ""
             if site != "":
                 dataframe_rr.loc[index, "reactant_site"] = site
-                type = site.split(",")
-                methyl_type=""
-                for i in type:
-                    methyl_type = (i.split(":"))[0]+methyl_type+"_"
-                methyl_type=list(methyl_type)[:-1]
+                import re
+                methyl_type = set((re.sub(r'[^a-zA-Z]', ' ', site)).split())
                 print(methyl_type)
-                dataframe_rr.loc[index, "methyl_type"]="".join(methyl_type)
+                dataframe_rr.loc[index, "methyl_type"]="_".join(methyl_type)
             else:
                 #because we use the largest molecular, but for some substrates, methyl donor is larger
                 #we first leave those

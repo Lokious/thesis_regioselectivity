@@ -67,10 +67,11 @@ def build_different_input(auto="",x="",num_bit:int=0,radius:int=0,seqfile:str="6
                                                   drop_atoms=True,
                                                   file_name="{}_drop_duplicate_drop_atom_withtype_bond{}".format(str(num_bit),str(radius)))
     print(X)
-
-    add_dataframe = pd.read_csv("../{}data/protein_encoding/{}".format(auto,seqfile), header=0, index_col=0)
-    print(add_dataframe)
-
+    try:
+        add_dataframe = pd.read_csv("../{}data/protein_encoding/{}_onehot_encoding.csv".format(auto,group), header=0, index_col=0)
+        print(add_dataframe)
+    except:
+        parse_data.read_msa_and_encoding(group)
     start_index = num_bit*2
     #print(start_index)
     if list(add_dataframe.columns)[0] != str(str):
@@ -123,7 +124,9 @@ def main():
     seq=sequences()
     #seq.group_seq_based_on_methylated_type()
     #seq.group_fg_based_on_methylated_type("data/input_dataframe_withoutstructure_dropatoms2048_drop_duplicate_drop_atom_withtype_bond2.csv",2048,2)
-    groups=["As", "O", "S", "N", "C","Te","Se"]
+    groups=["O","N","O_N","S","C","Se","Co"]
+    for group in groups:
+        build_different_input(auto="auto", x="", num_bit=128, radius=3,group=group)
     # for group in groups:
     #     parse_data.read_msa_and_encoding("{}".format(group))
     # for group in groups:
@@ -143,7 +146,7 @@ def main():
     #           "wb") as dill_file:
     #     dill.dump(site_dict, dill_file)
     #mo_del.check_file_exist()
-    build_different_input(auto="auto",x="",num_bit=128, radius=3)
+
     # build_different_input(1024, 2)
     #parse_data.build_different_input(1024, 3)
     # print("saved input for 128bit fingerprint")

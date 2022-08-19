@@ -13,3 +13,8 @@ matplotlib 3.5.0
 biopython
 bio-embedding
 plotly-5.9.0 
+
+running steps：(19/08/2022)
+1. Model_class check_file_exist(),save_fingerprints_to_dataframe()
+2.all method in sequences class
+3.main_class build_different_input
