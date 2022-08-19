@@ -78,9 +78,9 @@ class Model_class():
             id_seq_dataframe = parse_data.read_sequence(seq_file)
             seq_smiles = self.merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
             #data_frame = self.keep_longest_smile(seq_smiles)
-            data_frame=self.keep_methyled_substrate(seq_smiles)
-            data_frame.to_csv("../autodata/seq_smiles_all.csv")
-            self.return_reactions(data_frame)
+            #data_frame=self.keep_methyled_substrate(seq_smiles)
+            seq_smiles.to_csv("../autodata/seq_smiles_all.csv")
+            self.return_reactions(seq_smiles)
 
 
 
@@ -131,7 +131,7 @@ class Model_class():
         :param dataframe_before: substrate includes mainsubstrates
         :return:
         """
-
+        raise RuntimeError("function `keep_methyled_substrate()` is deprecated")
         dataframe_before["main_sub"] = pd.DataFrame(
             len(dataframe_before.index) * [0])
         dataframe_before["main_pro"] = pd.DataFrame(
@@ -172,8 +172,8 @@ class Model_class():
         #     len(dataframe_rr.index) * [0]).astype('object')
         for index in dataframe_rr.index:
 
-            subs = dataframe_rr.loc[index, "main_sub"]
-            pros = dataframe_rr.loc[index, "main_pro"]
+            subs = dataframe_rr.loc[index, "sub_smiles"]
+            pros = dataframe_rr.loc[index, "pro_smiles"]
             if (subs != pros) and len(subs) !=0 and len(pros) !=0:
                 reaction1 = Reaction()
                 #print(dataframe.loc[index,"RHEA_ID"])
