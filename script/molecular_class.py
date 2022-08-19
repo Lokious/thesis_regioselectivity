@@ -161,33 +161,13 @@ class Reaction:
         self.mol_product = None
         self.mol_substrate = None
 
-    def perform_reaction(self,rxn_object="",file_name= None ):
-        """
-        ###not use anymore, just to save the picture of reaction####
-
-        :param rxn_object:
-        :return:
-        """
-        raise RuntimeError("function `perform_reaction()` is deprecated")
-        
-        rxn_object.Initialize()
-        
-        try:
-            reacting_atom_set = rxn_object.GetReactingAtoms()
-            print(reacting_atom_set)
-            img = Draw.ReactionToImage(rxn_object, returnPNG=True, subImgSize=(600,600))
-            img.drawOptions()
-            with open("{}.png".format(file_name), 'wb') as handle:
-                handle.write(img)
-            handle.close()
-        except:
-            print("canot run reaction{}".format(file_name))
 
     def get_reaction_sites(self,product_smiles:str="",substrate_smiles:str=""):
         """
         finding methylation atoms by removing -CH3 group and compare the similarity between substrate and product
-        :param product_smiles:sting,the SMILES of products
-            substrate_smiles:sting,the SMILES of substrates
+
+        :param product_smiles:sting,the SMILES of products, split by '.'
+            substrate_smiles:sting,the SMILES of substrates, split by '.'
         :return:
         """
         #remove AtomMapNum and Isotope, avoiding affect the similarity
@@ -227,27 +207,19 @@ class Reaction:
         possiable_dictionary={}
         for i,product_mol in enumerate(product_mols):
             for atom in product_mol.GetAtoms():
-                #do not consider C-methylation here
-                # if atom.GetSymbol() !="C":
-                #     neighbours = atom.GetNeighbors()
-                #     for neighbour_atom in neighbours:
                 #find -CH3 group
                 if ((atom.GetSymbol()=="C") and (atom.GetDegree()==1)):
 
                     #try to remove this -CH3 group
                     mol = Chem.EditableMol(product_mol)
                     mol.RemoveAtom(atom.GetIdx())
-                    #save possiable atoms to a list, if remove one do not get 100% similarity substrate
-                    #the list will be use later
-
-                    # Draw.ShowMol(mol.GetMol(), (600, 600))
-                    # Draw.ShowMol(substrate_mol, (600, 600))
                     #compare similarity between substrate and molecule after remove -CH3
                     for j,substrate_mol in enumerate(substrate_mols):
                         if (len(product_mol.GetAtoms())-len(substrate_mol.GetAtoms()))>4:
                             continue
                         else:
-
+                            # save possiable atoms to a list, if remove one do not get 100% similarity substrate
+                            # the list will be use later
                             try:
                                 possiable_dictionary[(i, j)].append(
                                     atom.GetIdx())
@@ -324,61 +296,8 @@ class Reaction:
 
         mol_remove_methylation=mol.GetMol()
 
-        #print(similiarity)
-        #raise RuntimeError("function `get_reaction_sites()` is deprecated")
-
         return product_mol, Chem.MolToSmiles(
                         mol_remove_methylation), atom_index_list, "unCheck"
-        
-    def get_reactant_atom(self):
-        """
-        This function only consider the large substrate and product, it assume
-        the smaller molecular as Methyl donor, H2O or coenzyme etc.
-
-        :return: list of atom objects which is the regioselectivity site
-        """
-        raise RuntimeError("function `get_reactant_atom()` is deprecated")
-        #list of atom object
-        atoms_list=[]
-        atom_index_list = []
-        #the main substrate and product to mol object, here the substrates and products only contains the main one
-        mol_substrate = Chem.MolFromSmiles(self.substrates)
-        mol_product = Chem.MolFromSmiles(self.products)
-
-        sub_mapnumber_dict = {}
-        pro_mapnumber_dict = {}
-
-        #save the symbol and isotope as the key, and atom index as value in dictionary
-        for atom in mol_substrate.GetAtoms():
-            #isotope is what is set before
-            sym_and_num = atom.GetSymbol()+str(atom.GetIsotope())
-            index = atom.GetIdx()
-            sub_mapnumber_dict[sym_and_num]=index
-        for atom in mol_product.GetAtoms():
-            sym_and_num = atom.GetSymbol()+str(atom.GetIsotope())
-            index = atom.GetIdx()
-            pro_mapnumber_dict[sym_and_num]=index
-
-        for map_index in sub_mapnumber_dict.keys():
-            atom_sub = mol_substrate.GetAtomWithIdx(sub_mapnumber_dict[map_index])
-            if map_index in pro_mapnumber_dict.keys():
-                atom_pro = mol_product.GetAtomWithIdx(pro_mapnumber_dict[map_index])
-            else:
-                continue
-            #if atom neighbor increase and this atom is not carbon nor R group, then add it to methylation site list
-            #now the problem here is the index is different in product and substrate sometime, then it will get wrong atom
-            if len(atom_sub.GetNeighbors()) < len(atom_pro.GetNeighbors()):
-                if (atom_sub.GetSymbol()!="C") and (atom_sub.GetSymbol()!="*") :
-                    atoms_list.append(atom_sub)
-
-        for atom in atoms_list:
-            #str with symbol index and mapnumber(mapnumber is the same as substrate's mapnumber)
-            atom_index_list.append((atom.GetSymbol() + str(atom.GetAtomMapNum())+":"+str(atom.GetIsotope())))
-            # print(atom.GetAtomMapNum())
-            # print(atom.GetIsotope())
-        #print(atom_index_list)
-
-        return atoms_list, atom_index_list,mol_substrate
 
     def fingerprint_similiarity(self,mol1_fprint="",mol2_fprint="",mol1:Chem.Mol=None,mol2:Chem.Mol=None):
 
@@ -451,8 +370,6 @@ def main_substrate(subs, pros):
             #     mol2, mol1, SimilarityMaps.GetMorganFingerprint)
             #target_mol_simi_fig.show()
             sim_dictionary[(i, j)] = DataStructs.FingerprintSimilarity(Chem.RDKFingerprint(mol1), Chem.RDKFingerprint(mol2))
-
-
     similarity_list_top = list(
         sorted(
             sim_dictionary.items(),
@@ -481,15 +398,15 @@ def main_substrate(subs, pros):
         #Draw.ShowMol(mol_sub)
         print(atom_numb_sub)
         if (len(pros[j]) > len(subs[i])) and (pros[j] != 0) and (subs[i] != 0 ):
-            mol1=Chem.MolFromSmiles(r"{}".format(subs[i]))
+            mol1 = Chem.MolFromSmiles(r"{}".format(subs[i]))
             mol2 = Chem.MolFromSmiles(r"{}".format(pros[j]))
             # Draw.ShowMol(mol2)
             # Draw.ShowMol(mol1)
             return [subs[i], pros[j]]
         else:
             continue
-                
-                
+
+
 class Testreaction_class(unittest.TestCase):
     def test0_get_reaction_sites(self):
         """
@@ -500,7 +417,8 @@ class Testreaction_class(unittest.TestCase):
         products="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1O:7][11CH3:13])[4cH:4][2cH:2]1"
 
         pro_mol,remove_methyl_smile,list_methylsite,check = reaction.get_reaction_sites(products,substrates)
-        self.assertEqual(list_methylsite[0], "O7:1")
+        self.assertEqual(list_methylsite[0], "O:10")
+        self.assertEqual(check, "Pass_Check")
 
     def test1_get_reactant_atom(self):
         """
@@ -510,8 +428,9 @@ class Testreaction_class(unittest.TestCase):
         substrates = r"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n:5][3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:20]([5O:21][1P:22]([6O:23][2P:24](=[9O:27])([12O-:30])[15O:39][14CH2:38][12C@H:35]2[13O:33][10C@@H:32]([5n:31]3[32c:81]4[11n:80][31cH:79][10n:78][30c:77]([9NH2:76])[33c:82]4[12n:83][34cH:84]3)[11C@H:34]([30OH:85])[13C@@H:36]2[14O:37][3P:40]([16O:41][19CH2:51][17C@H:48]2[19O:46][15C@@H:44]([6n:45]3[42c:102]4[16n:101][41cH:100][15n:99][40c:98]([14NH2:97])[43c:103]4[17n:104][44cH:105]3)[16C@H:47]([31OH:86])[18C@@H:49]2[20O:50][4P:52]([21O:53][22CH2:60][21C@H:59]2[24O:58][20C@@H:57]([7n:56]3[35c:89](=[34O:92])[13nH:91][38c:94](=[35O:96])[37c:93]([39CH3:95])[36cH:90]3)[24C@H:63]([32OH:87])[23C@@H:61]2[25O:62][5P:64]([26O:65][29CH2:75][27C@H:72]2[29O:70][25C@@H:69]([8n:68]3[47c:111]4[20n:110][46cH:109][19n:108][45c:107]([18NH2:106])[48c:112]4[21n:113][49cH:114]3)[26C@H:71]([33OH:88])[28C@@H:73]2[*:74])(=[27O:66])[28O-:67])(=[22O:54])[23O-:55])(=[17O:42])[18O-:43])(=[8O:26])[11O-:29])(=[7O:25])[10O-:28])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].C[S+:1]([1CH2:2][2CH2:3][3C@H:4]([NH3+:5])[4C:6]([O-:7])=[1O:8])[5CH2:9][6C@H:10]1[2O:11][7C@@H:12]([1n:17]2[10cH:18][2n:19][11c:20]3[12c:21]2[3n:22][13cH:23][4n:24][14c:25]3[5NH2:26])[8C@H:13]([3OH:14])[9C@@H:15]1[4OH:16]"
         products = r"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([51CH3:116])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:20]([5O:21][1P:22]([6O:23][2P:24](=[9O:27])([12O-:30])[15O:39][14CH2:38][12C@H:35]2[13O:33][10C@@H:32]([5n:31]3[32c:81]4[11n:80][31cH:79][10n:78][30c:77]([9NH2:76])[33c:82]4[12n:83][34cH:84]3)[11C@H:34]([30O:85][50CH3:115])[13C@@H:36]2[14O:37][3P:40]([16O:41][19CH2:51][17C@H:48]2[19O:46][15C@@H:44]([6n:45]3[42c:102]4[16n:101][41cH:100][15n:99][40c:98]([14NH2:97])[43c:103]4[17n:104][44cH:105]3)[16C@H:47]([31OH:86])[18C@@H:49]2[20O:50][4P:52]([21O:53][22CH2:60][21C@H:59]2[24O:58][20C@@H:57]([7n:56]3[35c:89](=[34O:92])[13nH:91][38c:94](=[35O:96])[37c:93]([39CH3:95])[36cH:90]3)[24C@H:63]([32OH:87])[23C@@H:61]2[25O:62][5P:64]([26O:65][29CH2:75][27C@H:72]2[29O:70][25C@@H:69]([8n:68]3[47c:111]4[20n:110][46cH:109][19n:108][45c:107]([18NH2:106])[48c:112]4[21n:113][49cH:114]3)[26C@H:71]([33OH:88])[28C@@H:73]2[*:74])(=[27O:66])[28O-:67])(=[22O:54])[23O-:55])(=[17O:42])[18O-:43])(=[8O:26])[11O-:29])(=[7O:25])[10O-:28])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].[C@H]1([2OH:6])[1C@@H:1]([1OH:5])[2C@H:2]([n:7]2[4c:8]3[6c:10]([2n:12][5cH:9]2)[7c:13]([4NH2:16])[3n:15][8cH:14][1n:11]3)[O:3][3C@@H:4]1[9CH2:17][S:18][10CH2:19][11CH2:20][12C@@H:21]([13C:24]([3O-:22])=[4O:23])[5NH3+:25]"
         pro_mol,remove_methyl_smile,list_methylsite,check = reaction.get_reaction_sites(products,substrates)
-        self.assertEqual(list_methylsite,['O:40', 'N:8'])
-        self.assertEqual(check,"pass check")
+        self.assertEqual(list_methylsite[0],'O:40')
+        self.assertEqual(list_methylsite[1], 'N:8')
+        self.assertEqual(check,"Pass_Check")
 
     def test2_get_reactant_atom(self):
         """
@@ -522,42 +441,11 @@ class Testreaction_class(unittest.TestCase):
         substrates = r"O[As:1]([CH3:2])[1OH:3].C[S+:1]([1CH2:2][2CH2:3][3C@H:4]([NH3+:5])[4C:6]([O-:7])=[1O:8])[5CH2:9][6C@H:10]1[2O:11][7C@@H:12]([1n:17]2[10cH:18][2n:19][11c:20]3[12c:21]2[3n:22][13cH:23][4n:24][14c:25]3[5NH2:26])[8C@H:13]([3OH:14])[9C@@H:15]1[4OH:16]"
         products = r"[As](=[O:1])([1O-:2])([CH3:3])[1CH3:4].[C@H]1([2OH:6])[1C@@H:1]([1OH:5])[2C@H:2]([n:7]2[4c:8]3[6c:10]([2n:12][5cH:9]2)[7c:13]([4NH2:16])[3n:15][8cH:14][1n:11]3)[O:3][3C@@H:4]1[9CH2:17][S:18][10CH2:19][11CH2:20][12C@@H:21]([13C:24]([3O-:22])=[4O:23])[5NH3+:25]"
         pro_mol,remove_methyl_smile,list_methylsite,check = reaction.get_reaction_sites(products,substrates)
-        self.assertNotEqual(list_methylsite,['As:1'])
+        self.assertEqual(list_methylsite,[])
         self.assertEqual(check,'unCheck')
 
 def main():
-    #unittest.main()
-    reaction= Reaction()
-    substrates = r"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n:5][3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:20]([5O:21][1P:22]([6O:23][2P:24](=[9O:27])([12O-:30])[15O:39][14CH2:38][12C@H:35]2[13O:33][10C@@H:32]([5n:31]3[32c:81]4[11n:80][31cH:79][10n:78][30c:77]([9NH2:76])[33c:82]4[12n:83][34cH:84]3)[11C@H:34]([30OH:85])[13C@@H:36]2[14O:37][3P:40]([16O:41][19CH2:51][17C@H:48]2[19O:46][15C@@H:44]([6n:45]3[42c:102]4[16n:101][41cH:100][15n:99][40c:98]([14NH2:97])[43c:103]4[17n:104][44cH:105]3)[16C@H:47]([31OH:86])[18C@@H:49]2[20O:50][4P:52]([21O:53][22CH2:60][21C@H:59]2[24O:58][20C@@H:57]([7n:56]3[35c:89](=[34O:92])[13nH:91][38c:94](=[35O:96])[37c:93]([39CH3:95])[36cH:90]3)[24C@H:63]([32OH:87])[23C@@H:61]2[25O:62][5P:64]([26O:65][29CH2:75][27C@H:72]2[29O:70][25C@@H:69]([8n:68]3[47c:111]4[20n:110][46cH:109][19n:108][45c:107]([18NH2:106])[48c:112]4[21n:113][49cH:114]3)[26C@H:71]([33OH:88])[28C@@H:73]2[*:74])(=[27O:66])[28O-:67])(=[22O:54])[23O-:55])(=[17O:42])[18O-:43])(=[8O:26])[11O-:29])(=[7O:25])[10O-:28])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].C[S+:1]([1CH2:2][2CH2:3][3C@H:4]([NH3+:5])[4C:6]([O-:7])=[1O:8])[5CH2:9][6C@H:10]1[2O:11][7C@@H:12]([1n:17]2[10cH:18][2n:19][11c:20]3[12c:21]2[3n:22][13cH:23][4n:24][14c:25]3[5NH2:26])[8C@H:13]([3OH:14])[9C@@H:15]1[4OH:16]"
-    products = r"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([51CH3:116])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:20]([5O:21][1P:22]([6O:23][2P:24](=[9O:27])([12O-:30])[15O:39][14CH2:38][12C@H:35]2[13O:33][10C@@H:32]([5n:31]3[32c:81]4[11n:80][31cH:79][10n:78][30c:77]([9NH2:76])[33c:82]4[12n:83][34cH:84]3)[11C@H:34]([30O:85][50CH3:115])[13C@@H:36]2[14O:37][3P:40]([16O:41][19CH2:51][17C@H:48]2[19O:46][15C@@H:44]([6n:45]3[42c:102]4[16n:101][41cH:100][15n:99][40c:98]([14NH2:97])[43c:103]4[17n:104][44cH:105]3)[16C@H:47]([31OH:86])[18C@@H:49]2[20O:50][4P:52]([21O:53][22CH2:60][21C@H:59]2[24O:58][20C@@H:57]([7n:56]3[35c:89](=[34O:92])[13nH:91][38c:94](=[35O:96])[37c:93]([39CH3:95])[36cH:90]3)[24C@H:63]([32OH:87])[23C@@H:61]2[25O:62][5P:64]([26O:65][29CH2:75][27C@H:72]2[29O:70][25C@@H:69]([8n:68]3[47c:111]4[20n:110][46cH:109][19n:108][45c:107]([18NH2:106])[48c:112]4[21n:113][49cH:114]3)[26C@H:71]([33OH:88])[28C@@H:73]2[*:74])(=[27O:66])[28O-:67])(=[22O:54])[23O-:55])(=[17O:42])[18O-:43])(=[8O:26])[11O-:29])(=[7O:25])[10O-:28])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].[C@H]1([2OH:6])[1C@@H:1]([1OH:5])[2C@H:2]([n:7]2[4c:8]3[6c:10]([2n:12][5cH:9]2)[7c:13]([4NH2:16])[3n:15][8cH:14][1n:11]3)[O:3][3C@@H:4]1[9CH2:17][S:18][10CH2:19][11CH2:20][12C@@H:21]([13C:24]([3O-:22])=[4O:23])[5NH3+:25]"
-    reaction.get_reaction_sites(products,substrates)
-
-    # mian_list = main_substrate(subs=substrates, pros=products)
-    # print(mian_list)
-    # reaction = Reaction()
-    # df = pd.read_csv("../data/seq_smiles_all_test_codefor_finding_methylsite.csv",header=0,index_col=0)
-    # df.dropna(inplace=True)
-    # df_save=copy.deepcopy(df)
-    # df_save["remove_methylation"]=pd.DataFrame(
-    #         len(df_save.index) * [0]).astype('object')
-    # df_save["list_methylsite"]=pd.DataFrame(
-    #         len(df_save.index) * [0]).astype('object')
-    # df_save["check"]=pd.DataFrame(
-    #         len(df_save.index) * [0]).astype('object')
-    # for index in df.index:
-    #     print(index)
-    #     main_sub_smile = df.loc[index,"sub_smiles"]
-    #     main_pro_smile = df.loc[index,"pro_smiles"]
-    #     pro_mol,remove_methyl_smile,list_methylsite,check=reaction.get_reaction_sites(main_pro_smile,main_sub_smile)
-    #     if check=="pass check":
-    #         Draw.MolToFile(Chem.MolFromSmiles(remove_methyl_smile), "../pro_fig/{}_remove.png".format(index))
-    #     # Draw.MolToFile(pro_mol,
-    #     #                "../pro_fig/{}_pro.png".format(index))
-    #     df_save.loc[index,"remove_methylation"]=remove_methyl_smile
-    #     df_save.loc[index,"list_methylsite"]=",".join(list_methylsite)
-    #     df_save.loc[index,"check"]=check
-    # print(df_save)
-    # df_save.to_csv("test_finding_methylation_site.csv")
+    unittest.main()
 
 if __name__ == "__main__":
     main()
