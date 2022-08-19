@@ -71,15 +71,15 @@ class Model_class():
         except:
             print("missing file{},{}".format(file1,file2))
             print("preparing the file......")
-            rh_file = "../data/rawdata/rhea2uniprot_sprot.tsv"
+            rh_file = "../autodata/rawdata/rhea2uniprot_sprot.tsv"
             rheauniprot_dataframe = parse_data.readrhlist(rh_file)
             #read id and sequences in dataframe
-            seq_file = "../data/rawdata/id_tosequence.xlsx" # run with pycharm
+            seq_file = "../autodata/rawdata/id_tosequence.xlsx" # run with pycharm
             id_seq_dataframe = parse_data.read_sequence(seq_file)
             seq_smiles = self.merge_uniprot_id_smile(rheauniprot_dataframe,id_seq_dataframe)
             #data_frame = self.keep_longest_smile(seq_smiles)
             data_frame=self.keep_methyled_substrate(seq_smiles)
-            data_frame.to_csv("../data/seq_smiles_all_script.csv")
+            data_frame.to_csv("../autodata/seq_smiles_all.csv")
             self.return_reactions(data_frame)
 
 
@@ -172,15 +172,15 @@ class Model_class():
         #     len(dataframe_rr.index) * [0]).astype('object')
         for index in dataframe_rr.index:
 
-            sub = dataframe_rr.loc[index, "main_sub"]
-            pro = dataframe_rr.loc[index, "main_pro"]
-            if (sub != pro) and sub !=0 and pro !=0:
+            subs = dataframe_rr.loc[index, "main_sub"]
+            pros = dataframe_rr.loc[index, "main_pro"]
+            if (subs != pros) and len(subs) !=0 and len(pros) !=0:
                 reaction1 = Reaction()
                 #print(dataframe.loc[index,"RHEA_ID"])
                 #rxn_file_name = "../data/rxn_picture/{}".format(dataframe_rr.loc[index,"Entry"])
                 #r1 = reaction1.get_reaction_sites(rxn_object=rxn,file_name=rxn_file_name)
                 print("index: {}".format(index))
-                pro_mol,remove_methyl_smile,list_methylsite,check = reaction1.get_reaction_sites(pro,sub)
+                pro_mol,remove_methyl_smile,list_methylsite,check = reaction1.get_reaction_sites(pros,subs)
                 Draw.MolToFile(pro_mol,
                                "../pro_fig/{}_pro.png".format(index))
                 rxn = AllChem.ReactionFromSmarts((remove_methyl_smile+">>"+Chem.MolToSmiles(pro_mol)))
@@ -202,9 +202,10 @@ class Model_class():
                 type = site.split(",")
                 methyl_type=""
                 for i in type:
-                    methyl_type = i.split(":")+methyl_type+"_"
+                    methyl_type = (i.split(":"))[0]+methyl_type+"_"
+                methyl_type=list(methyl_type)[:-1]
                 print(methyl_type)
-                dataframe_rr.loc[index, "methyl_type"]=methyl_type
+                dataframe_rr.loc[index, "methyl_type"]="".join(methyl_type)
             else:
                 #because we use the largest molecular, but for some substrates, methyl donor is larger
                 #we first leave those
@@ -286,9 +287,9 @@ class Model_class():
                             input_dataframe.loc[current_index, "label"] = label
                             input_dataframe.loc[current_index, "Entry"] = \
                             sauce_data.loc[index, "Entry"]
-                            input_dataframe.loc[current_index, "methyl_type"] = \
-                            sauce_data.loc[index, "methyl_type"]
+                            input_dataframe.loc[current_index, "methyl_type"] = sauce_data.loc[index, "methyl_type"]
                             current_index += 1
+                            print(current_index)
                     else:
                         #resrt atom index and then build fingerprint
                         fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
@@ -308,9 +309,9 @@ class Model_class():
                         input_dataframe.loc[current_index, "molecular_id"] = "m"+str(index)
                         input_dataframe.loc[current_index,"label"] = label
                         input_dataframe.loc[current_index,"Entry"] = sauce_data.loc[index,"Entry"]
-                        input_dataframe.loc[current_index, "methyl_type"] = \
-                            sauce_data.loc[index, "methyl_type"]
+                        input_dataframe.loc[current_index, "methyl_type"] = sauce_data.loc[index, "methyl_type"]
                         current_index += 1
+                        print(current_index)
             except:
                     continue
         if drop_atoms:

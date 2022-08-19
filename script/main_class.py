@@ -130,7 +130,7 @@ def main():
     #     build_different_input("data/group/input_dataframe_dropatoms",2048,2,seqfile="{}_onehot_encoding.csv".format(group),group=group)
     #parse_data.read_msa_and_encoding(file_name="uniprot_and_manual_align")
     # mo_del.group_by_site()
-    #sepreate_input(file="data/input_data/input2048fg_dpna_bond2.csv", numbit = 2048, bond= 2)
+    #sepreate_input(file="../autodata/input_data/input128fg_dpna_bond2_6_seed_onehot_encoding.csv.csv", numbit = 128, bond= 3)
     #create_inputdata("data/group_data",128,"6_seed")
     # data_with_site = pd.read_csv("data/seq_smiles_all_MANUAL.csv", header=0,
     #                              index_col=0)
@@ -143,7 +143,7 @@ def main():
     #           "wb") as dill_file:
     #     dill.dump(site_dict, dill_file)
     #mo_del.check_file_exist()
-    build_different_input("auto","",128, 3)
+    build_different_input(auto="auto",x="",num_bit=128, radius=3)
     # build_different_input(1024, 2)
     #parse_data.build_different_input(1024, 3)
     # print("saved input for 128bit fingerprint")
