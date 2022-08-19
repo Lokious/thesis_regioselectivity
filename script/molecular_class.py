@@ -420,7 +420,7 @@ class Testreaction_class(unittest.TestCase):
         self.assertEqual(list_methylsite[0], "O:10")
         self.assertEqual(check, "Pass_Check")
 
-    def test1_get_reactant_atom(self):
+    def test1_get_reaction_sites(self):
         """
         Test for get_reaction_sites works for multiple methylation site
         """
@@ -432,7 +432,7 @@ class Testreaction_class(unittest.TestCase):
         self.assertEqual(list_methylsite[1], 'N:8')
         self.assertEqual(check,"Pass_Check")
 
-    def test2_get_reactant_atom(self):
+    def test2_get_reaction_sites(self):
         """
         Exception situation, when valency change in reaction
 
