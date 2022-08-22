@@ -231,7 +231,7 @@ class Model_class():
         self_defined_mol_object = Molecule()
         input_dataframe = pd.DataFrame()
         current_index = 0
-        print(sauce_data)
+
         for index in sauce_data.index:
 
             print(index)
@@ -286,7 +286,7 @@ class Model_class():
                             sauce_data.loc[index, "Entry"]
                             input_dataframe.loc[current_index, "methyl_type"] = sauce_data.loc[index, "methyl_type"]
                             current_index += 1
-                            print(current_index)
+
                     else:
                         #resrt atom index and then build fingerprint
                         fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
@@ -545,7 +545,7 @@ class Model_class():
             '../Cumulative Proportion of Variance Explained foe label_{}'.format(file_name))
         #plt.show()
         plt.close()
-
+        return pca_df
     def three_D_pca(self,datasets,y_label,file_name=""):
 
         import plotly.express as px
@@ -593,7 +593,7 @@ class Model_class():
         #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
         rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
                              hyperparameters, scoring='roc_auc_ovr_weighted',
-                             cv=5,
+                             cv=3,
                              verbose=3,
                              n_jobs=10)
 
@@ -618,6 +618,7 @@ class Model_class():
         plt.title(
             "Accuracy with different estimators and features for RF model")
         plt.savefig("../Accuracy with different estimators and features for RF model_{}".format(file_name))
+        plt.close()
         #plt.show()
         fi = pd.DataFrame(data=rf_cv.best_estimator_.feature_importances_, index=X_train.columns,
                           columns=['Importance']) \

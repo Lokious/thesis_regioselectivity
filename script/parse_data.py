@@ -18,6 +18,7 @@ from rdkit.Chem import RDKFingerprint, SDMolSupplier
 from rdkit.Chem.Draw import IPythonConsole
 from rdkit.Chem import Draw, AllChem, rdChemReactions
 #import pikachu
+from Model_class import Model_class
 from molecular_class import Molecule
 import glob
 import dill
@@ -43,6 +44,24 @@ def target_sequences(file):
     hmmscan_df.columns = ["index","id"]
 
     return hmmscan_df
+def read_hmmscan_out(file):
+    print(file)
+    file = open(file).readlines()
+
+    hmmscan_df={}
+    hmmscan_df["domain"]=[]
+    hmmscan_df["entry"] = []
+    for i,line in enumerate(file):
+        if line.startswith("#")==False:
+            domian=line.split()[0]
+            entry= line.split()[3]
+            hmmscan_df["entry"].append(domian)
+            hmmscan_df["domain"].append(entry)
+    hmmscan_df=pd.DataFrame(hmmscan_df,index=range(len(hmmscan_df["domain"])))
+    print((hmmscan_df["domain"].value_counts())[:10])
+    return hmmscan_df
+
+
 def remove_duplicated_id(directory):
     """
     This is to extract the hits uniprot id from hmmscan and remove the repeat part
@@ -276,12 +295,13 @@ def read_msa_and_encoding(file_name=""):
     :param file_name: string, the file name for aligned sequences
     :return:
     """
-    file = "data/align/Keeplength/{}_addmodel".format(file_name)
+    file = "../autodata/align/Keeplength/{}_addmodel_rm".format(file_name)
 
     #read alignment
+    #align = AlignIO.read(file_name, "clustal")
     align = AlignIO.read(file, "fasta")
     align_array = np.array([list(rec) for rec in align], np.character)
-
+    print(align_array)
 
     char_list = np.unique(align_array)
 
@@ -303,7 +323,7 @@ def read_msa_and_encoding(file_name=""):
         if gap_percentage > 0.8:
 
             align_pd.drop(columns=[column],inplace=True)
-    #print(align_pd)
+    print(align_pd)
     # the length of aligned sequence after remove some columns contains a lot of gaps
     seq_length=len(align_pd.columns)
     print("seq_length:{}".format(seq_length))
@@ -329,12 +349,95 @@ def read_msa_and_encoding(file_name=""):
     # encode_seq["domain"] = len(encode_seq.index)*[file_name]
     encode_seq = (encode_seq.reset_index()).drop(columns='index')
     print(encode_seq)
-    with open("data/protein_encoding/{}_onehot_encoding".format(file_name),
-              "wb") as dill_file:
-        dill.dump(encode_seq, dill_file)
-    encode_seq.to_csv("data/protein_encoding/{}_onehot_encoding.csv".format(file_name))
+    # with open("../autodata/protein_encoding/{}_onehot_encoding_sepreate".format(file_name),
+    #           "wb") as dill_file:
+    #     dill.dump(encode_seq, dill_file)
+    #encode_seq.to_csv("../autodata/protein_encoding/{}_onehot_encoding_sepreate.csv".format(file_name))
+    encode_seq.to_csv(
+        "{}_onehot_encoding_sepreate_without_drop.csv".format(
+            file_name))
     return encode_seq
+def K_mer_generation(k:int=0)->list:
+    """
 
+    :param k:
+    :return:
+    """
+    from itertools import product
+    AA=["A", "R", "N", "D", "C", "E", "Q", "G", "H", "I", "L", "K", "M", "F", "P", "S", "T", "W", "Y", "V","X","-"]
+    k_mer = list(product(AA,repeat=k))
+    for i,item in enumerate(k_mer):
+       k_mer[i]="".join(item)
+    return k_mer
+def k_mer_encoding(file_name,k):
+    """
+    This is the function of create k_mer_encoding for sepreate groups
+    :param file_name: string,group name
+    :param k:int, the length of k
+    :return: align_pd:sequences encoding pd.Dataframe with group and id
+    """
+    file = "../autodata/align/Keeplength/{}_addmodel_rm".format(file_name)
+    # read alignment
+    align = AlignIO.read(file, "fasta")
+    sequences_dictionary={}
+    for record in align:
+        sequences_dictionary[record.id]=("".join(list(record.seq)))
+    print(sequences_dictionary)
+    #all possiable k_mer
+    K_mer_list=K_mer_generation(k)
+    ids = list(rec.id for rec in align)
+    align_pd = pd.DataFrame(data=np.zeros((len(ids),len(K_mer_list+["ID","group"]))),columns=(K_mer_list+["ID","group"]),index=list(set(ids)))
+    align_pd["group"]=align_pd["group"].astype("str")
+    print(align_pd)
+    for index,id in enumerate(list(align_pd.index)):
+        sequences = sequences_dictionary[id]
+        print(index)
+        for start_site in range(0,len(sequences),k):
+            three_mer= "".join(sequences[start_site:(start_site + k)])
+            if len(three_mer)== k:
+                align_pd.loc[id,three_mer]=align_pd.loc[id,three_mer]+1
+                align_pd.loc[id,"group"]=file_name
+            else:
+                continue
+
+    print(align_pd)
+    align_pd.to_csv("{}_k_mer_encoding_sepreate.csv".format(file_name))
+    return align_pd
+def merge_encoding_to_onefile():
+
+    files=["O","N","O_N","S","C","Se","Co"]
+    pd_list=[]
+    for file in files:
+        pd_add = pd.read_table("{}_k_mer_encoding_sepreate.csv".format(file),header=0,index_col=0)
+        pd_list.append(pd_add)
+    all_pd=pd.concat(pd_list)
+    print(all_pd)
+    all_pd=all_pd.loc[:, all_pd.sum() != 0]
+    return all_pd
+def hierarchical_clustering(sequence_data):
+    from sklearn.cluster import AgglomerativeClustering
+    from scipy.cluster.hierarchy import fcluster, cut_tree, linkage, dendrogram
+    import matplotlib.pyplot as plt
+
+    model = Model_class()
+    pca_df=model.run_PCA(sequence_data.drop("ID"), sequence_data["group"], file_name="")
+    fig, axes = plt.subplots(2, 3, figsize=(15, 15))
+    axis = [[0, 0], [0, 1], [0, 2],
+            [1, 0], [1, 1], [1, 2]]
+    methods = ['complete', 'average', 'single'] * 2
+    metric = ['correlation', 'euclidean'] * 3
+    for metd, metr, j in zip(methods, metric, axis):
+        # print(j[0], j[1], i)
+
+        hc = linkage(sequence_data, method=metd, metric=metr)
+        hc_clusters = cut_tree(hc, 4).ravel()
+
+        axes[j[0], j[1]].scatter(pca_df.PC1, pca_df.PC2, c=hc_clusters, s=5)
+        axes[j[0], j[1]].set_title(f'Method = {metd}; metric = {metr}')
+        axes[j[0], j[1]].set_xlabel('PC1')
+        axes[j[0], j[1]].set_ylabel('PC2')
+    fig.suptitle('Hierarchical clusters on PCA 2 Dimension ')
+    plt.show()
 def clean_seq():
     #remove duplicate sequneces in fasta file
     file_list = ["PF08241","PF05175","PF08242","PF13489","PF13649","PF13847"]
@@ -370,6 +473,11 @@ def clean_seq():
 
 
 def main():
-    unittest.main()
+    #unittest.main()
+
+    for i in ["O","N","O_N","S","C","Se","Co"]:
+    #     trget_df=read_hmmscan_out("../autodata/align/hmmsearch/{}_tblout.tsv".format(i))
+
+        k_mer_encoding(i,3)
 if __name__ == "__main__":
     main()

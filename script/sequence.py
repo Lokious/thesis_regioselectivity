@@ -76,12 +76,29 @@ class sequences():
                         SeqIO.write(record, outFile, 'fasta')
         else:
             print("finished removing duplicate")
+    def rename_sequences(self):
+        from Bio.Seq import Seq
+        from Bio.SeqRecord import SeqRecord
+        for file in ["O", "N", "C", "O_N", "S", "Co", "Se"]:
+            with open('../autodata/sequences/all_rename_type.fasta'.format(file),
+                      'a') as outFile:
+                for record in SeqIO.parse("../autodata/sequences/{}_rm.fasta".format(file), 'fasta'):
+                    record_rename=SeqRecord(
+                    seq=record.seq,
+                    id=(file),
+                    name=record.name)
+                    SeqIO.write(record_rename, outFile, 'fasta')
+                    # print(record)
+                    # print(record_rename)
+
+
 def main():
     #unittest.main()
 
     seq=sequences()
+
     #seq.group_seq_based_on_methylated_type(inputfile="../autodata/seq_smiles_all.csv",save_directory="../autodata/sequences")
-    #seq.remove_duplicate(["O","N","O_N","S","C","Se","Co"])
+    #seq.remove_duplicate(["S_seed"])
     # seq.group_fg_based_on_methylated_type("../autodata/seq_smiles_all.csv",)
 
 if __name__ == "__main__":

@@ -144,7 +144,7 @@ class Molecule:  # classes are written in CamelCase
         morgan_bit_vector = AllChem.GetMorganFingerprintAsBitVect(
             submol, 
             radius,
-            num_bits
+         num_bits
         )
         
         # We convert the RDKit vetor object to a numpy array.

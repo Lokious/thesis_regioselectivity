@@ -11,4 +11,5 @@ data/input_dataframe_withoutstructure_1024
 data/*
 autodata/*
 *.png
+script/*.csv
 #data/seq_smiles.csv

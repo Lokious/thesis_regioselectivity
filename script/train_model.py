@@ -12,9 +12,9 @@ mo_del = Model_class()
 today = date.today()
 # dd/mm/YY
 d1 = today.strftime("%d_%m_%Y")
-filename_list=["As", "O", "S", "N", "C","Te","Se"]
+filename_list=[ "N", "C","Te","Se","O_N","Co","As"]
 for file in filename_list:
-    input_dataframe = pd.read_csv("../data/input_data/input1024fg_dpna_bond2_{}_onehot_encoding.csv.csv".format(file), header=0, index_col=0)
+    input_dataframe = pd.read_csv("../autodata/input_data/input128fg_dpna_bond3_{}_onehot_encoding.csv.csv".format(file), header=0, index_col=0)
 
     X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
         input_dataframe)
@@ -28,4 +28,4 @@ for file in filename_list:
     # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
     #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
     model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                            "sepreate_align_input1024fg_bi_type_bond2_rf{}_{}".format(d1,file),i=0)
+                            "sepreate_align_input128fg_bi_type_bond2_rf{}_{}".format(d1,file),i=0)

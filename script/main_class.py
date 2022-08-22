@@ -57,24 +57,43 @@ def build_different_input(auto="",x="",num_bit:int=0,radius:int=0,seqfile:str="6
                 "../{}data/input_dataframe_withoutstructure_dropatoms{}_drop_duplicate_drop_atom_withtype_bond{}.csv".format(auto,
                     str(num_bit), str(radius)), header=0, index_col=0)
         else:
-            X = pd.read_csv("{}_{}_withtype_bond{}_['{}'].csv".format(x,num_bit,radius,group),header=0,index_col=0)
+            X = pd.read_csv("{}".format(x),header=0,index_col=0)
     except:
-        data_with_site = pd.read_csv("../{}data/seq_smiles_all.csv".format(auto), header=0, index_col=0)
-        with open('../{}data/diction_atom_all'.format(auto), 'rb') as file1:
-            diction_atom = dill.load(file1)
-        X = mo_del.save_fingerprints_to_dataframe(data_with_site, diction_atom,
-                                                  num_bit, radius,
-                                                  drop_atoms=True,
-                                                  file_name="{}_drop_duplicate_drop_atom_withtype_bond{}".format(str(num_bit),str(radius)))
+        if x=="":
+            print("meet problem while trying to reading X")
+            data_with_site = pd.read_csv("../{}data/seq_smiles_all.csv".format(auto), header=0, index_col=0)
+            with open('../{}data/diction_atom_all'.format(auto), 'rb') as file1:
+                diction_atom = dill.load(file1)
+            create_fingerprint=input("please input Y to continue:")
+            if create_fingerprint=="Y" or "y":
+                X = mo_del.save_fingerprints_to_dataframe(data_with_site, diction_atom,
+                                                      num_bit, radius,
+                                                      drop_atoms=True,
+                                                      file_name="{}_drop_duplicate_drop_atom_withtype_bond{}".format(str(num_bit),str(radius)))
+            else:
+                print("existing-----")
+                exit()
+        else:
+            raise IOError("The input x is not exit")
+
+    print(X)
+    X.dropna(inplace=True)
+    print("x after drop na:")
     print(X)
     try:
-        add_dataframe = pd.read_csv("../{}data/protein_encoding/{}_onehot_encoding.csv".format(auto,group), header=0, index_col=0)
+        add_dataframe = pd.read_csv("../{}data/protein_encoding/{}_{}fg_rm.csv".format(auto,seqfile,str(num_bit)), header=0, index_col=0)
         print(add_dataframe)
     except:
-        parse_data.read_msa_and_encoding(group)
+        print("../{}data/protein_encoding/{}_{}fg.csv missing, build protein_encoding data------".format(auto,seqfile,str(num_bit)))
+        create_add_dataframe=input("please input Y to continue:")
+        if create_add_dataframe == "y" or "Y":
+            add_dataframe=parse_data.read_msa_and_encoding(group)
+        else:
+            print("existing-----")
+            exit()
     start_index = num_bit*2
     #print(start_index)
-    if list(add_dataframe.columns)[0] != str(str):
+    if list(add_dataframe.columns)[0] != str(start_index):
         print("renaming columns----")
         map_dictionary ={}
         for col in add_dataframe.columns:
@@ -88,7 +107,7 @@ def build_different_input(auto="",x="",num_bit:int=0,radius:int=0,seqfile:str="6
         print("####rename column finished####")
         print(add_dataframe)
         add_dataframe.to_csv(
-                "../{}data/protein_encoding/{}_{}fg.csv".format(auto,seqfile,str(num_bit)))
+                "../{}data/protein_encoding/{}_{}fg_rm.csv".format(auto,seqfile,str(num_bit)))
     print("merging fingerprint and sequences encoding---------")
     input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
     print(input_dataframe)
@@ -107,7 +126,7 @@ def sepreate_input(auto="",file="",numbit:int=2048,bond:int=2):
         print(group)
         sub_df.reset_index(drop=True,inplace=True)
 
-        sub_df.to_csv("../{}data/input_data/group/{}_{}_{}.csv".format(auto,group,str(numbit),str(bond)))
+        sub_df.to_csv("../{}data/group/{}_{}_{}.csv".format(auto,group,str(numbit),str(bond)))
 def main():
     today = date.today()
     # dd/mm/YY
@@ -121,16 +140,19 @@ def main():
     # mo_del.save_fingerprints_to_dataframe(data_with_site,diction_atom,128,3,True,"{}_manual_drop_duplicate_drop_atom_withtype_bond{}".format(str(128),str(3)))
     #
 
-    seq=sequences()
+    #seq=sequences()
     #seq.group_seq_based_on_methylated_type()
     #seq.group_fg_based_on_methylated_type("data/input_dataframe_withoutstructure_dropatoms2048_drop_duplicate_drop_atom_withtype_bond2.csv",2048,2)
-    groups=["O","N","O_N","S","C","Se","Co"]
+    groups=["O","N","O_N","S","C","Se","Co","As"]
     for group in groups:
-        build_different_input(auto="auto", x="", num_bit=128, radius=3,group=group)
+        parse_data.read_msa_and_encoding("{}".format(group))
+    #sepreate_input("auto","../autodata/input_dataframe_withoutstructure_dropatoms128_drop_duplicate_drop_atom_withtype_bond3.csv",128,3)
+    #create protein encoding
     # for group in groups:
     #     parse_data.read_msa_and_encoding("{}".format(group))
     # for group in groups:
-    #     build_different_input("data/group/input_dataframe_dropatoms",2048,2,seqfile="{}_onehot_encoding.csv".format(group),group=group)
+    #     print(group)
+    #     build_different_input(auto="auto",x="../autodata/group/['{}']_128_3.csv".format(group),num_bit=128,radius=3,seqfile="{}_onehot_encoding.csv".format(group),group=group)
     #parse_data.read_msa_and_encoding(file_name="uniprot_and_manual_align")
     # mo_del.group_by_site()
     #sepreate_input(file="../autodata/input_data/input128fg_dpna_bond2_6_seed_onehot_encoding.csv.csv", numbit = 128, bond= 3)
