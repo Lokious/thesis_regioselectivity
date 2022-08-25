@@ -18,11 +18,11 @@ from rdkit.Chem import RDKFingerprint, SDMolSupplier
 from rdkit.Chem.Draw import IPythonConsole
 from rdkit.Chem import Draw, AllChem, rdChemReactions
 #import pikachu
-from Model_class import Model_class
+
 from molecular_class import Molecule
 import glob
 import dill
-from Bio import AlignIO
+from Bio import AlignIO, SeqIO
 from sequence import sequences
 import numpy as np
 import unittest
@@ -321,7 +321,6 @@ def read_msa_and_encoding(file_name=""):
         gap_percentage = (gap_num/len(align_pd.index))
 
         if gap_percentage > 0.8:
-
             align_pd.drop(columns=[column],inplace=True)
     print(align_pd)
     # the length of aligned sequence after remove some columns contains a lot of gaps
@@ -352,10 +351,10 @@ def read_msa_and_encoding(file_name=""):
     # with open("../autodata/protein_encoding/{}_onehot_encoding_sepreate".format(file_name),
     #           "wb") as dill_file:
     #     dill.dump(encode_seq, dill_file)
-    #encode_seq.to_csv("../autodata/protein_encoding/{}_onehot_encoding_sepreate.csv".format(file_name))
-    encode_seq.to_csv(
-        "{}_onehot_encoding_sepreate_without_drop.csv".format(
-            file_name))
+    encode_seq.to_csv("../autodata/protein_encoding/{}_onehot_encoding_sepreate.csv".format(file_name))
+    # encode_seq.to_csv(
+    #     "{}_onehot_encoding_sepreate_without_drop.csv".format(
+    #         file_name))
     return encode_seq
 def K_mer_generation(k:int=0)->list:
     """
@@ -364,7 +363,7 @@ def K_mer_generation(k:int=0)->list:
     :return:
     """
     from itertools import product
-    AA=["A", "R", "N", "D", "C", "E", "Q", "G", "H", "I", "L", "K", "M", "F", "P", "S", "T", "W", "Y", "V","X","-"]
+    AA=["A", "R", "N", "D", "C", "E", "Q", "G", "H", "I", "L", "K", "M", "F", "P", "S","U", "T", "W", "Y", "V","B","Z","X","J","O","-"]
     k_mer = list(product(AA,repeat=k))
     for i,item in enumerate(k_mer):
        k_mer[i]="".join(item)
@@ -376,16 +375,17 @@ def k_mer_encoding(file_name,k):
     :param k:int, the length of k
     :return: align_pd:sequences encoding pd.Dataframe with group and id
     """
-    file = "../autodata/align/Keeplength/{}_addmodel_rm".format(file_name)
+    file = "../autodata/sequences/{}_rm.fasta".format(file_name)
     # read alignment
-    align = AlignIO.read(file, "fasta")
+    seqs = SeqIO.parse(file, "fasta")
     sequences_dictionary={}
-    for record in align:
+    for record in seqs:
         sequences_dictionary[record.id]=("".join(list(record.seq)))
     print(sequences_dictionary)
     #all possiable k_mer
     K_mer_list=K_mer_generation(k)
-    ids = list(rec.id for rec in align)
+    ids = list(sequences_dictionary.keys())
+    print("id:{}".format(ids))
     align_pd = pd.DataFrame(data=np.zeros((len(ids),len(K_mer_list+["ID","group"]))),columns=(K_mer_list+["ID","group"]),index=list(set(ids)))
     align_pd["group"]=align_pd["group"].astype("str")
     print(align_pd)
@@ -401,43 +401,91 @@ def k_mer_encoding(file_name,k):
                 continue
 
     print(align_pd)
-    align_pd.to_csv("{}_k_mer_encoding_sepreate.csv".format(file_name))
+    align_pd.to_csv("../autodata/protein_encoding/{}_k_mer_encoding_without_align.csv".format(file_name))
     return align_pd
+
 def merge_encoding_to_onefile():
 
-    files=["O","N","O_N","S","C","Se","Co"]
+    files=["O","N","S","C","Co"]
     pd_list=[]
     for file in files:
-        pd_add = pd.read_table("{}_k_mer_encoding_sepreate.csv".format(file),header=0,index_col=0)
+        try:
+            pd_add = pd.read_table("../autodata/protein_encoding/{}_k_mer_encoding_without_align.csv".format(file),header=0,index_col=0)
+            print(pd_add)
+        except:
+            print("create k_mer encoding.....")
+            pd_add=k_mer_encoding(file, 3)
+
         pd_list.append(pd_add)
-    all_pd=pd.concat(pd_list)
+    all_pd=pd.concat(pd_list,axis=0)
     print(all_pd)
     all_pd=all_pd.loc[:, all_pd.sum() != 0]
+    print(all_pd)
+    all_pd.to_csv("../autodata/protein_encoding/all_k_mer_encoding_sepreate_without_align.csv")
     return all_pd
-def hierarchical_clustering(sequence_data):
-    from sklearn.cluster import AgglomerativeClustering
-    from scipy.cluster.hierarchy import fcluster, cut_tree, linkage, dendrogram
-    import matplotlib.pyplot as plt
 
-    model = Model_class()
-    pca_df=model.run_PCA(sequence_data.drop("ID"), sequence_data["group"], file_name="")
-    fig, axes = plt.subplots(2, 3, figsize=(15, 15))
-    axis = [[0, 0], [0, 1], [0, 2],
-            [1, 0], [1, 1], [1, 2]]
-    methods = ['complete', 'average', 'single'] * 2
-    metric = ['correlation', 'euclidean'] * 3
-    for metd, metr, j in zip(methods, metric, axis):
-        # print(j[0], j[1], i)
+def get_active_and_binding_site_realted_to_methylation():
+    """
+    The input data is downloaded from Uniprot database
+    :return:
+    """
+    entry_acs_pd=pd.read_excel("../autodata/uniprot_activesite.xlsx",header=0,index_col=None)
+    entry_acs_pd["active_site_AA"]=pd.DataFrame(
+            len(entry_acs_pd.index) * [0])
+    entry_acs_pd["binding_site_AA"]=pd.DataFrame(
+            len(entry_acs_pd.index) * [0])
+    entry_acs_pd["CHEBI"]=pd.DataFrame(
+            len(entry_acs_pd.index) * [0])
+    entry_acs_pd["PDB_binding_site"]=pd.DataFrame(
+            len(entry_acs_pd.index) * [0])
+    for index in entry_acs_pd.index:
+        active_sites_list=(entry_acs_pd.loc[index,"Active site"]).split("ACT_SITE")[1:]
+        siteAA_list=[]
+        #split active site and extract related to methylation
+        for active_site_list in active_sites_list:
+            site = active_site_list.split(";")[0]
 
-        hc = linkage(sequence_data, method=metd, metric=metr)
-        hc_clusters = cut_tree(hc, 4).ravel()
+            if ("methyl" or "MT") in "".join(active_site_list.split(";")):
 
-        axes[j[0], j[1]].scatter(pca_df.PC1, pca_df.PC2, c=hc_clusters, s=5)
-        axes[j[0], j[1]].set_title(f'Method = {metd}; metric = {metr}')
-        axes[j[0], j[1]].set_xlabel('PC1')
-        axes[j[0], j[1]].set_ylabel('PC2')
-    fig.suptitle('Hierarchical clusters on PCA 2 Dimension ')
-    plt.show()
+                siteAA_list.append(site)
+        else:
+            entry_acs_pd.loc[index,"active_site_AA"]=",".join(siteAA_list)
+        # split binding site and save ligand's CHEBI, save intwo columns in same order
+        if pd.isna(entry_acs_pd.loc[index,"Binding site"])==False:
+
+            binding_sites_list=(entry_acs_pd.loc[index,"Binding site"]).split("BINDING")[1:]
+            bindingsiteAA_list=[]
+            chebi_list =[]
+            pdb_id_list=[]
+            print(index)
+
+            for binding_site_list in binding_sites_list:
+
+                site = binding_site_list.split(";")[0]
+                bindingsiteAA_list.append(site)
+                try:
+                    chebi_list.append((binding_site_list.split('"ChEBI:')[1]).split(";")[0])
+                except:
+                    chebi_list.append(" ")
+                try:
+                    pdb_id_list.append((binding_site_list.split("PDB:")[1])[:4])
+                    #print(binding_site_list.split("PDB:")[1])
+                    print(pdb_id_list)
+                except:
+                    pdb_id_list.append(" ")
+            entry_acs_pd.loc[index,"binding_site_AA"]=",".join(bindingsiteAA_list)
+            entry_acs_pd.loc[index,"CHEBI"] = ",".join(chebi_list)
+            entry_acs_pd.loc[index,"PDB_binding_site"] = ",".join(pdb_id_list)
+        else:
+            entry_acs_pd.loc[index, "binding_site_AA"] = ""
+            entry_acs_pd.loc[index, "CHEBI"] = "NA"
+            entry_acs_pd.loc[index,"PDB_binding_site"] = ""
+    #drop those without related active sites
+    entry_acs_pd=entry_acs_pd[~((entry_acs_pd["active_site_AA"] == "") & (entry_acs_pd["binding_site_AA"] == ""))]
+    #entry_acs_pd.dropna(subset=["active_site_AA","binding_site_AA"],inplace=True)
+    print(entry_acs_pd)
+    entry_acs_pd.to_csv("../autodata/entry_with_activesite.csv")
+
 def clean_seq():
     #remove duplicate sequneces in fasta file
     file_list = ["PF08241","PF05175","PF08242","PF13489","PF13649","PF13847"]
@@ -475,9 +523,9 @@ def clean_seq():
 def main():
     #unittest.main()
 
-    for i in ["O","N","O_N","S","C","Se","Co"]:
+    #for i in ["O","N","O_N","S","C","Se","Co"]:
     #     trget_df=read_hmmscan_out("../autodata/align/hmmsearch/{}_tblout.tsv".format(i))
-
-        k_mer_encoding(i,3)
+    get_active_and_binding_site_realted_to_methylation()
+    #merge_encoding_to_onefile()
 if __name__ == "__main__":
     main()

@@ -50,72 +50,80 @@ def build_different_input(auto="",x="",num_bit:int=0,radius:int=0,seqfile:str="6
     :return:
     """
     mo_del = Model_class()
-
     try:
-        if x=="":
-            X = pd.read_csv(
-                "../{}data/input_dataframe_withoutstructure_dropatoms{}_drop_duplicate_drop_atom_withtype_bond{}.csv".format(auto,
-                    str(num_bit), str(radius)), header=0, index_col=0)
-        else:
-            X = pd.read_csv("{}".format(x),header=0,index_col=0)
+        input_dataframe=pd.read_csv(
+            "../{}data/input_data/input{}fg_dpna_bond{}_{}.csv".format(auto,
+                                                                       str(num_bit),
+                                                                       str(radius),
+                                                                       seqfile),header=0,index_col=0)
+        print(input_dataframe)
     except:
-        if x=="":
-            print("meet problem while trying to reading X")
-            data_with_site = pd.read_csv("../{}data/seq_smiles_all.csv".format(auto), header=0, index_col=0)
-            with open('../{}data/diction_atom_all'.format(auto), 'rb') as file1:
-                diction_atom = dill.load(file1)
-            create_fingerprint=input("please input Y to continue:")
-            if create_fingerprint=="Y" or "y":
-                X = mo_del.save_fingerprints_to_dataframe(data_with_site, diction_atom,
-                                                      num_bit, radius,
-                                                      drop_atoms=True,
-                                                      file_name="{}_drop_duplicate_drop_atom_withtype_bond{}".format(str(num_bit),str(radius)))
+        print("creating inputframe for :{}".format(seqfile))
+        try:
+            if x=="":
+                X = pd.read_csv(
+                    "../{}data/input_dataframe_withoutstructure_dropatoms{}_drop_duplicate_drop_atom_withtype_bond{}.csv".format(auto,
+                        str(num_bit), str(radius)), header=0, index_col=0)
             else:
-                print("existing-----")
-                exit()
-        else:
-            raise IOError("The input x is not exit")
+                X = pd.read_csv("{}".format(x),header=0,index_col=0)
+        except:
+            if x=="":
+                print("meet problem while trying to reading X")
+                data_with_site = pd.read_csv("../{}data/seq_smiles_all.csv".format(auto), header=0, index_col=0)
+                with open('../{}data/diction_atom_all'.format(auto), 'rb') as file1:
+                    diction_atom = dill.load(file1)
+                create_fingerprint=input("please input Y to continue:")
+                if create_fingerprint=="Y" or "y":
+                    X = mo_del.save_fingerprints_to_dataframe(data_with_site, diction_atom,
+                                                          num_bit, radius,
+                                                          drop_atoms=True,
+                                                          file_name="drop_duplicate_drop_atom_withtype".format(str(num_bit),str(radius)))
+                else:
+                    print("existing-----")
+                    exit()
+            else:
+                raise IOError("The input x is not exit")
 
-    print(X)
-    X.dropna(inplace=True)
-    print("x after drop na:")
-    print(X)
-    try:
-        add_dataframe = pd.read_csv("../{}data/protein_encoding/{}_{}fg_rm.csv".format(auto,seqfile,str(num_bit)), header=0, index_col=0)
-        print(add_dataframe)
-    except:
-        print("../{}data/protein_encoding/{}_{}fg.csv missing, build protein_encoding data------".format(auto,seqfile,str(num_bit)))
-        create_add_dataframe=input("please input Y to continue:")
-        if create_add_dataframe == "y" or "Y":
+        print(X)
+        X.dropna(inplace=True)
+        print("x after drop na:")
+        print(X)
+        try:
+            add_dataframe = pd.read_csv("../{}data/protein_encoding/{}_{}fg_rm.csv".format(auto,seqfile,str(num_bit)), header=0, index_col=0)
+            print(add_dataframe)
+        except:
+            print("../{}data/protein_encoding/{}_{}fg.csv missing, build protein_encoding data------".format(auto,seqfile,str(num_bit)))
+            # create_add_dataframe=input("please input Y to continue:")
+            # if create_add_dataframe == "y" or "Y":
             add_dataframe=parse_data.read_msa_and_encoding(group)
-        else:
-            print("existing-----")
-            exit()
-    start_index = num_bit*2
-    #print(start_index)
-    if list(add_dataframe.columns)[0] != str(start_index):
-        print("renaming columns----")
-        map_dictionary ={}
-        for col in add_dataframe.columns:
-            if (col != "Entry") and (col != "index"):
+            # else:
+            #     print("existing-----")
+            #     exit()
+        start_index = num_bit*2
+        #print(start_index)
+        if list(add_dataframe.columns)[0] != str(start_index):
+            print("renaming columns----")
+            map_dictionary ={}
+            for col in add_dataframe.columns:
+                if (col != "Entry") and (col != "index"):
 
-                map_dictionary[col] = str(int(col)+int(start_index))
+                    map_dictionary[col] = str(int(col)+int(start_index))
 
-            else:
-                continue
-        add_dataframe = add_dataframe.rename(columns=map_dictionary)
-        print("####rename column finished####")
-        print(add_dataframe)
-        add_dataframe.to_csv(
-                "../{}data/protein_encoding/{}_{}fg_rm.csv".format(auto,seqfile,str(num_bit)))
-    print("merging fingerprint and sequences encoding---------")
-    input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
-    print(input_dataframe)
-    input_dataframe = input_dataframe.dropna(axis=0, how="any")
-    print(input_dataframe)
-    print("saving input data.......")
-    #
-    input_dataframe.to_csv("../{}data/input_data/input{}fg_dpna_bond{}_{}.csv".format(auto,str(num_bit),str(radius),seqfile))
+                else:
+                    continue
+            add_dataframe = add_dataframe.rename(columns=map_dictionary)
+            print("####rename column finished####")
+            print(add_dataframe)
+            add_dataframe.to_csv(
+                    "../{}data/protein_encoding/{}_{}fg_rm.csv".format(auto,seqfile,str(num_bit)))
+        print("merging fingerprint and sequences encoding---------")
+        input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
+        print(input_dataframe)
+        input_dataframe = input_dataframe.dropna(axis=0, how="any")
+        print(input_dataframe)
+        print("saving input data.......")
+        #
+        input_dataframe.to_csv("../{}data/input_data/input{}fg_dpna_bond{}_{}.csv".format(auto,str(num_bit),str(radius),seqfile))
 
 def sepreate_input(auto="",file="",numbit:int=2048,bond:int=2):
     input_dataall=pd.read_csv(file,header=0,index_col=0)
@@ -127,11 +135,61 @@ def sepreate_input(auto="",file="",numbit:int=2048,bond:int=2):
         sub_df.reset_index(drop=True,inplace=True)
 
         sub_df.to_csv("../{}data/group/{}_{}_{}.csv".format(auto,group,str(numbit),str(bond)))
+def perform_cluster_based_on_substrate(file_directory="../autodata/fingerprint/input_dataframe_withoutstructure_dropatoms128_drop_duplicate_drop_atom_withtype_bond3.csv"):
+    input_data=pd.read_csv("{}".format(file_directory),header=0,index_col=0)
+
+    # Define clustering setup
+    def ClusterFps(fps, cutoff=0.2):
+        from rdkit import DataStructs
+        from rdkit.ML.Cluster import Butina
+
+        # first generate the distance matrix:
+        dists = []
+        nfps = len(fps)
+        for i in range(1, nfps):
+            sims = DataStructs.BulkTanimotoSimilarity(fps[i], fps[:i])
+            dists.extend([1 - x for x in sims])
+
+        # now cluster the data:
+        cs = Butina.ClusterData(dists, nfps, cutoff, isDistData=True)
+        return cs
+    fingerprintlist=[]
+    fg_df = (input_data.iloc[:,:256])
+    fgs=[]
+    print(fg_df.shape)
+    for i,index in enumerate(fg_df.index):
+        line = fg_df.loc[[index]]
+        print(line)
+        fgs.append("".join([str(i) for i in line]))
+        fgs[i]=DataStructs.cDataStructs.CreateFromBitString(fgs[i])
+    print(fgs)
+    clusters = ClusterFps(fgs, cutoff=0.4)
+    print(clusters)
+def cluster_with_initial_centroids():
+    centroid_idx = [0, 2]  # let data point 0 and 2 be our centroids
+    centroids = X[centroid_idx, :]
+    print(centroids)  # [[1. 0. 0.]
+    # [0. 0. 1.]]
+
+    kmeans = KMeans(n_clusters=2, init=centroids,
+                    max_iter=1)  # just run one k-Means iteration so that the centroids are not updated
+
+    kmeans.fit(X)
+    kmeans.labels_
 def main():
     today = date.today()
     # dd/mm/YY
     d1 = today.strftime("%d_%m_%Y")
-    mo_del = Model_class()
+    # mo_del = Model_class()
+    # sequence_data = pd.read_csv("../autodata/protein_encoding/all_k_mer_encoding_sepreate_without_align.csv",header=0,index_col=0)
+    # sequence_data['methyl_type']=sequence_data["group"]
+    # print(sequence_data)
+    # sequence_data.drop("group", inplace=True,axis=1)
+    # print(sequence_data.columns)
+    # mo_del.run_PCA(sequence_data,y_label=sequence_data['methyl_type'],file_name="all_k_mer_encoding_sepreate_without_align")
+
+    perform_cluster_based_on_substrate()
+    #mo_del.hierarchical_clustering(sequence_data)
     # data_with_site = pd.read_csv("../data/mannual_data.csv", header=0,
     #                              index_col=0)
     # with open('../data/methyl_site_dictionary', 'rb') as file1:
@@ -143,16 +201,38 @@ def main():
     #seq=sequences()
     #seq.group_seq_based_on_methylated_type()
     #seq.group_fg_based_on_methylated_type("data/input_dataframe_withoutstructure_dropatoms2048_drop_duplicate_drop_atom_withtype_bond2.csv",2048,2)
-    groups=["O","N","O_N","S","C","Se","Co","As"]
-    for group in groups:
-        parse_data.read_msa_and_encoding("{}".format(group))
+    groups=["N_seed","O_seed","S_seed","C_seed"]
+    # for group in groups:
+    #     parse_data.read_msa_and_encoding("{}".format(group))
     #sepreate_input("auto","../autodata/input_dataframe_withoutstructure_dropatoms128_drop_duplicate_drop_atom_withtype_bond3.csv",128,3)
     #create protein encoding
     # for group in groups:
     #     parse_data.read_msa_and_encoding("{}".format(group))
-    # for group in groups:
+    groups1 = ["N"]
+    # for group in groups1:
     #     print(group)
-    #     build_different_input(auto="auto",x="../autodata/group/['{}']_128_3.csv".format(group),num_bit=128,radius=3,seqfile="{}_onehot_encoding.csv".format(group),group=group)
+    #     build_different_input(auto="auto",x="../autodata/group/['{}']_128_3.csv".format(group),num_bit=128,radius=3,seqfile="{}_seed_onehot_encoding.csv".format(group),group=group)
+
+    '''
+    for file in groups:
+        input_dataframe = pd.read_csv(
+            "../autodata/input_data/input128fg_dpna_bond3_{}_onehot_encoding.csv.csv".format(file), header=0, index_col=0)
+
+        X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
+            input_dataframe)
+
+        # mo_del.three_D_pca(X_train, y_train, "{}_128_2".format(file))
+        # mo_del.run_PCA(X_train, y_train, "{}_128_2".format(file))
+        X_train = X_train.drop(columns=["methyl_type"])
+        X_test = X_test.drop(columns=["methyl_type"])
+        y_train = y_train.drop(columns=["methyl_type"])
+        y_test = y_test.drop(columns=["methyl_type"])
+        # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
+        #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
+        model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
+                                 "sepreate_align_input128fg_bi_type_bond3_rf{}_{}_spreate_seed".format(
+                                     d1, file), i=0)
+    '''
     #parse_data.read_msa_and_encoding(file_name="uniprot_and_manual_align")
     # mo_del.group_by_site()
     #sepreate_input(file="../autodata/input_data/input128fg_dpna_bond2_6_seed_onehot_encoding.csv.csv", numbit = 128, bond= 3)

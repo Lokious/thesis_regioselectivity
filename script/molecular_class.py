@@ -99,11 +99,11 @@ class Molecule:  # classes are written in CamelCase
             dtype=int)  # (one dimention, 0 is number of rows)
 
         #returns an RDKit vector object.
-
+        bi = {}
         morgan_bit_vector = AllChem.GetMorganFingerprintAsBitVect(
             substrate_molecular, 
             radius,
-            num_bits
+            num_bits,bitInfo=bi
         )
 
         # convert the RDKit vetor object to a numpy array.
@@ -139,12 +139,12 @@ class Molecule:  # classes are written in CamelCase
             (0,),
             dtype=int  # (one dimention, 0 is number of rows)
         )
-
+        bi = {}
         #returns an RDKit vector object.
         morgan_bit_vector = AllChem.GetMorganFingerprintAsBitVect(
             submol, 
             radius,
-         num_bits
+         num_bits,bitInfo=bi
         )
         
         # We convert the RDKit vetor object to a numpy array.

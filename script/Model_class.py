@@ -215,7 +215,7 @@ class Model_class():
             with open("../autodata/diction_atom_all", "wb") as dill_file:
                 dill.dump(atom_object_dictionary, dill_file)
             dataframe_rr.to_csv("../autodata/seq_smiles_all.csv")
-
+        return dataframe_rr
 
     def save_fingerprints_to_dataframe(self,sauce_data,atom_object_dictionary,num_bits: int = 2048,radius: int = 3,drop_atoms=False,file_name=""):
         """
@@ -312,12 +312,12 @@ class Model_class():
             except:
                     continue
         if drop_atoms:
-            input_dataframe.to_csv("../autodata/input_dataframe_withoutstructure_dropatoms{}.csv".format(file_name))
-            with open("../autodata/input_dataframe_withoutstructure_dropatoms{}".format(file_name), "wb") as dill_file:
+            input_dataframe.to_csv("../autodata/fingerprint_bit{}_radius{}_{}.csv".format(num_bits,radius,file_name))
+            with open("../autodata/fingerprint_bit{}_radius{}_{}".format(num_bits,radius,file_name), "wb") as dill_file:
                 dill.dump(input_dataframe, dill_file)
         else:
-            input_dataframe.to_csv("../autodata/input_dataframe_withoutstructure_{}.csv".format(file_name))
-            with open("../autodata/input_dataframe_withoutstructure_{}".format(file_name), "wb") as dill_file:
+            input_dataframe.to_csv("../autodata/fingerprint_bit{}_radius{}_{}.csv".format(num_bits,radius,file_name))
+            with open("../autodata/fingerprint_bit{}_radius{}_{}".format(num_bits,radius,file_name), "wb") as dill_file:
                 dill.dump(input_dataframe, dill_file)
         return input_dataframe
 
@@ -450,20 +450,20 @@ class Model_class():
         #show the lodings
         V1_PCA = pd.DataFrame(data=pca_loadings.abs(),
                               index=pca_loadings.index,
-                              columns=["V1","V2"])
+                              columns=["V1","V3"])
 
         V1_PCA['V_sum'] = V1_PCA.apply(lambda x: (x.abs()).sum(), axis=1)
         V1_PCA = V1_PCA.sort_values(by=["V_sum"], ascending=False)
         sns.barplot(data=V1_PCA.iloc[:30], x="V_sum", y=V1_PCA.index[:30]).set(
-            title='Sum of first 2 loading value of PCA')
+            title='Sum of v1 and v3 loading value of PCA')
 
-        plt.savefig("../Sum_of_first_2_loading_value_of_PCA_{}".format(file_name))
+        plt.savefig("../Sum_of_v1_v3_loading_value_of_PCA_{}".format(file_name))
 
         plt.close()
         pca_df = pd.DataFrame(pca_fit.fit_transform(data_with_site),index=data_with_site.index, columns=PC)
 
         fig, ax = plt.subplots()
-        plt.scatter(pca_df.PC1, pca_df.PC2, c=colour_label, s=3)
+        plt.scatter(pca_df.PC1, pca_df.PC3, c=colour_label, s=3)
 
         #show explained variance
         handle_list = []
@@ -474,10 +474,10 @@ class Model_class():
 
         #plt.scatter(pca_df.PC1, pca_df.PC2,  s=5,c=colour_label)
         plt.xlabel("pc1")
-        plt.ylabel("pc2")
-        plt.title("First two component of PCA coloured by methylation type")
+        plt.ylabel("pc3")
+        plt.title("PC1 AND 3 of PCA coloured by methylation type")
         plt.savefig(
-            "../pca_for encoding sequences and fingerprint_{}".format(file_name))
+            "../pca_for encoding sequences and fingerprint_PC1 AND PC3{}".format(file_name))
         plt.clf()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
                  pca_fit.explained_variance_ratio_, '-ro')
@@ -505,7 +505,7 @@ class Model_class():
             V.append("V" + str(i + 1))
             if i == min(521,(len(datasets.index)-1)):
                 break
-
+        """
         pca_fit = PCA(n_components=len(PC), random_state=42).fit(
             data_with_site)
 
@@ -545,6 +545,7 @@ class Model_class():
             '../Cumulative Proportion of Variance Explained foe label_{}'.format(file_name))
         #plt.show()
         plt.close()
+        """
         return pca_df
     def three_D_pca(self,datasets,y_label,file_name=""):
 
@@ -585,7 +586,7 @@ class Model_class():
         :return: randomforest model
         """
 
-        hyperparameters = {'n_estimators': [100,500,1000],
+        hyperparameters = {'n_estimators': [500,1000,2000],
                            'max_features': [0.3,0.5,0.7],
 
                            }
@@ -595,7 +596,7 @@ class Model_class():
                              hyperparameters, scoring='roc_auc_ovr_weighted',
                              cv=3,
                              verbose=3,
-                             n_jobs=10)
+                             n_jobs=16)
 
         rf_cv.fit(X_train, y_train)
         print(rf_cv.best_params_)
@@ -603,7 +604,9 @@ class Model_class():
         threshold_train = self.show_roc(rf_cv.best_estimator_, X_train, y_train, (file_name+"train"))
         #roc for test data
         threshold_test = self.show_roc(rf_cv.best_estimator_, X_test, y_test, (file_name + "test"))
-
+        self.cm_threshold(threshold_train, X_train, y_train, rf_cv.best_estimator_, (file_name+"train"))
+        self.cm_threshold(0.5, X_train, y_train, rf_cv.best_estimator_,
+                     (file_name + "train"))
         self.cm_threshold(threshold_test, X_test, y_test, rf_cv.best_estimator_, (file_name+"test"))
         self.cm_threshold(0.5, X_test, y_test, rf_cv.best_estimator_,
                      (file_name + "test"))
@@ -617,7 +620,7 @@ class Model_class():
         plt.ylabel("roc_auc_ovr_weighted (mean 5-fold CV)")
         plt.title(
             "Accuracy with different estimators and features for RF model")
-        plt.savefig("../Accuracy with different estimators and features for RF model_{}".format(file_name))
+        plt.savefig("../autodata/separate_seed_result/Accuracy with different estimators and features for RF model_{}".format(file_name))
         plt.close()
         #plt.show()
         fi = pd.DataFrame(data=rf_cv.best_estimator_.feature_importances_, index=X_train.columns,
@@ -628,7 +631,7 @@ class Model_class():
         sns.barplot(data=fi.head(20), x="Importance", y=(fi.head(20)).index).set_title(
             "feature importance for RF model")
         #fig = ax.get_figure()
-        plt.savefig('../trainmodel_output_figure/feature_importance{}.png'.format(file_name))
+        plt.savefig('../autodata/separate_seed_result/trainmodel_output_figure/feature_importance{}.png'.format(file_name))
         plt.close()
 
 
@@ -761,19 +764,22 @@ class Model_class():
         print(yhat)
         fpr, tpr, thresholds = metrics.roc_curve(y, yhat)
         roc_auc = metrics.auc(fpr, tpr)
-        display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr,
-                                          roc_auc=roc_auc).plot()
-        display.figure_.savefig("../RF ROC_curve_{}_data".format(file_name))
-        #plt.show()
-        plt.close()
-
-        gmeans=[]
+        gmeans = []
         for point in range(len(fpr)):
             gmean = sqrt(tpr[point] * (1 - fpr[point]))
             gmeans.append(gmean)
         # # locate the index of the largest g-mean
         ix = np.argmax(gmeans)
         print('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
+
+        display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr,
+                                          roc_auc=roc_auc).plot()
+        plt.title('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
+        display.figure_.savefig("../autodata/separate_seed_result/RF ROC_curve_{}_data".format(file_name))
+        #plt.show()
+        plt.close()
+
+
         return thresholds[ix]
 
     def cm_threshold(self,threshold,x,y,rf,file_name):
@@ -790,13 +796,49 @@ class Model_class():
                 'cm_{}_{}.png'.format(threshold, file_name),
                 dpi=300)
             plt.title(
-                "RF confusion matrix with best parameters_threshold:{}".format(
+                "RF confusion matrix threshold:{}".format(
                     threshold))
             cm_display.figure_.savefig(
-                '../trainmodel_output_figure/cm_threshold{}_{}.png'.format(
+                '../autodata/separate_seed_result/cm_threshold{}_{}.png'.format(
                     threshold, file_name), dpi=300)
             # plt.show()
             plt.close()
+
+    def hierarchical_clustering(self,sequence_data,label):
+        from sklearn.cluster import AgglomerativeClustering
+        from scipy.cluster.hierarchy import fcluster, cut_tree, linkage, \
+            dendrogram
+        import matplotlib.pyplot as plt
+
+
+        # pca_df = self.run_PCA(sequence_data,
+        #                        label, file_name="kmer_sequences")
+        fig, axes = plt.subplots(2, 3, figsize=(15, 15))
+        axis = [[0, 0], [0, 1], [0, 2],
+                [1, 0], [1, 1], [1, 2]]
+        methods = ['complete', 'average', 'single'] * 2
+        metric = ['correlation', 'euclidean'] * 3
+        # for metd, metr, j in zip(methods, metric, axis):
+        #     # print(j[0], j[1], i)
+        sequence_data.drop("methyl_type", inplace=True,axis=1)
+        print(sequence_data.to_numpy())
+        data = sequence_data.to_numpy()
+        # hc = linkage(data, method=metd, metric=metr)
+        # hc_clusters = cut_tree(hc, 4).ravel()
+        cluster=AgglomerativeClustering(n_clusters=5,affinity="euclidean")
+        cluster.fit(data)
+        labels=cluster.fit_predict(data)
+        print(labels)
+        data["cluster_label"]=list(labels)
+        data.to_csv("clustering_label.csv")
+        # axes[0,0].scatter(pca_df.PC1, pca_df.PC2, c=hc_clusters,
+        #                          s=5)
+        # axes[0,0].set_title(f'Method = "euclidean"')
+        # axes[0,0].set_xlabel('PC1')
+        # axes[0,0].set_ylabel('PC2')
+        # fig.suptitle('Hierarchical clusters on PCA 2 Dimension ')
+        # plt.savefig("clustering")
+        #plt.show()
 
     def predict(self,substrate_smile_df,enzyme_sequences:str="", inputmodel = None,num_bits: int = 2048):
         """
@@ -870,20 +912,41 @@ class Model_class():
             methyl_site_atom= self.predict(loded_data,num_bits=1024)
             print(methyl_site_atom)
 # class Testreaction_class(unittest.TestCase):
-#     def test0_keep_methyled_substrate(self):
+#     mol = Model_class()
+#
+#     def test0_keep_longest_smile(self):
+#         """
+#         Test if keep_longest_smile() will get expected result
+#         """
 #         df1=pd.DataFrame()
 #         df1["sub_smiles"]=["c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18OH:49])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].C[S+:1]([1CH2:2][2CH2:3][3C@H:4]([NH3+:5])[4C:6]([O-:7])=[1O:8])[5CH2:9][6C@H:10]1[2O:11][7C@@H:12]([1n:17]2[10cH:18][2n:19][11c:20]3[12c:21]2[3n:22][13cH:23][4n:24][14c:25]3[5NH2:26])[8C@H:13]([3OH:14])[9C@@H:15]1[4OH:16]"]*2
 #         df1["pro_smiles"]=["c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18O:49][22CH3:57])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].[C@H]1([2OH:6])[1C@@H:1]([1OH:5])[2C@H:2]([n:7]2[4c:8]3[6c:10]([2n:12][5cH:9]2)[7c:13]([4NH2:16])[3n:15][8cH:14][1n:11]3)[O:3][3C@@H:4]1[9CH2:17][S:18][10CH2:19][11CH2:20][12C@@H:21]([13C:24]([3O-:22])=[4O:23])[5NH3+:25]"]*2
-#         mol = Model_class()
-#         df2=mol.keep_methyled_substrate(df1)
+#         df2 = self.mol.keep_longest_smile(df1)
 #         print(df2)
 #         self.assertEqual(df2.loc[0,"main_sub"],"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18OH:49])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14]")
+#
+#     def test1_return_reactions(self):
+#         """
+#         Test if return_reactions() will get the correct output for methyl_type and reactant_site
+#         """
+#         df1 = pd.DataFrame()
+#         substrates="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1OH:7])[4cH:4][2cH:2]1"
+#         products="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1O:7][11CH3:13])[4cH:4][2cH:2]1"
+#         df1["sub_smiles"] =[substrates]
+#         df1["pro_smiles"] =[products]
+#         df_with_reactant_site=self.mol.return_reactions(dataframe_rr=df1)
+#         self.assertEqual(df_with_reactant_site.loc[0,"reactant_site"], "O:10")
+#         self.assertEqual(df_with_reactant_site.loc[0,"methyl_type"], "O")
+
 def main():
     #unittest.main()
     model=Model_class()
-    model.check_file_exist("../autodata/seq_smiles_all_script.csv","../autodata/diction_atom__all")
-
-
+    # model.check_file_exist("../autodata/seq_smiles_all_script.csv","../autodata/diction_atom_all")
+    data_with_site = pd.read_csv("../autodata/seq_smiles_all.csv",
+                                 header=0, index_col=0)
+    with open('../autodata/diction_atom_all', 'rb') as file1:
+        diction_atom = dill.load(file1)
+    model.save_fingerprints_to_dataframe(data_with_site, diction_atom,128,3, drop_atoms=True,file_name="all_data_drop_atom")
 
 if __name__ == "__main__":
     main()
