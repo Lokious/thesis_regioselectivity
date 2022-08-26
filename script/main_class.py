@@ -124,8 +124,59 @@ def build_different_input(auto="",x="",num_bit:int=0,radius:int=0,seqfile:str="6
         print("saving input data.......")
         #
         input_dataframe.to_csv("../{}data/input_data/input{}fg_dpna_bond{}_{}.csv".format(auto,str(num_bit),str(radius),seqfile))
+def use_k_merencoding_for_create_input(x="",num_bit:int=0,radius:int=0,seqfile:str="all_k_mer_encoding_sepreate_without_align.csv",group=""):
+    """
+    This function is to combine k_mer protein encoding and substrate fingerprint
 
+    :param x:
+    :param num_bit:
+    :param radius:
+    :param seqfile:
+    :param group:
+    :return:
+    """
+    print(x)
+    #covert dtype to sting, avoid incorrect NA while merging
+    X = pd.read_csv("{}".format(x), header=0, index_col=0)
+    X["Entry"]=(X["Entry"].astype("string"))
+    print(X.dtypes)
+    add_dataframe=pd.read_csv("../autodata/protein_encoding/{}".format(seqfile), header=0, index_col=0)
+    # add_dataframe["Entry"]=add_dataframe.index
+    # add_dataframe.reset_index(drop=True,inplace=True)
+    #drop all zero columns
+
+    add_dataframe = (add_dataframe.loc[:, add_dataframe.sum() != 0.0])
+    add_dataframe.drop_duplicates(subset="Entry", inplace=True)
+
+    add_dataframe["Entry"] = (add_dataframe["Entry"].astype("string"))
+    #convert into int
+    add_dataframe.iloc[:,:-3]=add_dataframe.iloc[:,:-3].astype("int64")
+
+    print(add_dataframe.dtypes)
+    #add_dataframe.to_csv("../autodata/protein_encoding/{}".format(seqfile))
+
+    print("merging fingerprint and sequences encoding---------")
+    input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
+    #print(input_dataframe)
+    input_dataframe = input_dataframe.dropna(axis=0, how="any")
+    print("merged inputdataframe after drop na")
+    print(input_dataframe)
+    print("saving input data.......")
+    #
+    input_dataframe.to_csv(
+        "../data/input_data/input{}fg_bond{}_{}_k_mer.csv".format(str(num_bit),
+                                                            str(radius),
+                                                            group))
+    return input_dataframe
 def sepreate_input(auto="",file="",numbit:int=2048,bond:int=2):
+    """
+
+    :param auto:
+    :param file:
+    :param numbit:
+    :param bond:
+    :return:
+    """
     input_dataall=pd.read_csv(file,header=0,index_col=0)
     seprate_dataset = input_dataall.groupby(by=["methyl_type"])
     for group in seprate_dataset.groups:
@@ -134,8 +185,8 @@ def sepreate_input(auto="",file="",numbit:int=2048,bond:int=2):
         print(group)
         sub_df.reset_index(drop=True,inplace=True)
 
-        sub_df.to_csv("../{}data/group/{}_{}_{}.csv".format(auto,group,str(numbit),str(bond)))
-def perform_cluster_based_on_substrate(file_directory="../autodata/fingerprint/input_dataframe_withoutstructure_dropatoms128_drop_duplicate_drop_atom_withtype_bond3.csv"):
+        sub_df.to_csv("../{}data/group/{}_{}_{}_with_bitinfo.csv".format(auto,group,str(numbit),str(bond)))
+def perform_cluster_based_on_substrate(file_directory="../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv"):
     input_data=pd.read_csv("{}".format(file_directory),header=0,index_col=0)
 
     # Define clustering setup
@@ -165,7 +216,9 @@ def perform_cluster_based_on_substrate(file_directory="../autodata/fingerprint/i
     print(fgs)
     clusters = ClusterFps(fgs, cutoff=0.4)
     print(clusters)
-def cluster_with_initial_centroids():
+def cluster_with_initial_centroids(X):
+
+    from sklearn.cluster import KMeans
     centroid_idx = [0, 2]  # let data point 0 and 2 be our centroids
     centroids = X[centroid_idx, :]
     print(centroids)  # [[1. 0. 0.]
@@ -188,7 +241,12 @@ def main():
     # print(sequence_data.columns)
     # mo_del.run_PCA(sequence_data,y_label=sequence_data['methyl_type'],file_name="all_k_mer_encoding_sepreate_without_align")
 
-    perform_cluster_based_on_substrate()
+    """separate the fingerprint based on methylation group"""
+    #sepreate_input("auto","../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv",128,3)
+
+    for group in ["N","O","S","C"]:
+        use_k_merencoding_for_create_input(x="../autodata/group/['{}']_128_3_with_bitinfo.csv".format(group),num_bit=128,radius=3,seqfile="{}_k_mer_encoding_without_align_26_08.csv".format(group),group=group)
+    #perform_cluster_based_on_substrate()
     #mo_del.hierarchical_clustering(sequence_data)
     # data_with_site = pd.read_csv("../data/mannual_data.csv", header=0,
     #                              index_col=0)

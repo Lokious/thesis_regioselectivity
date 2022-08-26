@@ -381,27 +381,30 @@ def k_mer_encoding(file_name,k):
     sequences_dictionary={}
     for record in seqs:
         sequences_dictionary[record.id]=("".join(list(record.seq)))
-    print(sequences_dictionary)
+    #print(sequences_dictionary)
     #all possiable k_mer
     K_mer_list=K_mer_generation(k)
     ids = list(sequences_dictionary.keys())
-    print("id:{}".format(ids))
+    #print("id:{}".format(ids))
     align_pd = pd.DataFrame(data=np.zeros((len(ids),len(K_mer_list+["ID","group"]))),columns=(K_mer_list+["ID","group"]),index=list(set(ids)))
-    align_pd["group"]=align_pd["group"].astype("str")
-    print(align_pd)
+    align_pd["group"]=align_pd["group"].astype("string")
+    #print(align_pd)
     for index,id in enumerate(list(align_pd.index)):
         sequences = sequences_dictionary[id]
         print(index)
         for start_site in range(0,len(sequences),k):
             three_mer= "".join(sequences[start_site:(start_site + k)])
             if len(three_mer)== k:
-                align_pd.loc[id,three_mer]=align_pd.loc[id,three_mer]+1
+                align_pd.loc[id,three_mer]=int(align_pd.loc[id,three_mer]+1)
                 align_pd.loc[id,"group"]=file_name
             else:
                 continue
 
+    align_pd["Entry"] = align_pd.index
+    align_pd = (align_pd.reset_index()).drop(columns='index')
     print(align_pd)
-    align_pd.to_csv("../autodata/protein_encoding/{}_k_mer_encoding_without_align.csv".format(file_name))
+    print(align_pd.dtypes)
+    align_pd.to_csv("../autodata/protein_encoding/{}_k_mer_encoding_without_align_26_08.csv".format(file_name))
     return align_pd
 
 def merge_encoding_to_onefile():
@@ -410,17 +413,20 @@ def merge_encoding_to_onefile():
     pd_list=[]
     for file in files:
         try:
-            pd_add = pd.read_table("../autodata/protein_encoding/{}_k_mer_encoding_without_align.csv".format(file),header=0,index_col=0)
-            print(pd_add)
+            p=pd.read_table("jdb")
+            #pd_add = pd.read_csv("../autodata/protein_encoding/{}_k_mer_encoding_without_align.csv".format(file),header=0,index_col=0)
+            #print(pd_add)
         except:
             print("create k_mer encoding.....")
             pd_add=k_mer_encoding(file, 3)
 
-        pd_list.append(pd_add)
+        pd_list.append(pd_add.astype(object))
     all_pd=pd.concat(pd_list,axis=0)
     print(all_pd)
-    all_pd=all_pd.loc[:, all_pd.sum() != 0]
-    print(all_pd)
+    print(len(all_pd.sum() != 0.0))
+    print(all_pd.columns[0])
+    all_pd=(all_pd.loc[:, (all_pd.sum() != 0.0)])
+    #print(all_pd)
     all_pd.to_csv("../autodata/protein_encoding/all_k_mer_encoding_sepreate_without_align.csv")
     return all_pd
 
@@ -522,10 +528,11 @@ def clean_seq():
 
 def main():
     #unittest.main()
-
-    #for i in ["O","N","O_N","S","C","Se","Co"]:
-    #     trget_df=read_hmmscan_out("../autodata/align/hmmsearch/{}_tblout.tsv".format(i))
-    get_active_and_binding_site_realted_to_methylation()
+    # read_msa_and_encoding(file_name="N_seed")
+    merge_encoding_to_onefile()
+    # for i in ["O","N","O_N","S","C","Se","Co"]:
+    #      trget_df=read_hmmscan_out("../autodata/align/hmmsearch/{}_tblout.tsv".format(i))
+    # get_active_and_binding_site_realted_to_methylation()
     #merge_encoding_to_onefile()
 if __name__ == "__main__":
     main()
