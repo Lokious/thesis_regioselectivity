@@ -52,7 +52,7 @@ def build_different_input(auto="",x="",num_bit:int=0,radius:int=0,seqfile:str="6
     mo_del = Model_class()
     try:
         input_dataframe=pd.read_csv(
-            "../{}data/input_data/input{}fg_dpna_bond{}_{}.csv".format(auto,
+            "../{}data/input_data/bit_info/input{}fg_dpna_bond{}_{}.csv".format(auto,
                                                                        str(num_bit),
                                                                        str(radius),
                                                                        seqfile),header=0,index_col=0)
@@ -123,7 +123,7 @@ def build_different_input(auto="",x="",num_bit:int=0,radius:int=0,seqfile:str="6
         print(input_dataframe)
         print("saving input data.......")
         #
-        input_dataframe.to_csv("../{}data/input_data/input{}fg_dpna_bond{}_{}.csv".format(auto,str(num_bit),str(radius),seqfile))
+        input_dataframe.to_csv("../{}data/input_data/bit_info/input{}fg_dpna_bond{}_{}.csv".format(auto,str(num_bit),str(radius),seqfile))
 def use_k_merencoding_for_create_input(x="",num_bit:int=0,radius:int=0,seqfile:str="all_k_mer_encoding_sepreate_without_align.csv",group=""):
     """
     This function is to combine k_mer protein encoding and substrate fingerprint
@@ -164,7 +164,7 @@ def use_k_merencoding_for_create_input(x="",num_bit:int=0,radius:int=0,seqfile:s
     print("saving input data.......")
     #
     input_dataframe.to_csv(
-        "../data/input_data/input{}fg_bond{}_{}_k_mer.csv".format(str(num_bit),
+        "../autodata/input_data/input{}fg_bond{}_{}_k_mer.csv".format(str(num_bit),
                                                             str(radius),
                                                             group))
     return input_dataframe
@@ -229,10 +229,41 @@ def cluster_with_initial_centroids(X):
 
     kmeans.fit(X)
     kmeans.labels_
+
+def visilize_bit_info_of_created_fingerprint(smile,radius,numbit,atom_index):
+    substrate_molecular=Chem.MolFromSmiles(smile)
+    atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(
+        substrate_molecular,
+        radius,
+        atom_index
+    )
+    atom_map = {}
+    submol = Chem.PathToSubmol(substrate_molecular, atom_environment,
+                               atomMap=atom_map)
+    Chem.SanitizeMol(submol,
+                     sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+    rdmolops.SanitizeFlags.SANITIZE_NONE
+    bi = {}
+    fp = AllChem.GetMorganFingerprintAsBitVect( submol,
+            radius,
+         numbit,bitInfo=bi
+        )
+    print(fp)
+    print(list(fp.GetOnBits()))
+    Draw.ShowMol(submol,(600,600))
+    #226 is the No.1 feature importance
+    im=Draw.DrawMorganBit(submol, (226-numbit), bi)
+    im.show()
 def main():
     today = date.today()
     # dd/mm/YY
     d1 = today.strftime("%d_%m_%Y")
+
+
+    smile="[27*][26C@@H]1[25O][24C@H]([23CH2][22O][21P](=[34O])([35O-])[20O][19P](=[36O])([37O-])[18O][17P](=[38O])([39O-])[16O][15CH2][14C@H]2[13O][12C@@H]([11n]3[10cH][8n+]([9CH3])[7c]4c(=[1O])[2nH][3c]([4NH2])[5n][6c]43)[42C@H]([43OH])[40C@@H]2[41OH])[31C@@H]([32O][33*])[28C@H]1[29O]"
+    mol1= Chem.MolFromSmiles(smile)
+    Draw.ShowMol(mol1,(600,600))
+    #visilize_bit_info_of_created_fingerprint(smile, 3,128,18)
     # mo_del = Model_class()
     # sequence_data = pd.read_csv("../autodata/protein_encoding/all_k_mer_encoding_sepreate_without_align.csv",header=0,index_col=0)
     # sequence_data['methyl_type']=sequence_data["group"]
@@ -244,8 +275,8 @@ def main():
     """separate the fingerprint based on methylation group"""
     #sepreate_input("auto","../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv",128,3)
 
-    for group in ["N","O","S","C"]:
-        use_k_merencoding_for_create_input(x="../autodata/group/['{}']_128_3_with_bitinfo.csv".format(group),num_bit=128,radius=3,seqfile="{}_k_mer_encoding_without_align_26_08.csv".format(group),group=group)
+    # for group in ["N","O","S","C"]:
+    #     use_k_merencoding_for_create_input(x="../autodata/group/['{}']_128_3_with_bitinfo.csv".format(group),num_bit=128,radius=3,seqfile="{}_k_mer_encoding_without_align_26_08.csv".format(group),group=group)
     #perform_cluster_based_on_substrate()
     #mo_del.hierarchical_clustering(sequence_data)
     # data_with_site = pd.read_csv("../data/mannual_data.csv", header=0,
@@ -266,10 +297,12 @@ def main():
     #create protein encoding
     # for group in groups:
     #     parse_data.read_msa_and_encoding("{}".format(group))
-    groups1 = ["N"]
+
+
+    # groups1 = ["S","C","O","N"]
     # for group in groups1:
     #     print(group)
-    #     build_different_input(auto="auto",x="../autodata/group/['{}']_128_3.csv".format(group),num_bit=128,radius=3,seqfile="{}_seed_onehot_encoding.csv".format(group),group=group)
+    #     build_different_input(auto="auto",x="../autodata/group/['{}']_128_3_with_bitinfo.csv".format(group),num_bit=128,radius=3,seqfile="{}_seed_onehot_encoding.csv".format(group),group=group)
 
     '''
     for file in groups:

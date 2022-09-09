@@ -491,7 +491,16 @@ def get_active_and_binding_site_realted_to_methylation():
     #entry_acs_pd.dropna(subset=["active_site_AA","binding_site_AA"],inplace=True)
     print(entry_acs_pd)
     entry_acs_pd.to_csv("../autodata/entry_with_activesite.csv")
-
+def merge_active_site_and_methyltype(activesite_file,fingerprint_file):
+    active_site_df= pd.read_csv(activesite_file,header=0,index_col=0)
+    #active_site_df=active_site_df.fillna(0)
+    active_site_df=pd.DataFrame(active_site_df,columns=["active_site_AA","Entry"])
+    fg_df=pd.read_csv(fingerprint_file,header=0,index_col=0)
+    merg_df=fg_df.merge(active_site_df, on="Entry", how="left")
+    print(merg_df)
+    merg_df.dropna(inplace=True)
+    print(merg_df)
+    merg_df.to_csv("../autodata/AC_merge.csv")
 def clean_seq():
     #remove duplicate sequneces in fasta file
     file_list = ["PF08241","PF05175","PF08242","PF13489","PF13649","PF13847"]
@@ -528,8 +537,9 @@ def clean_seq():
 
 def main():
     #unittest.main()
+    merge_active_site_and_methyltype("../autodata/entry_with_activesite.csv","../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv")
     # read_msa_and_encoding(file_name="N_seed")
-    merge_encoding_to_onefile()
+    #merge_encoding_to_onefile()
     # for i in ["O","N","O_N","S","C","Se","Co"]:
     #      trget_df=read_hmmscan_out("../autodata/align/hmmsearch/{}_tblout.tsv".format(i))
     # get_active_and_binding_site_realted_to_methylation()

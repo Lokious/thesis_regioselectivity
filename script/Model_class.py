@@ -244,6 +244,7 @@ class Model_class():
                     sub_rest_mol, num_bits=num_bits, radius=radius)
                 for atom in sub_mol.GetAtoms():
                     #set label
+                    #isotope is what we saved before in the list of methylaion site
                     sy_index =(atom.GetSymbol() + ":" + str(atom.GetIsotope()))
                     # print(sy_index)
                     # print(atom_object_dictionary[index])
@@ -450,20 +451,20 @@ class Model_class():
         #show the lodings
         V1_PCA = pd.DataFrame(data=pca_loadings.abs(),
                               index=pca_loadings.index,
-                              columns=["V1","V3"])
+                              columns=["V1","V2"])
 
         V1_PCA['V_sum'] = V1_PCA.apply(lambda x: (x.abs()).sum(), axis=1)
         V1_PCA = V1_PCA.sort_values(by=["V_sum"], ascending=False)
         sns.barplot(data=V1_PCA.iloc[:30], x="V_sum", y=V1_PCA.index[:30]).set(
-            title='Sum of v1 and v3 loading value of PCA')
+            title='Sum of v1 and v2 loading value of PCA')
 
-        plt.savefig("../Sum_of_v1_v3_loading_value_of_PCA_{}".format(file_name))
+        plt.savefig("../Sum_of_v1_v2_loading_value_of_PCA_{}".format(file_name))
 
         plt.close()
         pca_df = pd.DataFrame(pca_fit.fit_transform(data_with_site),index=data_with_site.index, columns=PC)
 
         fig, ax = plt.subplots()
-        plt.scatter(pca_df.PC1, pca_df.PC3, c=colour_label, s=3)
+        plt.scatter(pca_df.PC1, pca_df.PC2, c=colour_label, s=3)
 
         #show explained variance
         handle_list = []
@@ -473,18 +474,19 @@ class Model_class():
             handles=handle_list,loc="upper right",title="Sizes")
 
         #plt.scatter(pca_df.PC1, pca_df.PC2,  s=5,c=colour_label)
-        plt.xlabel("pc1")
-        plt.ylabel("pc3")
-        plt.title("PC1 AND 3 of PCA coloured by methylation type")
+        print(pca_fit.explained_variance_ratio_)
+        plt.xlabel("pc1({:.2f}%)".format(pca_fit.explained_variance_ratio_[0]*100))
+        plt.ylabel("pc2({:.2f}%)".format(pca_fit.explained_variance_ratio_[1]*100))
+        plt.title(" PCA coloured by methylation type")
         plt.savefig(
-            "../pca_for encoding sequences and fingerprint_PC1 AND PC3{}".format(file_name))
+            "../pca_for encoding sequences and fingerprint_PC1 PC2{}".format(file_name))
         plt.clf()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
                  pca_fit.explained_variance_ratio_, '-ro')
         plt.ylabel('Proportion of Variance Explained_{}'.format(file_name))
         plt.xlabel("components")
         plt.savefig(
-            'Proportion of Variance Explained_{}'.format(file_name))
+            '../Proportion of Variance Explained_{}'.format(file_name))
 
         plt.clf()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
@@ -492,7 +494,7 @@ class Model_class():
         plt.ylabel('Cumulative Proportion of Variance Explained_{}'.format(file_name))
         plt.xlabel("components")
         plt.savefig(
-            'Cumulative Proportion of Variance Explained_{}'.format(file_name))
+            '../Cumulative Proportion of Variance Explained_{}'.format(file_name))
 
         plt.clf()
         ##pac with label
@@ -505,7 +507,7 @@ class Model_class():
             V.append("V" + str(i + 1))
             if i == min(521,(len(datasets.index)-1)):
                 break
-        """
+
         pca_fit = PCA(n_components=len(PC), random_state=42).fit(
             data_with_site)
 
@@ -545,7 +547,7 @@ class Model_class():
             '../Cumulative Proportion of Variance Explained foe label_{}'.format(file_name))
         #plt.show()
         plt.close()
-        """
+
         return pca_df
     def three_D_pca(self,datasets,y_label,file_name=""):
 
@@ -596,7 +598,7 @@ class Model_class():
                              hyperparameters, scoring='roc_auc_ovr_weighted',
                              cv=3,
                              verbose=3,
-                             n_jobs=16)
+                             n_jobs=14)
 
         rf_cv.fit(X_train, y_train)
         print(rf_cv.best_params_)
@@ -605,11 +607,11 @@ class Model_class():
         #roc for test data
         threshold_test = self.show_roc(rf_cv.best_estimator_, X_test, y_test, (file_name + "test"))
         self.cm_threshold(threshold_train, X_train, y_train, rf_cv.best_estimator_, (file_name+"train"))
-        self.cm_threshold(0.5, X_train, y_train, rf_cv.best_estimator_,
-                     (file_name + "train"))
-        self.cm_threshold(threshold_test, X_test, y_test, rf_cv.best_estimator_, (file_name+"test"))
-        self.cm_threshold(0.5, X_test, y_test, rf_cv.best_estimator_,
-                     (file_name + "test"))
+        # self.cm_threshold(0.5, X_train, y_train, rf_cv.best_estimator_,
+        #              (file_name + "train"))
+        self.cm_threshold(threshold_train, X_test, y_test, rf_cv.best_estimator_, (file_name+"test(use train threshold)"))
+        # self.cm_threshold(0.5, X_test, y_test, rf_cv.best_estimator_,
+        #              (file_name + "test (use train threshold)"))
         #lineplot the roc score with differnt hyparameters
         plt.figure()
         print(rf_cv.cv_results_)
@@ -617,7 +619,7 @@ class Model_class():
                      x=rf_cv.cv_results_['param_max_features'].data,
                      hue=rf_cv.cv_results_['param_n_estimators'])
         plt.xlabel("max features")
-        plt.ylabel("roc_auc_ovr_weighted (mean 5-fold CV)")
+        plt.ylabel("roc_auc_ovr_weighted (mean 3-fold CV)")
         plt.title(
             "Accuracy with different estimators and features for RF model")
         plt.savefig("../autodata/separate_seed_result/Accuracy with different estimators and features for RF model_{}".format(file_name))
@@ -779,6 +781,14 @@ class Model_class():
         #plt.show()
         plt.close()
 
+        ###precision_recall###
+        from sklearn.metrics import PrecisionRecallDisplay
+
+        display = PrecisionRecallDisplay.from_estimator(
+            rf, X, y, name="LinearSVC"
+        )
+        precision_recall_figure = display.ax_.set_title("Precision-Recall curve")
+        plt.show()
 
         return thresholds[ix]
 
