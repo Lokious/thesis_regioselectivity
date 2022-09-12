@@ -230,7 +230,7 @@ class Reaction:
                             similiarity = DataStructs.FingerprintSimilarity(
                                 Chem.RDKFingerprint(mol.GetMol()),
                                 Chem.RDKFingerprint(substrate_mol))
-                            print(similiarity)
+                            #print(similiarity)
                             #if similarity equals 1, it matches the substrate,
                             if similiarity==1:
                                 #rest isotope
@@ -238,6 +238,7 @@ class Reaction:
                                 atom_index_list.append(
                                     neighbour_atom.GetSymbol() + ":"+str(
                                         neighbour_atom.GetIdx()))
+                                atom_index=neighbour_atom.GetIdx()
                                 # check radical electrons
                                 print("symbol:{},index{}, Explicit valence: {},total H:{}".format(neighbour_atom.GetSymbol(),neighbour_atom.GetIdx(),
                                       neighbour_atom.GetExplicitValence(),
@@ -247,15 +248,17 @@ class Reaction:
                                 #reset the mol and remove the methlation group, keep the isotope
                                 mol=Chem.EditableMol(product_mol)
                                 mol.RemoveAtom(atom.GetIdx())
+
                                 mol_remove_methylation = mol.GetMol()
+                                # Add H after remove methyl group
                                 for atom in mol_remove_methylation.GetAtoms():
-                                    if atom.GetIsotope() == 29:
-                                        print("symbol:{},index{}, Explicit valence: {},total H:{}".format(atom.GetSymbol(),atom.GetIdx(),atom.GetExplicitValence(),atom.GetTotalNumHs()))
+                                    if atom.GetIsotope()==atom_index:
+                                        # Add H after remove methyl group
+                                        atom.SetNumExplicitHs((atom.GetExplicitValence() - atom.GetTotalDegree()))
                                 # Draw.ShowMol(mol_remove_methylation,
                                 #              (600, 600))
-                                # mol_remove_methylation=Chem.AddHs(mol_remove_methylation)
-                                Draw.ShowMol(mol_remove_methylation, (600, 600))
-
+                                # Draw.ShowMol(mol_remove_methylation, (800, 800))
+                                # Draw.ShowMol(substrate_mol)
                                 print("check")
                                 return product_mol,Chem.MolToSmiles(mol_remove_methylation),atom_index_list,"Pass_Check"
                             else:
@@ -265,12 +268,12 @@ class Reaction:
         print(possiable_dictionary)
         from itertools import combinations
         for key in possiable_dictionary.keys():
-            #possiable list is the
+            #possiable list is the atom index of the carbon in the methyl group
             possiable_list=possiable_dictionary[key]
             index_combination_list=list(combinations(possiable_list, 2))
             index_combination_list += list(combinations(possiable_list, 3))
-            print(index_combination_list)
-            print(key)
+            # print(index_combination_list)
+            # print(key)
             product_mol=product_mols[key[0]]
             for items in index_combination_list:
                 mol=Chem.EditableMol(product_mol)
@@ -278,40 +281,44 @@ class Reaction:
                 #remove from larger index
                 for i in remove_atom:
                     mol.RemoveAtom(i)
-                #Draw.ShowMol(mol.GetMol(), (600, 600))
-                #Draw.ShowMol(product_mol,(600,600))
-                #Draw.ShowMol(substrate_mols[key[1]],(600,600))
                 similiarity = DataStructs.FingerprintSimilarity(
                     Chem.RDKFingerprint(mol.GetMol()),
                     #get the substrate_mol through index which is saved in the key of dictionary
                     Chem.RDKFingerprint(substrate_mols[key[1]]))
+
                 print(similiarity)
                 if similiarity ==1:
+                    # Draw.ShowMol(product_mol, (800, 800))
+                    # Draw.ShowMol(mol.GetMol(), (800, 800))
+                    # Draw.ShowMol(substrate_mols[key[1]], (800, 800))
+
+                    # reset the mol and remove the methlation group, keep the isotope
+                    for atom1 in product_mol.GetAtoms():
+                        # rest isotope
+                        atom1.SetIsotope(atom1.GetIdx())
+                    #convert mol to editable mol
+                    mol = Chem.EditableMol(product_mol)
                     for i in remove_atom:
                         atom = (product_mol.GetAtomWithIdx(i)).GetNeighbors()[0]
                         atom_index_list.append(
                             atom.GetSymbol() + ":"+str(
                                 atom.GetIdx()))
-                        #check radical electrons
-                        print(product_mol.GetAtomWithIdx(i).GetSymbol(), product_mol.GetAtomWithIdx(i).GetExplicitValence(),
-                              product_mol.GetAtomWithIdx(i).GetTotalNumHs())
-                        # mol = Chem.EditableMol(product_mol)
-                        # mol.RemoveAtom(atom.GetIdx())
-                        # atom.assignRadicals()
-                    print(atom_index_list)
-                        # rest isotope
-                    for atom1 in product_mol.GetAtoms():
-                        atom1.SetIsotope(atom1.GetIdx())
-                    # reset the mol and remove the methlation group, keep the isotope
-                    mol = Chem.EditableMol(product_mol)
-                    mol.RemoveAtom(atom.GetIdx())
+                        mol.RemoveAtom(i)
+                        # Add H after remove methyl group
+                        atom.SetNumExplicitHs((atom.GetExplicitValence() - atom.GetTotalDegree()))
+
+                    #print(atom_index_list)
                     mol_remove_methylation = mol.GetMol()
-
-                    Draw.ShowMol(mol_remove_methylation, (600, 600))
+                    # Draw.ShowMol(mol_remove_methylation, (800, 800))
                     print("check")
-                    return product_mol, Chem.MolToSmiles(
-                        mol_remove_methylation), atom_index_list, "Pass_Check"
-
+                    if DataStructs.FingerprintSimilarity(
+                    Chem.RDKFingerprint(mol_remove_methylation),
+                    #get the substrate_mol through index which is saved in the key of dictionary
+                    Chem.RDKFingerprint(substrate_mols[key[1]]))==1:
+                        return product_mol, Chem.MolToSmiles(
+                            mol_remove_methylation), atom_index_list, "Pass_Check"
+                    else:
+                        raise ValueError
         mol_remove_methylation=mol.GetMol()
 
         return product_mol, Chem.MolToSmiles(
@@ -424,7 +431,7 @@ def main_substrate(subs, pros):
         else:
             continue
 
-'''
+
 class Testreaction_class(unittest.TestCase):
     def test0_get_reaction_sites(self):
         """
@@ -445,10 +452,12 @@ class Testreaction_class(unittest.TestCase):
         reaction = Reaction()
         substrates = r"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n:5][3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:20]([5O:21][1P:22]([6O:23][2P:24](=[9O:27])([12O-:30])[15O:39][14CH2:38][12C@H:35]2[13O:33][10C@@H:32]([5n:31]3[32c:81]4[11n:80][31cH:79][10n:78][30c:77]([9NH2:76])[33c:82]4[12n:83][34cH:84]3)[11C@H:34]([30OH:85])[13C@@H:36]2[14O:37][3P:40]([16O:41][19CH2:51][17C@H:48]2[19O:46][15C@@H:44]([6n:45]3[42c:102]4[16n:101][41cH:100][15n:99][40c:98]([14NH2:97])[43c:103]4[17n:104][44cH:105]3)[16C@H:47]([31OH:86])[18C@@H:49]2[20O:50][4P:52]([21O:53][22CH2:60][21C@H:59]2[24O:58][20C@@H:57]([7n:56]3[35c:89](=[34O:92])[13nH:91][38c:94](=[35O:96])[37c:93]([39CH3:95])[36cH:90]3)[24C@H:63]([32OH:87])[23C@@H:61]2[25O:62][5P:64]([26O:65][29CH2:75][27C@H:72]2[29O:70][25C@@H:69]([8n:68]3[47c:111]4[20n:110][46cH:109][19n:108][45c:107]([18NH2:106])[48c:112]4[21n:113][49cH:114]3)[26C@H:71]([33OH:88])[28C@@H:73]2[*:74])(=[27O:66])[28O-:67])(=[22O:54])[23O-:55])(=[17O:42])[18O-:43])(=[8O:26])[11O-:29])(=[7O:25])[10O-:28])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].C[S+:1]([1CH2:2][2CH2:3][3C@H:4]([NH3+:5])[4C:6]([O-:7])=[1O:8])[5CH2:9][6C@H:10]1[2O:11][7C@@H:12]([1n:17]2[10cH:18][2n:19][11c:20]3[12c:21]2[3n:22][13cH:23][4n:24][14c:25]3[5NH2:26])[8C@H:13]([3OH:14])[9C@@H:15]1[4OH:16]"
         products = r"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([51CH3:116])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:20]([5O:21][1P:22]([6O:23][2P:24](=[9O:27])([12O-:30])[15O:39][14CH2:38][12C@H:35]2[13O:33][10C@@H:32]([5n:31]3[32c:81]4[11n:80][31cH:79][10n:78][30c:77]([9NH2:76])[33c:82]4[12n:83][34cH:84]3)[11C@H:34]([30O:85][50CH3:115])[13C@@H:36]2[14O:37][3P:40]([16O:41][19CH2:51][17C@H:48]2[19O:46][15C@@H:44]([6n:45]3[42c:102]4[16n:101][41cH:100][15n:99][40c:98]([14NH2:97])[43c:103]4[17n:104][44cH:105]3)[16C@H:47]([31OH:86])[18C@@H:49]2[20O:50][4P:52]([21O:53][22CH2:60][21C@H:59]2[24O:58][20C@@H:57]([7n:56]3[35c:89](=[34O:92])[13nH:91][38c:94](=[35O:96])[37c:93]([39CH3:95])[36cH:90]3)[24C@H:63]([32OH:87])[23C@@H:61]2[25O:62][5P:64]([26O:65][29CH2:75][27C@H:72]2[29O:70][25C@@H:69]([8n:68]3[47c:111]4[20n:110][46cH:109][19n:108][45c:107]([18NH2:106])[48c:112]4[21n:113][49cH:114]3)[26C@H:71]([33OH:88])[28C@@H:73]2[*:74])(=[27O:66])[28O-:67])(=[22O:54])[23O-:55])(=[17O:42])[18O-:43])(=[8O:26])[11O-:29])(=[7O:25])[10O-:28])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].[C@H]1([2OH:6])[1C@@H:1]([1OH:5])[2C@H:2]([n:7]2[4c:8]3[6c:10]([2n:12][5cH:9]2)[7c:13]([4NH2:16])[3n:15][8cH:14][1n:11]3)[O:3][3C@@H:4]1[9CH2:17][S:18][10CH2:19][11CH2:20][12C@@H:21]([13C:24]([3O-:22])=[4O:23])[5NH3+:25]"
+
         pro_mol,remove_methyl_smile,list_methylsite,check = reaction.get_reaction_sites(products,substrates)
         self.assertEqual(list_methylsite[0],'O:40')
         self.assertEqual(list_methylsite[1], 'N:8')
         self.assertEqual(check,"Pass_Check")
+
 
     def test2_get_reaction_sites(self):
         """
@@ -463,7 +472,7 @@ class Testreaction_class(unittest.TestCase):
         self.assertEqual(check,'unCheck')
     def test3_get_reaction_sites(self):
         """
-
+        This is test for add H after remove the methyl group
         :return:
         """
         reaction = Reaction()
@@ -471,27 +480,80 @@ class Testreaction_class(unittest.TestCase):
         products = r"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:42])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:29]([8O:30][1P:31]([9O:32][2P:33]([10O:34][14CH2:41][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:43])[11C@@H:22]2[7O:27][1*:28])(=[13O:37])[16O-:40])(=[12O:36])[15O-:39])(=[11O:35])[14O-:38])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].[C@H]1([2OH:6])[1C@@H:1]([1OH:5])[2C@H:2]([n:7]2[4c:8]3[6c:10]([2n:12][5cH:9]2)[7c:13]([4NH2:16])[3n:15][8cH:14][1n:11]3)[O:3][3C@@H:4]1[9CH2:17][S:18][10CH2:19][11CH2:20][12C@@H:21]([13C:24]([3O-:22])=[4O:23])[5NH3+:25]"
 
         pro_mol,remove_methyl_smile,list_methylsite,check = reaction.get_reaction_sites(products,substrates)
-        # self.assertEqual(list_methylsite[0],'O:40')
-        # self.assertEqual(list_methylsite[1], 'N:8')
         self.assertEqual(check,"Pass_Check")
-'''
-def main():
-    #unittest.main()
-    reaction = Reaction()
-    substrates = r"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:42])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:29]([8O:30][1P:31]([9O:32][2P:33]([10O:34][14CH2:41][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6OH:26])[11C@@H:22]2[7O:27][1*:28])(=[13O:37])[16O-:40])(=[12O:36])[15O-:39])(=[11O:35])[14O-:38])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].C[S+:1]([1CH2:2][2CH2:3][3C@H:4]([NH3+:5])[4C:6]([O-:7])=[1O:8])[5CH2:9][6C@H:10]1[2O:11][7C@@H:12]([1n:17]2[10cH:18][2n:19][11c:20]3[12c:21]2[3n:22][13cH:23][4n:24][14c:25]3[5NH2:26])[8C@H:13]([3OH:14])[9C@@H:15]1[4OH:16]"
-    products = r"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:42])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:29]([8O:30][1P:31]([9O:32][2P:33]([10O:34][14CH2:41][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:43])[11C@@H:22]2[7O:27][1*:28])(=[13O:37])[16O-:40])(=[12O:36])[15O-:39])(=[11O:35])[14O-:38])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].[C@H]1([2OH:6])[1C@@H:1]([1OH:5])[2C@H:2]([n:7]2[4c:8]3[6c:10]([2n:12][5cH:9]2)[7c:13]([4NH2:16])[3n:15][8cH:14][1n:11]3)[O:3][3C@@H:4]1[9CH2:17][S:18][10CH2:19][11CH2:20][12C@@H:21]([13C:24]([3O-:22])=[4O:23])[5NH3+:25]"
+        mol = Chem.MolFromSmiles(remove_methyl_smile)
+        for atom in mol.GetAtoms():
+            if atom.GetIsotope()==29:
+                num_electrons=atom.GetNumRadicalElectrons()
+                explicitValence=atom.GetExplicitValence()
+                self.assertEqual(num_electrons,0)
+                self.assertEqual(explicitValence,2)
 
-    pro_mol, remove_methyl_smile, list_methylsite, check = reaction.get_reaction_sites(
-        products, substrates)
-    smile = remove_methyl_smile
-    mol1= Chem.MolFromSmiles(smile)
-    print(list_methylsite)
-    for atom in mol1.GetAtoms():
+def main():
+    unittest.main()
+    """
+    reaction = Reaction()
+    substrates = r"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:42])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:29]([8O:30][1P:31]([9O:32][2P:33]([10O:34][14CH2:41][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6OH:26])[11C@@H:22]2[7O:27][1*:28])(=[13O:37])[16O-:40])(=[12O:36])[15O-:39])(=[11O:35])[14O-:38])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14]"
+    products = r"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:42])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:29]([8O:30][1P:31]([9O:32][2P:33]([10O:34][14CH2:41][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:43])[11C@@H:22]2[7O:27][1*:28])(=[13O:37])[16O-:40])(=[12O:36])[15O-:39])(=[11O:35])[14O-:38])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14]"
+    #convert to mol object
+    product_mol=Chem.MolFromSmiles(products)
+    # clear the mapnumber and isotope
+    for atom in product_mol.GetAtoms():
+        atom.SetAtomMapNum(0)
+        atom.SetIsotope(0)
+
+    # set isotope
+    for atom1 in product_mol.GetAtoms():
+        atom1.SetIsotope(atom1.GetIdx())
+    # draw mol
+    Draw.ShowMol(product_mol,(600,600))
+    # remove the methyl group
+    mol = Chem.EditableMol(product_mol)
+
+    mol.RemoveAtom(30)
+    # convert to mol
+    mol_remove=mol.GetMol()
+    #Chem.SanitizeMol(mol_remove)
+
+    print(mol_remove.GetAtomWithIdx(29).GetNumRadicalElectrons(),mol_remove.GetAtomWithIdx(29).GetTotalDegree(),mol_remove.GetAtomWithIdx(29).GetExplicitValence(),mol_remove.GetAtomWithIdx(29).GetImplicitValence(),mol_remove.GetAtomWithIdx(29).GetTotalValence())
+
+    mol_remove.GetAtomWithIdx(29).SetNumExplicitHs((mol_remove.GetAtomWithIdx(29).GetExplicitValence()-mol_remove.GetAtomWithIdx(29).GetTotalDegree()))
+    Draw.ShowMol(mol_remove,(600,600))
+    print("symbol:{},index{}, Explicit valence: {},total H:{}".format(mol_remove.GetAtomWithIdx(29).GetSymbol(),mol_remove.GetAtomWithIdx(29).GetIsotope(),mol_remove.GetAtomWithIdx(29).GetExplicitValence(),mol_remove.GetAtomWithIdx(29).GetTotalNumHs()))
+    #convert to smile
+    substrate_smile = Chem.MolToSmiles(mol_remove)
+    print(substrate_smile)
+    #convert to mol object
+    substrate_mol=Chem.MolFromSmiles(substrate_smile)
+    #Chem.SanitizeMol(substrate_mol)
+    Draw.ShowMol(substrate_mol,(600,600))
+    for atom in substrate_mol.GetAtoms():
         if atom.GetIsotope()==29:
-            index= atom.GetIdx()
-    print("symbol:{},isotope(equal to before index){}, Explicit valence: {},total H:{}".format(mol1.GetAtomWithIdx(index).GetSymbol(),mol1.GetAtomWithIdx(index).GetIsotope(),
-          mol1.GetAtomWithIdx(index).GetExplicitValence(),
-          mol1.GetAtomWithIdx(index).GetTotalNumHs()))
-    Draw.ShowMol(mol1,(600,600))
+
+            print(atom.GetNumRadicalElectrons())
+            print(
+                "symbol:{},isotope(equal to before index){}, Explicit valence: {},total H:{}".format(
+                    atom.GetSymbol(),
+                    atom.GetIsotope(),
+                    atom.GetExplicitValence(),
+                    atom.GetTotalNumHs()))
+
+    # pro_mol, remove_methyl_smile, list_methylsite, check = reaction.get_reaction_sites(
+    #     products, substrates)
+    # smile = remove_methyl_smile
+    # print(smile)
+    # print(substrate_smile)
+    # print(smile==substrate_smile)
+    # mol1= Chem.MolFromSmiles(smile)
+    #
+    # print(list_methylsite)
+    # for atom in mol1.GetAtoms():
+    #     if atom.GetIsotope()==29:
+    #         index= atom.GetIdx()
+    # print("symbol:{},isotope(equal to before index){}, Explicit valence: {},total H:{}".format(mol1.GetAtomWithIdx(index).GetSymbol(),mol1.GetAtomWithIdx(index).GetIsotope(),
+    #       mol1.GetAtomWithIdx(index).GetExplicitValence(),
+    #       mol1.GetAtomWithIdx(index).GetTotalNumHs()))
+    # Draw.ShowMol(mol1,(600,600))
+    """
 if __name__ == "__main__":
     main()
