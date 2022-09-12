@@ -506,7 +506,46 @@ def clean_seq():
     file_list = ["PF08241","PF05175","PF08242","PF13489","PF13649","PF13847"]
     seq = sequences()
     seq.remove_duplicate(file_list)
+def read_fasta_file(file_name=""):
+    """
+    This function is reading fasta file into dictionary
 
+    :param file_name: path and name of a fasta file
+    :return: dictionary of sequences
+    """
+    file= open(file_name).readlines()
+    seq_dictionary={}
+    seq_name = ""
+    for line in file:
+        if line.startswith(">"):
+            seq_name="".join(list(line.strip("\n"))[1:])
+            seq_dictionary[seq_name]=""
+            continue
+        seq_dictionary[seq_name] += line.strip("\n")
+    return seq_dictionary
+def check_sequences_similarity(fasta_file=""):
+    """
+    This function is to compare the sequences similarity
+    :return:
+    """
+    import difflib
+    groups=["O","S","N","C"]
+    for group in groups:
+        seq_dictionary=read_fasta_file("../autodata/sequences/{}_rm.fasta".format(group))
+        similarity_matrix=pd.DataFrame(index=list(seq_dictionary.keys()),columns=list(seq_dictionary.keys()))
+        visit_list=[]
+        for column in similarity_matrix.columns:
+            for index in similarity_matrix.index:
+                if {column,index} not in visit_list:
+                    seq1=seq_dictionary[column]
+                    seq2=seq_dictionary[index]
+                    visit_list.append({column,index})
+                    similarity_matrix.loc[index,column]=difflib.SequenceMatcher(None,seq1,seq2 ).ratio()
+                    print(similarity_matrix)
+                else:
+                    similarity_matrix.loc[index, column]=similarity_matrix.loc[column,index]
+        print(similarity_matrix)
+        similarity_matrix.to_csv("../autodata/sequences/{}_rm_similarity_matrix.csv".format(group))
 # def merge_uniprot_emebeding():
 #     file_list = ["PF08241","PF05175",  "PF08242", "PF13489", "PF13649",
 #                  "PF13847"]
@@ -537,7 +576,8 @@ def clean_seq():
 
 def main():
     #unittest.main()
-    merge_active_site_and_methyltype("../autodata/entry_with_activesite.csv","../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv")
+    check_sequences_similarity()
+    #merge_active_site_and_methyltype("../autodata/entry_with_activesite.csv","../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv")
     # read_msa_and_encoding(file_name="N_seed")
     #merge_encoding_to_onefile()
     # for i in ["O","N","O_N","S","C","Se","Co"]:

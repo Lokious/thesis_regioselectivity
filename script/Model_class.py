@@ -9,6 +9,8 @@ datafile should be put in the directory data/ ,this script should be under regio
 includes Rhea-ec_2_1_1.tsv
 """
 import dill
+import sklearn.metrics
+
 from molecular_class import Molecule, Reaction,main_substrate
 import parse_data
 #for data structure
@@ -592,14 +594,23 @@ class Model_class():
                            'max_features': [0.3,0.5,0.7],
 
                            }
+
         #n_jobs number of cores used for it
         #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
+        # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
+        #                      hyperparameters, scoring='roc_auc_ovr_weighted',
+        #                      cv=3,
+        #                      verbose=3,
+        #                      n_jobs=14)
+
+        ####use MCC as scoring#####
+        from sklearn.metrics import make_scorer
+        from sklearn.metrics import matthews_corrcoef
         rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
-                             hyperparameters, scoring='roc_auc_ovr_weighted',
+                             hyperparameters, scoring=make_scorer(matthews_corrcoef),
                              cv=3,
                              verbose=3,
                              n_jobs=14)
-
         rf_cv.fit(X_train, y_train)
         print(rf_cv.best_params_)
         # roc for train data
@@ -609,7 +620,7 @@ class Model_class():
         self.cm_threshold(threshold_train, X_train, y_train, rf_cv.best_estimator_, (file_name+"train"))
         # self.cm_threshold(0.5, X_train, y_train, rf_cv.best_estimator_,
         #              (file_name + "train"))
-        self.cm_threshold(threshold_train, X_test, y_test, rf_cv.best_estimator_, (file_name+"test(use train threshold)"))
+        self.cm_threshold(threshold_test, X_test, y_test, rf_cv.best_estimator_, (file_name+"test"))
         # self.cm_threshold(0.5, X_test, y_test, rf_cv.best_estimator_,
         #              (file_name + "test (use train threshold)"))
         #lineplot the roc score with differnt hyparameters
