@@ -23,7 +23,7 @@ from rdkit.Chem import AllChem, rdmolops
 from rdkit.Chem.Draw import IPythonConsole
 from rdkit import Chem
 import glob
-from sequence import sequences
+from sequence import Sequences
 
 
 def run_model_for_group_data(input:pd.DataFrame,filename:str="",num_bit:int=2048):

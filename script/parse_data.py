@@ -23,7 +23,7 @@ from molecular_class import Molecule
 import glob
 import dill
 from Bio import AlignIO, SeqIO
-from sequence import sequences
+from sequence import Sequences
 import numpy as np
 import unittest
 
@@ -504,7 +504,7 @@ def merge_active_site_and_methyltype(activesite_file,fingerprint_file):
 def clean_seq():
     #remove duplicate sequneces in fasta file
     file_list = ["PF08241","PF05175","PF08242","PF13489","PF13649","PF13847"]
-    seq = sequences()
+    seq = Sequences()
     seq.remove_duplicate(file_list)
 def read_fasta_file(file_name=""):
     """
