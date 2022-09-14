@@ -551,6 +551,7 @@ class Model_class():
         plt.close()
 
         return pca_df
+
     def three_D_pca(self,datasets,y_label,file_name=""):
 
         import plotly.express as px
@@ -734,6 +735,7 @@ class Model_class():
         # filename = '../data/model/rf_test_model_cv{}'.format(file_name)
         # joblib.dump(rf_cv, filename)
         # return rf_cv
+
     def SVM(self,X_train, X_test, y_train, y_test,file_name="",i:int=0):
         # pars = [{'C': [ 0.1]},
         #         {'kernel':['poly','rbf','sigmoid']},
@@ -913,6 +915,7 @@ class Model_class():
                     continue
         else:
             return methyl_site_atom
+
     def duplicate_1_class(self,input,times):
 
         indexNames = input[input['label'] == 1].index
@@ -932,6 +935,7 @@ class Model_class():
             print(loded_data)
             methyl_site_atom= self.predict(loded_data,num_bits=1024)
             print(methyl_site_atom)
+
 # class Testreaction_class(unittest.TestCase):
 #     mol = Model_class()
 #

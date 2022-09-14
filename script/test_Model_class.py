@@ -8,7 +8,7 @@ class TestModel_class(unittest.TestCase):
     def test0_check_file_exist(self):
         self.model.check_file_exist()
     def test1_keep_methyled_substrate(self):
-       with self.assertRaises(AttributeError):
+       with self.assertRaises(RuntimeError):
            self.model.keep_methyled_substrate(1)
     def test2_return_reactions(self):
         dataframe = pd.read_csv("../data/seq_smiles_all.csv",header=0,index_col=0)
@@ -20,7 +20,16 @@ class TestModel_class(unittest.TestCase):
         main_product = dataframe.loc[0,"main_sub"]
         main_substrate = dataframe.loc[0,"main_pro"]
         self.assertLess(main_substrate,main_product)
+    def test4_runPCA(self):
+        """
+        This function is to test if runPCA runs as expected
 
+        """
+        dataframe=pd.DataFrame({"A":[1,0,1],"B":[0,0,0],"methyl_type":["O","C","O"]},index=[0,1,2])
+
+        y=pd.DataFrame(columns=["Y"],data=[1,0,1])
+        pca_df=self.model.run_PCA(dataframe,y_label=y["Y"])
+        self.assertEqual(0,pca_df.PC2[0])
 
 
 def main():

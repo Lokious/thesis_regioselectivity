@@ -96,18 +96,40 @@ class Sequences():
                     # print(record)
                     # print(record_rename)
 
-    def get_sites_from_alignment(self,format="fasta",file=""):
+    def get_sites_from_alignment(self,format="fasta",file="",active_site_dictionary:dict={})->pd.DataFrame:
         """
+        This is the function to get the site close to active site for aligned sequences
 
-
-        :param format:
-        :param file:
+        :param format:string, format of input alignment
+        :param file:string, path and name of the aligned sequences
         :return:
 
-
         """
-        align = AlignIO.read(file, "fasta")
+        #create dataframe for saving the site
+        site_dataframe=pd.DataFrame()
+        align = AlignIO.read(file, format)
 
+        return site_dataframe
+    def get_active_site_dictionary_from_file(self,file="../autodata/align/align_seed_sequences_with_structure/3ROD_active_site.txt")->dict:
+        """
+        This function is to read active sits as dictionary
+        :param file: path of tesxt file which saves the active sits information
+        :return:
+        """
+        try:
+            acs_dataframe = pd.read_table(file, header=0, comment="#",
+                                          index_col="auth")
+        except EOFError:
+            print("please check file exist and in correct format")
+        # for given index_col, either given as string name or column index.
+        # If a sequence of int / str is given, a MultiIndex is used.
+
+        active_sites_dictionary={}
+        for index in acs_dataframe.index:
+            active_sites_dictionary[index]=acs_dataframe.loc[index,'AA']
+
+        print(active_sites_dictionary)
+        return active_sites_dictionary
     def get_AA_within_distance_from_structure_file(self,file="../autodata/align/align_seed_sequences_with_structure/3rod.pdb",residue_dictionary:dict={11:"Y"}):
         """
         This function is to get the id of residues close to active sites
@@ -170,7 +192,8 @@ def main():
     #unittest.main()
 
     seq=Sequences()
-    seq.get_AA_within_distance_from_structure_file()
+    seq.get_active_site_dictionary_from_file()
+    #seq.get_AA_within_distance_from_structure_file()
 
     #seq.group_seq_based_on_methylated_type(inputfile="../autodata/seq_smiles_all.csv",save_directory="../autodata/sequences")
     #seq.remove_duplicate()

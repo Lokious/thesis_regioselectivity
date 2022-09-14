@@ -6,7 +6,7 @@ class TestModel_class(unittest.TestCase):
     def test0_get_AA_within_distance_from_structure_file(self):
         """
         This is the test function for get_AA_within_distance_from_structure_file in Sequences class
-    
+
         """
         acs_dictionary=self.seq.get_AA_within_distance_from_structure_file(
             file="../autodata/align/align_seed_sequences_with_structure/3rod.pdb",
