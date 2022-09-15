@@ -299,9 +299,12 @@ def read_msa_and_encoding(file_name=""):
 
     #read alignment
     #align = AlignIO.read(file_name, "clustal")
-    align = AlignIO.read(file, "fasta")
+    align = AlignIO.read(file, format="fasta")
     align_array = np.array([list(rec) for rec in align], np.character)
     print(align_array)
+    id = list(rec.id for rec in align)
+    align_pd = pd.DataFrame(data=align_array,index=id)
+    align_pd = align_pd.drop_duplicates()
 
     char_list = np.unique(align_array)
 
@@ -310,9 +313,7 @@ def read_msa_and_encoding(file_name=""):
         char_dictionary[char] = (i+1)
 
 
-    id = list(rec.id for rec in align)
-    align_pd = pd.DataFrame(data=align_array,index=id)
-    align_pd = align_pd.drop_duplicates()
+
 
     #drop columns which for over 80% sequences is gap
     from collections import Counter
@@ -326,6 +327,7 @@ def read_msa_and_encoding(file_name=""):
     # the length of aligned sequence after remove some columns contains a lot of gaps
     seq_length=len(align_pd.columns)
     print("seq_length:{}".format(seq_length))
+
     encode_dictionary = {}
 
     for key in char_dictionary.keys():
@@ -407,6 +409,26 @@ def k_mer_encoding(file_name,k):
     align_pd.to_csv("../autodata/protein_encoding/{}_k_mer_encoding_without_align_26_08.csv".format(file_name))
     return align_pd
 
+def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame,file_name:str):
+    #add properties as features
+    seq = Sequences()
+
+    properties=['charge', 'volume', 'hydropathy', 'hydrophobicity']
+    # create empty dataframe
+    property_df=pd.DataFrame(index=input_df.index)
+    for col in input_df.columns:
+        for pro in properties:
+            col_name=col+pro
+            property_df[col_name]=["NA"]*len(property_df.index)
+    # calculate properties and save to dataframe
+    for i in property_df.index:
+        for col in input_df.columns:
+            for pro in properties:
+                col_name = col + pro
+                aa=input_df.loc[i,col]
+                property_df.loc[i,col_name]=seq.amino_acid_properties(amino_acid=aa)
+    properties=seq.amino_acid_properties("Y")
+    print(properties)
 def merge_encoding_to_onefile():
 
     files=["O","N","S","C","Co"]

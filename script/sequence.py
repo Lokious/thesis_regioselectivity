@@ -10,10 +10,17 @@ This code is to parse sequence data
 import sys
 import unittest
 import pandas as pd
+import numpy as np
 
 from Bio import AlignIO, SeqIO
+from Bio.Seq import Seq
+from Bio.Align import MultipleSeqAlignment
+from Bio.SeqRecord import SeqRecord
 from Bio.PDB import PDBParser
-from Bio.Data.IUPACData import protein_letters_1to3
+from Bio.Data.IUPACData import protein_letters_1to3,protein_letters_3to1
+from quantiprot.metrics.aaindex import get_aa2volume, get_aa2hydropathy, get_aa2charge,get_aa2mj
+import blosum as bl
+
 
 from os import path
 
@@ -96,25 +103,13 @@ class Sequences():
                     # print(record)
                     # print(record_rename)
 
-    def get_sites_from_alignment(self,format="fasta",file="",active_site_dictionary:dict={})->pd.DataFrame:
-        """
-        This is the function to get the site close to active site for aligned sequences
 
-        :param format:string, format of input alignment
-        :param file:string, path and name of the aligned sequences
-        :return:
-
-        """
-        #create dataframe for saving the site
-        site_dataframe=pd.DataFrame()
-        align = AlignIO.read(file, format)
-
-        return site_dataframe
     def get_active_site_dictionary_from_file(self,file="../autodata/align/align_seed_sequences_with_structure/3ROD_active_site.txt")->dict:
         """
         This function is to read active sits as dictionary
+
         :param file: path of tesxt file which saves the active sits information
-        :return:
+        :return:active_sites_dictionary for example {11:"Y"}
         """
         try:
             acs_dataframe = pd.read_table(file, header=0, comment="#",
@@ -130,7 +125,8 @@ class Sequences():
 
         print(active_sites_dictionary)
         return active_sites_dictionary
-    def get_AA_within_distance_from_structure_file(self,file="../autodata/align/align_seed_sequences_with_structure/3rod.pdb",residue_dictionary:dict={11:"Y"}):
+
+    def get_AA_within_distance_from_structure_file(self,file="../autodata/align/align_seed_sequences_with_structure/3rod.pdb",residue_dictionary:dict={11:"Y"},chain_id:str="A"):
         """
         This function is to get the id of residues close to active sites
 
@@ -145,17 +141,21 @@ class Sequences():
 
         Some related problem: https://www.biostars.org/p/401105/
         """
-
+        try:
+            residue_dictionary=self.get_active_site_dictionary_from_file()
+            print(residue_dictionary)
+        except:
+            print("can not get residue_dictionary from get_active_site_dictionary_from_file function")
         # create parser
         parser = PDBParser()
 
         # read structure from file
-
         structure = parser.get_structure("pdb_structure",file)
         model = structure[0]
-        chain = model['A']
+        chain = model[chain_id]
         residues=list(chain.get_residues())
         active_sites=[]
+
         for id in residue_dictionary.keys():
             amino_acid= residue_dictionary[id]
             # check the id from the dictionary and id from pdb structure refers
@@ -165,13 +165,8 @@ class Sequences():
 
         amino_acide_close_to_active_site={}
         for id1,residue1 in enumerate(active_sites):
-            #remove residue from the list of residues, so it only count the distance between two residue once
-
-
-            #seems residue.get_id()[1] will return the id from author, which is
-            #use in the paper
-
             for id2,residue2 in enumerate(residues):
+
                 # compute distance between alpha C atoms
                 try:
                     distance = residue1['CA'] - residue2['CA']
@@ -180,24 +175,130 @@ class Sequences():
                     continue
                 #save AA to dictionary whihc are close to the active site
                 if distance <= 5:
+                    # seems residue.get_id()[1] will return the id from author, which is
+                    # use in the paper
                     if residue1.get_id()[1] not in amino_acide_close_to_active_site:
                         amino_acide_close_to_active_site[residue1.get_id()[1]]=[(residue2.get_id()[1],residue2.get_resname(),distance)]
                     else:
                         amino_acide_close_to_active_site[residue1.get_id()[1]].append((residue2.get_id()[1],residue2.get_resname(),distance))
 
-        print(amino_acide_close_to_active_site)
-        return amino_acide_close_to_active_site
+        #!!!!!!notice: something wrong with the length, it also contains the ligind and other stuff
+        structure_seq_length=0
+        for residue in residues:
+            if residue.id[0]== ' ':
+                structure_seq_length +=1
+                print(residue.id)
+                print(residue.get_resname())
+        print(structure_seq_length)
+        return amino_acide_close_to_active_site, structure_seq_length
+
+    def get_sites_from_alignment(self,fileformat="fasta",file="",active_site_dictionary:dict={},start_pos:int=0)->pd.DataFrame:
+        """
+        This is the function to get the site close to active site for aligned sequences
+
+        :param format:string, format of input alignment
+        :param file:string, path and name of the aligned sequences
+        :param start_pos: int, the starting position of the sequneces compare to the author annnotated index
+        :return:
+
+        """
+        if active_site_dictionary=={}:
+            print("Need active_site_dictionary, creating....")
+            active_site_dictionary,sequence_length =self.get_AA_within_distance_from_structure_file()
+            print(active_site_dictionary)
+        #create dataframe for saving the site
+        site_dataframe=pd.DataFrame()
+
+        #read the alignment and save to dataframe
+        align = AlignIO.read(file, fileformat)
+        print(align.get_alignment_length())
+        align_array = np.array([list(rec) for rec in align])
+        ids = list(rec.id for rec in align)
+        align_pd = pd.DataFrame(data=align_array,index=ids)
+        print('Q9KUA0' in list(align_pd.index))
+
+        #drop the column which the guided structure is a gap, and drop 'X' amino acid
+        ## change - and X 
+        align_pd.replace("X", "-", inplace=True)
+        align_pd.replace("-", np.nan, inplace=True)
+        align_pd=align_pd.T
+        align_pd.dropna(subset=['3rod.pdb_chainA_s001'],inplace=True)
+        align_pd.reset_index(drop=True, inplace=True)
+
+        #rest column names to fit the index from author
+        index_list=list(align_pd.index)
+        align_pd.index=[int(x)+start_pos for x in index_list]
+        print(len(align_pd.columns))
+        align_pd=align_pd.T
+        align_pd.replace( np.nan,"-", inplace=True)
+        print('Q9KUA0' in align_pd.index)
+
+
+
+        if len(align_pd.columns) !=sequence_length:
+            raise ValueError("The alignment length is not as same as the structure sequence")
+
+
+        #print(align_pd)
+        encoding_pd=pd.DataFrame(index=ids)
+        #print(encoding_pd)
+        for key_acs in active_site_dictionary.keys():
+            for item_tuple in active_site_dictionary[key_acs]:
+                #activesite_closeAA
+                columnname=item_tuple[0]
+                encoding_pd[columnname]=["NA"]*len(ids)
+
+        for id in ids:
+            for column in encoding_pd.columns:
+                #print(column)
+                aa = align_pd.loc[id,column]
+                encoding_pd.loc[id,column]=aa
+        print(encoding_pd)
+
+        #construct MSA with amino acids close to active sites
+
+        for seq_id in encoding_pd.index:
+            file = open("../autodata/align/align_seed_sequences_with_structure/N_seq_close_to_active_sites.fasta", "a")
+            seq= "".join(encoding_pd.loc[seq_id,:].values.tolist())
+            print(seq,seq_id)
+            file.write(">{}\n".format(seq_id))
+            file.write("{}\n".format(seq))
+
+        print(np.unique(encoding_pd.values, return_counts=True))
+        return encoding_pd
+
+    def amino_acid_properties(self,amino_acid):
+        """
+        return list of amino acid properties generate by quantiprot
+
+        :param amino_acid:
+        :return:
+        """
+        if len(amino_acid)==3:
+            amino_acid=protein_letters_3to1[amino_acid]
+        try:
+            charge= get_aa2charge().mapping[amino_acid]
+            volume=get_aa2volume().mapping[amino_acid]
+            hydropathy=get_aa2hydropathy().mapping[amino_acid]
+            hydrophobicity=get_aa2mj().mapping[amino_acid]
+            properties_dictionary = {"charge": charge, "volume": volume,
+                                     "hydropathy": hydropathy,
+                                     "hydrophobicity": hydrophobicity}
+        except ValueError:
+            print("please check input {} in the amino acids list".format(amino_acid))
+
+        return properties_dictionary
 
 def main():
     #unittest.main()
 
     seq=Sequences()
-    seq.get_active_site_dictionary_from_file()
+    #seq.get_active_site_dictionary_from_file()
     #seq.get_AA_within_distance_from_structure_file()
-
+    seq.get_sites_from_alignment(file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",start_pos=3)
     #seq.group_seq_based_on_methylated_type(inputfile="../autodata/seq_smiles_all.csv",save_directory="../autodata/sequences")
     #seq.remove_duplicate()
-    # seq.group_fg_based_on_methylated_type("../autodata/seq_smiles_all.csv",)
+    #seq.group_fg_based_on_methylated_type("../autodata/seq_smiles_all.csv",)
 
 if __name__ == "__main__":
     main()
