@@ -409,26 +409,29 @@ def k_mer_encoding(file_name,k):
     align_pd.to_csv("../autodata/protein_encoding/{}_k_mer_encoding_without_align_26_08.csv".format(file_name))
     return align_pd
 
-def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame,file_name:str):
+def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_name:str=None):
     #add properties as features
     seq = Sequences()
-
+    input_df=seq.get_sites_from_alignment(file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",start_pos=3)
     properties=['charge', 'volume', 'hydropathy', 'hydrophobicity']
     # create empty dataframe
     property_df=pd.DataFrame(index=input_df.index)
     for col in input_df.columns:
         for pro in properties:
-            col_name=col+pro
+            col_name=str(col)+pro
             property_df[col_name]=["NA"]*len(property_df.index)
     # calculate properties and save to dataframe
     for i in property_df.index:
         for col in input_df.columns:
+            aa = input_df.loc[i, col]
+            propertites_dictionary=seq.amino_acid_properties(amino_acid=aa)
             for pro in properties:
-                col_name = col + pro
-                aa=input_df.loc[i,col]
-                property_df.loc[i,col_name]=seq.amino_acid_properties(amino_acid=aa)
-    properties=seq.amino_acid_properties("Y")
-    print(properties)
+                col_name = str(col) + pro
+                property_df.loc[i,col_name]=propertites_dictionary[pro]
+    print(property_df)
+    property_df.to_csv("../autodata/align/align_seed_sequences_with_structure/AA_properties_encoding.csv")
+    return property_df
+
 def merge_encoding_to_onefile():
 
     files=["O","N","S","C","Co"]
@@ -598,7 +601,9 @@ def check_sequences_similarity(fasta_file=""):
 
 def main():
     #unittest.main()
-    check_sequences_similarity()
+    #check_sequences_similarity()
+
+    use_atom_properties_for_sequences_encoding()
     #merge_active_site_and_methyltype("../autodata/entry_with_activesite.csv","../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv")
     # read_msa_and_encoding(file_name="N_seed")
     #merge_encoding_to_onefile()

@@ -218,7 +218,7 @@ class Sequences():
         print('Q9KUA0' in list(align_pd.index))
 
         #drop the column which the guided structure is a gap, and drop 'X' amino acid
-        ## change - and X 
+        ## change - and X
         align_pd.replace("X", "-", inplace=True)
         align_pd.replace("-", np.nan, inplace=True)
         align_pd=align_pd.T
@@ -232,12 +232,9 @@ class Sequences():
         align_pd=align_pd.T
         align_pd.replace( np.nan,"-", inplace=True)
         print('Q9KUA0' in align_pd.index)
-
-
-
+        #  double check the sequences length are the same with the structure chain sequences
         if len(align_pd.columns) !=sequence_length:
             raise ValueError("The alignment length is not as same as the structure sequence")
-
 
         #print(align_pd)
         encoding_pd=pd.DataFrame(index=ids)
@@ -284,9 +281,11 @@ class Sequences():
             properties_dictionary = {"charge": charge, "volume": volume,
                                      "hydropathy": hydropathy,
                                      "hydrophobicity": hydrophobicity}
-        except ValueError:
+        except:
             print("please check input {} in the amino acids list".format(amino_acid))
-
+            properties_dictionary = {"charge": 0, "volume": 0,
+                                     "hydropathy": 0,
+                                     "hydrophobicity": 0}
         return properties_dictionary
 
 def main():
