@@ -7,7 +7,6 @@ Dependencies:   Python3.9
                 pandas
 This code is to parse sequence data
 """
-import sys
 import unittest
 import pandas as pd
 import numpy as np
@@ -192,7 +191,7 @@ class Sequences():
         print(structure_seq_length)
         return amino_acide_close_to_active_site, structure_seq_length
 
-    def get_sites_from_alignment(self,fileformat="fasta",file="",active_site_dictionary:dict={},start_pos:int=0)->pd.DataFrame:
+    def get_sites_from_alignment(self,fileformat="fasta",file="",active_site_dictionary:dict={},start_pos:int=0,structure_chain="3rod.pdb_chainA_s001")->pd.DataFrame:
         """
         This is the function to get the site close to active site for aligned sequences
 
@@ -206,8 +205,7 @@ class Sequences():
             print("Need active_site_dictionary, creating....")
             active_site_dictionary,sequence_length =self.get_AA_within_distance_from_structure_file()
             print(active_site_dictionary)
-        #create dataframe for saving the site
-        site_dataframe=pd.DataFrame()
+
 
         #read the alignment and save to dataframe
         align = AlignIO.read(file, fileformat)
@@ -221,8 +219,8 @@ class Sequences():
         ## change - and X
         align_pd.replace("X", "-", inplace=True)
         align_pd.replace("-", np.nan, inplace=True)
-        align_pd=align_pd.T
-        align_pd.dropna(subset=['3rod.pdb_chainA_s001'],inplace=True)
+        align_pd = align_pd.T
+        align_pd.dropna(subset=[structure_chain],inplace=True)
         align_pd.reset_index(drop=True, inplace=True)
 
         #rest column names to fit the index from author
@@ -233,71 +231,81 @@ class Sequences():
         align_pd.replace( np.nan,"-", inplace=True)
         print('Q9KUA0' in align_pd.index)
         #  double check the sequences length are the same with the structure chain sequences
-        if len(align_pd.columns) !=sequence_length:
+        if len(align_pd.columns) != sequence_length:
             raise ValueError("The alignment length is not as same as the structure sequence")
 
         #print(align_pd)
-        encoding_pd=pd.DataFrame(index=ids)
-        #print(encoding_pd)
+        #create dataframe for saving the site close to active sites
+        active_site_pd=pd.DataFrame(index=ids)
+        #print(active_site_pd)
         for key_acs in active_site_dictionary.keys():
             for item_tuple in active_site_dictionary[key_acs]:
                 #activesite_closeAA
                 columnname=item_tuple[0]
-                encoding_pd[columnname]=["NA"]*len(ids)
+                active_site_pd[columnname]=["NA"]*len(ids)
 
         for id in ids:
-            for column in encoding_pd.columns:
+            for column in active_site_pd.columns:
                 #print(column)
                 aa = align_pd.loc[id,column]
-                encoding_pd.loc[id,column]=aa
-        print(encoding_pd)
+                active_site_pd.loc[id,column]=aa
+        print(active_site_pd)
 
         #construct MSA with amino acids close to active sites
-
-        for seq_id in encoding_pd.index:
+        ##save sequences to fasta file
+        for seq_id in active_site_pd.index:
             file = open("../autodata/align/align_seed_sequences_with_structure/N_seq_close_to_active_sites.fasta", "a")
-            seq= "".join(encoding_pd.loc[seq_id,:].values.tolist())
+            seq= "".join(active_site_pd.loc[seq_id,:].values.tolist())
             print(seq,seq_id)
             file.write(">{}\n".format(seq_id))
             file.write("{}\n".format(seq))
+        ##save pd.Dataframe to csv file
+        active_site_pd.to_csv("../autodata/align/align_seed_sequences_with_structure/N_active_site_df.csv")
+        return active_site_pd
 
-        print(np.unique(encoding_pd.values, return_counts=True))
-        return encoding_pd
-
-    def amino_acid_properties(self,amino_acid):
+    def amino_acid_properties(self, amino_acid: str, structure_aa: str) -> dict:
         """
         return list of amino acid properties generate by quantiprot
 
-        :param amino_acid:
-        :return:
+        :param
+        amino_acid:three letter(all capital) or one letter code of amino acid
+        structure_aa: amino acid from the samr position of structure sequence
+        :return: properties_dictionary
         """
-        if len(amino_acid)==3:
-            amino_acid=protein_letters_3to1[amino_acid]
+        if len(amino_acid) == 3:
+            amino_acid = protein_letters_3to1[amino_acid]
         try:
-            charge= get_aa2charge().mapping[amino_acid]
-            volume=get_aa2volume().mapping[amino_acid]
-            hydropathy=get_aa2hydropathy().mapping[amino_acid]
-            hydrophobicity=get_aa2mj().mapping[amino_acid]
+            charge = get_aa2charge().mapping[amino_acid]
+            volume = get_aa2volume().mapping[amino_acid]
+            hydropathy = get_aa2hydropathy().mapping[amino_acid]
+            hydrophobicity = get_aa2mj().mapping[amino_acid]
+            similarity_score = bl.BLOSUM(62)[(amino_acid+structure_aa)]
+            print(similarity_score)
             properties_dictionary = {"charge": charge, "volume": volume,
                                      "hydropathy": hydropathy,
-                                     "hydrophobicity": hydrophobicity}
+                                     "hydrophobicity": hydrophobicity,
+                                     "similarity_score": similarity_score}
         except:
             print("please check input {} in the amino acids list".format(amino_acid))
             properties_dictionary = {"charge": 0, "volume": 0,
                                      "hydropathy": 0,
-                                     "hydrophobicity": 0}
+                                     "hydrophobicity": 0,
+                                     "similarity_score":0}
         return properties_dictionary
 
 def main():
-    #unittest.main()
 
+    #unittest.main()
     seq=Sequences()
     #seq.get_active_site_dictionary_from_file()
     #seq.get_AA_within_distance_from_structure_file()
-    seq.get_sites_from_alignment(file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",start_pos=3)
+
+    #seq.get_sites_from_alignment(file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",start_pos=3)
+    seq.amino_acid_properties("Y", "Y")
     #seq.group_seq_based_on_methylated_type(inputfile="../autodata/seq_smiles_all.csv",save_directory="../autodata/sequences")
     #seq.remove_duplicate()
     #seq.group_fg_based_on_methylated_type("../autodata/seq_smiles_all.csv",)
+
 
 if __name__ == "__main__":
     main()

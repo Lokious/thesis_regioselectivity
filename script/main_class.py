@@ -186,6 +186,7 @@ def sepreate_input(auto="",file="",numbit:int=2048,bond:int=2):
         sub_df.reset_index(drop=True,inplace=True)
 
         sub_df.to_csv("../{}data/group/{}_{}_{}_with_bitinfo.csv".format(auto,group,str(numbit),str(bond)))
+
 def perform_cluster_based_on_substrate(file_directory="../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv"):
     input_data=pd.read_csv("{}".format(file_directory),header=0,index_col=0)
 
@@ -258,11 +259,7 @@ def main():
     today = date.today()
     # dd/mm/YY
     d1 = today.strftime("%d_%m_%Y")
-
-
-    smile="[27*][26C@@H]1[25O][24C@H]([23CH2][22O][21P](=[34O])([35O-])[20O][19P](=[36O])([37O-])[18O][17P](=[38O])([39O-])[16O][15CH2][14C@H]2[13O][12C@@H]([11n]3[10cH][8n+]([9CH3])[7c]4c(=[1O])[2nH][3c]([4NH2])[5n][6c]43)[42C@H]([43OH])[40C@@H]2[41OH])[31C@@H]([32O][33*])[28C@H]1[29O]"
-    mol1= Chem.MolFromSmiles(smile)
-    Draw.ShowMol(mol1,(600,600))
+    #build_different_input(auto="auto", x="../autodata/group/['N']_128_3_with_bitinfo.csv",num_bit = 128, radius:int = 3, seqfile= "6_seed_onehot_encoding.csv", group = "N")
     #visilize_bit_info_of_created_fingerprint(smile, 3,128,18)
     # mo_del = Model_class()
     # sequence_data = pd.read_csv("../autodata/protein_encoding/all_k_mer_encoding_sepreate_without_align.csv",header=0,index_col=0)
@@ -404,10 +401,16 @@ def main():
     # # add_dataframe["Entry"]=add_dataframe["Entry"].astype(object)
     #
     # #
-    # input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
-    # print(input_dataframe)
-    # input_dataframe = input_dataframe.dropna(axis=0,how="any")
-    # print(input_dataframe)
+    X=pd.read_csv("../autodata/group/['N']_128_3_with_bitinfo.csv",header=0,index_col=0)
+    add_dataframe=pd.read_csv("../autodata/protein_encoding/N_AA_properties_encoding.csv",header=0,index_col=0)
+    add_dataframe["Entry"]=add_dataframe.index
+    add_dataframe.reset_index(drop=True,inplace=True)
+    print(add_dataframe)
+    input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
+    print(input_dataframe)
+    input_dataframe = input_dataframe.dropna(axis=0,how="any")
+    print(input_dataframe)
+    input_dataframe.to_csv("../autodata/input_data/active_site/N_bit128_3.csv")
     #
     # #
     # input_dataframe.to_csv("data/input_data/input2048fg_dpna_manual.csv")

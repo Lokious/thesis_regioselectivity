@@ -43,6 +43,8 @@ from sklearn.metrics import confusion_matrix, mean_squared_error, mean_absolute_
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.decomposition import PCA
+from sklearn.metrics import make_scorer
+from sklearn.metrics import matthews_corrcoef
 from sklearn.metrics import precision_score, accuracy_score, plot_roc_curve, RocCurveDisplay,ConfusionMatrixDisplay, roc_auc_score, roc_curve
 from sklearn.svm import SVC
 from sklearn.svm import SVC
@@ -115,6 +117,8 @@ class Model_class():
 
     def keep_longest_smile(self,dataframe_before):
 
+        raise RuntimeError(
+            "function `keep_longest_smile()` is deprecated")
         dataframe_before["main_sub"] = pd.DataFrame(
             len(dataframe_before.index) * [0])
         dataframe_before["main_pro"] = pd.DataFrame(
@@ -223,9 +227,9 @@ class Model_class():
         """
         this function is to build inputdata with fingerprints and labels
 
-        :param sauce_data:
-        :param atom_object_dictionary:
-        :param num_bits:
+        :param sauce_data: pd.dataframe with substrate and metylation site information
+        :param atom_object_dictionary: key: index of sauce_data value: mathylation site
+        :param num_bits: num_bits for morgen fingerprint
         :param radius:
         :return:
         """
@@ -313,7 +317,8 @@ class Model_class():
                         current_index += 1
                         print(current_index)
             except:
-                    continue
+                print("somethingwrong with this index{}".format(index))
+                continue
         if drop_atoms:
             input_dataframe.to_csv("../autodata/fingerprint_bit{}_radius{}_{}.csv".format(num_bits,radius,file_name))
             with open("../autodata/fingerprint_bit{}_radius{}_{}".format(num_bits,radius,file_name), "wb") as dill_file:
@@ -592,26 +597,23 @@ class Model_class():
         """
 
         hyperparameters = {'n_estimators': [500,1000,2000],
-                           'max_features': [0.3,0.5,0.7],
-
+                           'max_features': [0.3,0.5,0.7,0.9],
                            }
 
         #n_jobs number of cores used for it
         #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
-        # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
-        #                      hyperparameters, scoring='roc_auc_ovr_weighted',
-        #                      cv=3,
-        #                      verbose=3,
-        #                      n_jobs=14)
-
-        ####use MCC as scoring#####
-        from sklearn.metrics import make_scorer
-        from sklearn.metrics import matthews_corrcoef
         rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
-                             hyperparameters, scoring=make_scorer(matthews_corrcoef),
+                             hyperparameters, scoring='roc_auc',
                              cv=3,
                              verbose=3,
                              n_jobs=14)
+
+        ####use MCC as scoring#####
+        # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
+        #                      hyperparameters, scoring=make_scorer(matthews_corrcoef),
+        #                      cv=3,
+        #                      verbose=3,
+        #                      n_jobs=14)
         rf_cv.fit(X_train, y_train)
         print(rf_cv.best_params_)
         # roc for train data
@@ -621,9 +623,10 @@ class Model_class():
         self.cm_threshold(threshold_train, X_train, y_train, rf_cv.best_estimator_, (file_name+"train"))
         # self.cm_threshold(0.5, X_train, y_train, rf_cv.best_estimator_,
         #              (file_name + "train"))
-        self.cm_threshold(threshold_test, X_test, y_test, rf_cv.best_estimator_, (file_name+"test"))
+        cm_matrix=self.cm_threshold(threshold_test, X_test, y_test, rf_cv.best_estimator_, (file_name+"test"))
         # self.cm_threshold(0.5, X_test, y_test, rf_cv.best_estimator_,
         #              (file_name + "test (use train threshold)"))
+
         #lineplot the roc score with differnt hyparameters
         plt.figure()
         print(rf_cv.cv_results_)
@@ -631,9 +634,9 @@ class Model_class():
                      x=rf_cv.cv_results_['param_max_features'].data,
                      hue=rf_cv.cv_results_['param_n_estimators'])
         plt.xlabel("max features")
-        plt.ylabel("roc_auc_ovr_weighted (mean 3-fold CV)")
+        plt.ylabel("roc_auc (mean 3-fold CV)")
         plt.title(
-            "Accuracy with different estimators and features for RF model")
+            "roc_auc score with different estimators and features for RF model")
         plt.savefig("../autodata/separate_seed_result/Accuracy with different estimators and features for RF model_{}".format(file_name))
         plt.close()
         #plt.show()
@@ -647,6 +650,9 @@ class Model_class():
         #fig = ax.get_figure()
         plt.savefig('../autodata/separate_seed_result/trainmodel_output_figure/feature_importance{}.png'.format(file_name))
         plt.close()
+
+        ##save result to file
+        self.save_result_tofile(rf_cv, X_test, y_test, cm_matrix, file_name=file_name)
 
 
         """
@@ -770,6 +776,37 @@ class Model_class():
         from sklearn.preprocessing import StandardScaler
         from sklearn.datasets import make_classification
 
+    def save_result_tofile(self,rf,X_test, y_test,cm_matrix,file_name=""):
+        """
+
+        :param rf:
+        :param X_test:
+        :param y_test:
+        :param cm_matrix:
+        :param file_name:
+        :return:
+        """
+        y_pred = rf.best_estimator_.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        mcc_score = matthews_corrcoef(y_test, y_pred)
+        TP = cm_matrix[0][0]
+        FP = cm_matrix[0][1]
+        FN = cm_matrix[1][0]
+        TN = cm_matrix[1][1]
+        sensitivity = TP / (TP + FN)
+        specificity = TN / (TN + FP)
+        precision = TP / (TP + FP)
+        file1 = open(
+            "../autodata/separate_seed_result/{}prediction_summary.txt".format(
+                file_name), "a")
+        file1.write("accuracy: {}\n".format(accuracy))
+        file1.write("mcc_score: {}\n".format(mcc_score))
+        file1.write("sensitivity : {}\n".format(sensitivity))
+        file1.write("specificity : {}\n".format(specificity))
+        file1.write("precision : {}\n".format(precision))
+        file1.write("###############################################")
+        file1.close()
+
     def show_roc(self,rf,X,y,file_name):
         from sklearn import metrics
         # roc for training data
@@ -801,8 +838,11 @@ class Model_class():
             rf, X, y, name="LinearSVC"
         )
         precision_recall_figure = display.ax_.set_title("Precision-Recall curve")
-        plt.show()
-
+        display.figure_.savefig(
+            "../autodata/separate_seed_result/RF precision_recall_figure _{}_data".format(
+                file_name))
+        #plt.show()
+        plt.close()
         return thresholds[ix]
 
     def cm_threshold(self,threshold,x,y,rf,file_name):
@@ -826,7 +866,7 @@ class Model_class():
                     threshold, file_name), dpi=300)
             # plt.show()
             plt.close()
-
+        return cm
     def hierarchical_clustering(self,sequence_data,label):
         from sklearn.cluster import AgglomerativeClustering
         from scipy.cluster.hierarchy import fcluster, cut_tree, linkage, \
@@ -936,6 +976,42 @@ class Model_class():
             methyl_site_atom= self.predict(loded_data,num_bits=1024)
             print(methyl_site_atom)
 
+    def use_less_similar_data_for_test(self,df,test:float=0.2,group_column:str='molecular_id',i:int=0,num_bit=2048):
+
+
+
+        splitter = GroupShuffleSplit(test_size=test, n_splits=1,
+                                     random_state=i)
+        split = splitter.split(df, groups=df[group_column])
+        train_inds, test_inds = next(split)
+        train = df.iloc[train_inds]
+        test = df.iloc[test_inds]
+
+        # X_train = train[list(train.columns)[:-2]]
+        X_train = (copy.deepcopy(train)).drop(
+            columns=["Entry", "molecular_id", "label"])
+        Y_train = train["label"]
+        # X_test = test[list(test.columns)[:-2]]
+        X_test = (copy.deepcopy(test)).drop(
+            columns=["Entry", "molecular_id", "label"])
+        Y_test = test["label"]
+        # print(X_train, X_test, Y_train, Y_test)
+        less_similar_test=self.check_test_train_similarity(test, train,Y_test,num_bit)
+
+
+        return X_train, X_test, Y_train, Y_test
+    def check_test_train_similarity(self,test,train,Y_test,numbit):
+        """
+
+        :param test: X_test
+        :param train: X_train
+        :return:
+        """
+        for index in test:
+            list_sub_fg=test.loc[index,:numbit].values.tolist()
+            sub_finderprint="".join(list_sub_fg)
+            print(sub_finderprint)
+
 # class Testreaction_class(unittest.TestCase):
 #     mol = Model_class()
 #
@@ -966,12 +1042,12 @@ class Model_class():
 def main():
     #unittest.main()
     model=Model_class()
-    # model.check_file_exist("../autodata/seq_smiles_all_script.csv","../autodata/diction_atom_all")
+    #model.check_file_exist("../autodata/seq_smiles_all_script.csv","../autodata/diction_atom_all")
     data_with_site = pd.read_csv("../autodata/seq_smiles_all.csv",
                                  header=0, index_col=0)
     with open('../autodata/diction_atom_all', 'rb') as file1:
         diction_atom = dill.load(file1)
-    model.save_fingerprints_to_dataframe(data_with_site, diction_atom,128,3, drop_atoms=True,file_name="all_data_drop_atom")
+    model.save_fingerprints_to_dataframe(data_with_site, diction_atom,128,3, drop_atoms=True,file_name="all_data_drop_atom_19_09")
 
 if __name__ == "__main__":
     main()

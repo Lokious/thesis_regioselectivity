@@ -1,7 +1,7 @@
 # thesis_regioselectivity
 packages needed to be installed:
 
-python >= 3.7
+python >= 3.8
 pandas1.4.3
 numpy 1.21.2
 openpyxl-3.0.10
@@ -15,6 +15,7 @@ quantiprot
 bio-embedding
 plotly-5.9.0 
 blosum
+mmseqs 1.0.0
 
 running steps：(19/08/2022)
 1. Model_class check_file_exist(),save_fingerprints_to_dataframe()

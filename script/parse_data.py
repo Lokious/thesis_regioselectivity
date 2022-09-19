@@ -409,10 +409,12 @@ def k_mer_encoding(file_name,k):
     align_pd.to_csv("../autodata/protein_encoding/{}_k_mer_encoding_without_align_26_08.csv".format(file_name))
     return align_pd
 
-def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_name:str=None):
+def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_name:str=None,structure_chain="3rod.pdb_chainA_s001"):
     #add properties as features
     seq = Sequences()
     input_df=seq.get_sites_from_alignment(file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",start_pos=3)
+
+    print(input_df)
     properties=['charge', 'volume', 'hydropathy', 'hydrophobicity']
     # create empty dataframe
     property_df=pd.DataFrame(index=input_df.index)
@@ -420,16 +422,19 @@ def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_n
         for pro in properties:
             col_name=str(col)+pro
             property_df[col_name]=["NA"]*len(property_df.index)
+
     # calculate properties and save to dataframe
     for i in property_df.index:
+
         for col in input_df.columns:
+            structure_aa = input_df.loc[structure_chain,col]
             aa = input_df.loc[i, col]
-            propertites_dictionary=seq.amino_acid_properties(amino_acid=aa)
+            propertites_dictionary=seq.amino_acid_properties(amino_acid=aa,structure_aa=structure_aa)
             for pro in properties:
                 col_name = str(col) + pro
                 property_df.loc[i,col_name]=propertites_dictionary[pro]
     print(property_df)
-    property_df.to_csv("../autodata/align/align_seed_sequences_with_structure/AA_properties_encoding.csv")
+    #property_df.to_csv("../autodata/align/align_seed_sequences_with_structure/N_AA_properties_encoding.csv")
     return property_df
 
 def merge_encoding_to_onefile():
@@ -548,6 +553,7 @@ def read_fasta_file(file_name=""):
             continue
         seq_dictionary[seq_name] += line.strip("\n")
     return seq_dictionary
+
 def check_sequences_similarity(fasta_file=""):
     """
     This function is to compare the sequences similarity
@@ -556,7 +562,7 @@ def check_sequences_similarity(fasta_file=""):
     import difflib
     groups=["O","S","N","C"]
     for group in groups:
-        seq_dictionary=read_fasta_file("../autodata/sequences/{}_rm.fasta".format(group))
+        seq_dictionary=read_fasta_file("../autodata/align/Keeplength/{}_seed_addmodel_rm".format(group))
         similarity_matrix=pd.DataFrame(index=list(seq_dictionary.keys()),columns=list(seq_dictionary.keys()))
         visit_list=[]
         for column in similarity_matrix.columns:
@@ -571,6 +577,7 @@ def check_sequences_similarity(fasta_file=""):
                     similarity_matrix.loc[index, column]=similarity_matrix.loc[column,index]
         print(similarity_matrix)
         similarity_matrix.to_csv("../autodata/sequences/{}_rm_similarity_matrix.csv".format(group))
+
 # def merge_uniprot_emebeding():
 #     file_list = ["PF08241","PF05175",  "PF08242", "PF13489", "PF13649",
 #                  "PF13847"]
