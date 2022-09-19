@@ -240,9 +240,9 @@ class Reaction:
                                         neighbour_atom.GetIdx()))
                                 atom_index=neighbour_atom.GetIdx()
                                 # check radical electrons
-                                print("symbol:{},index{}, Explicit valence: {},total H:{}".format(neighbour_atom.GetSymbol(),neighbour_atom.GetIdx(),
+                                print("symbol:{},index{}, Explicit valence: {},total H:{},TotalDegree{}".format(neighbour_atom.GetSymbol(),neighbour_atom.GetIdx(),
                                       neighbour_atom.GetExplicitValence(),
-                                      neighbour_atom.GetTotalNumHs()))
+                                      neighbour_atom.GetTotalNumHs(),neighbour_atom.GetTotalDegree()))
                                 for atom1 in product_mol.GetAtoms():
                                     atom1.SetIsotope(atom1.GetIdx())
                                 #reset the mol and remove the methlation group, keep the isotope
@@ -254,7 +254,18 @@ class Reaction:
                                 for atom in mol_remove_methylation.GetAtoms():
                                     if atom.GetIsotope()==atom_index:
                                         # Add H after remove methyl group
-                                        atom.SetNumExplicitHs((atom.GetExplicitValence() - atom.GetTotalDegree()))
+                                        try:
+                                            atom.SetNumExplicitHs((atom.GetExplicitValence() - atom.GetTotalDegree()))
+                                            similiarity = DataStructs.FingerprintSimilarity(
+                                                Chem.RDKFingerprint(
+                                                    mol_remove_methylation),
+                                                # get the substrate_mol through index which is saved in the key of dictionary
+                                                Chem.RDKFingerprint(substrate_mol))
+                                            print(similiarity)
+                                            assert similiarity==1
+                                            Chem.Kekulize(mol_remove_methylation)
+                                        except:
+                                            print("Kekulize error after add H, won't add H to the atom")
                                 # Draw.ShowMol(mol_remove_methylation,
                                 #              (600, 600))
                                 # Draw.ShowMol(mol_remove_methylation, (800, 800))
@@ -305,8 +316,13 @@ class Reaction:
                                 atom.GetIdx()))
                         mol.RemoveAtom(i)
                         # Add H after remove methyl group
-                        atom.SetNumExplicitHs((atom.GetExplicitValence() - atom.GetTotalDegree()))
-
+                        try:
+                            print("Total degree{}".format(atom.GetTotalDegree()))
+                            atom.SetNumExplicitHs((atom.GetExplicitValence() - atom.GetTotalDegree()))
+                            Chem.Kekulize(mol.GetMol())
+                        except:
+                            print(
+                            "Kekulize error after add H, won't add H to the atom")
                     #print(atom_index_list)
                     mol_remove_methylation = mol.GetMol()
                     # Draw.ShowMol(mol_remove_methylation, (800, 800))
@@ -488,7 +504,17 @@ class Testreaction_class(unittest.TestCase):
                 explicitValence=atom.GetExplicitValence()
                 self.assertEqual(num_electrons,0)
                 self.assertEqual(explicitValence,2)
-
+    def test4_get_reaction_sites(self):
+        """
+        Test for get_reaction_sites works for not adding H
+        """
+        reaction = Reaction()
+        substrates = r"O[C@H]1C[C@@H](O[C@@H]1COP([O-])([O-])=O)n1ccc(=O)[nH]c1=O"
+        products = r"Cc1cn([C@H]2C[C@H](O)[C@@H](COP([O-])([O-])=O)O2)c(=O)[nH]c1=O"
+        pro_mol,remove_methyl_smile,list_methylsite,check = reaction.get_reaction_sites(products,substrates)
+        self.assertEqual(list_methylsite[0],'C:1')
+        self.assertEqual(check,"Pass_Check")
+        print(remove_methyl_smile)
 def main():
     unittest.main()
     """

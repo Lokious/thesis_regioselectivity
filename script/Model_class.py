@@ -164,7 +164,7 @@ class Model_class():
 
         return copy.deepcopy(dataframe_before)
 
-    def return_reactions(self,dataframe_rr):
+    def return_reactions(self,dataframe_rr,test=False):
         """
         This function is to save methylated site in file
 
@@ -216,11 +216,14 @@ class Model_class():
             #save list of methyl site atom objects and index to a dictionary
             atom_object_dictionary[index] = site
         else:
-            with open("../autodata/seq_smiles_all", "wb") as dill_file:
-                                dill.dump(dataframe_rr, dill_file)
-            with open("../autodata/diction_atom_all", "wb") as dill_file:
-                dill.dump(atom_object_dictionary, dill_file)
-            dataframe_rr.to_csv("../autodata/seq_smiles_all.csv")
+            if test == False:
+                with open("../autodata/seq_smiles_all", "wb") as dill_file:
+                                    dill.dump(dataframe_rr, dill_file)
+                with open("../autodata/diction_atom_all", "wb") as dill_file:
+                    dill.dump(atom_object_dictionary, dill_file)
+                dataframe_rr.to_csv("../autodata/seq_smiles_all.csv")
+            else:
+                print("won't save file while running test")
         return dataframe_rr
 
     def save_fingerprints_to_dataframe(self,sauce_data,atom_object_dictionary,num_bits: int = 2048,radius: int = 3,drop_atoms=False,file_name=""):
@@ -317,8 +320,8 @@ class Model_class():
                         current_index += 1
                         print(current_index)
             except:
-                print("somethingwrong with this index{}".format(index))
-                continue
+                    print("somethingwrong with this index{}".format(index))
+                    continue
         if drop_atoms:
             input_dataframe.to_csv("../autodata/fingerprint_bit{}_radius{}_{}.csv".format(num_bits,radius,file_name))
             with open("../autodata/fingerprint_bit{}_radius{}_{}".format(num_bits,radius,file_name), "wb") as dill_file:
@@ -976,9 +979,16 @@ class Model_class():
             methyl_site_atom= self.predict(loded_data,num_bits=1024)
             print(methyl_site_atom)
 
-    def use_less_similar_data_for_test(self,df,test:float=0.2,group_column:str='molecular_id',i:int=0,num_bit=2048):
+    def use_less_similar_data_for_test(self,df,test:float=0.3,group_column:str='molecular_id',i:int=0,num_bit=2048):
+        """
 
-
+        :param df: input_dataframe with substrate fingerprint and sequences encoding
+        :param test: the propotion of data use for test data
+        :param group_column: group based on the column
+        :param i: int, random_state
+        :param num_bit: substrate fingerprint length
+        :return:
+        """
 
         splitter = GroupShuffleSplit(test_size=test, n_splits=1,
                                      random_state=i)
@@ -987,44 +997,63 @@ class Model_class():
         train = df.iloc[train_inds]
         test = df.iloc[test_inds]
 
-        # X_train = train[list(train.columns)[:-2]]
+
+        self.check_test_train_similarity(test,
+                                         train,
+                                         num_bit)
+        test=self.test
+        train=self.train
         X_train = (copy.deepcopy(train)).drop(
             columns=["Entry", "molecular_id", "label"])
-        Y_train = train["label"]
-        # X_test = test[list(test.columns)[:-2]]
         X_test = (copy.deepcopy(test)).drop(
             columns=["Entry", "molecular_id", "label"])
+        Y_train = train["label"]
         Y_test = test["label"]
-        # print(X_train, X_test, Y_train, Y_test)
-        less_similar_test=self.check_test_train_similarity(test, train,Y_test,num_bit)
 
+
+        # print(X_train, X_test, Y_train, Y_test)
 
         return X_train, X_test, Y_train, Y_test
-    def check_test_train_similarity(self,test,train,Y_test,numbit):
+
+    def check_test_train_similarity(self, test, train, numbit, seq_file = ""):
         """
 
-        :param test: X_test
-        :param train: X_train
+        :param test: entry in test
+        :param train: entry in train
         :return:
         """
-        for index in test:
-            list_sub_fg=test.loc[index,:numbit].values.tolist()
-            sub_finderprint="".join(list_sub_fg)
-            print(sub_finderprint)
 
+        seq_dictionary=parse_data.read_fasta_file(file_name=seq_file)
+
+        train_sub_fg_dictionary={}
+        for index_train in train:
+            list_sub_fg = test.loc[index_train, :numbit * 2].values.tolist()
+            sub_finderprint = "".join(list_sub_fg)
+            if sub_finderprint not in train_sub_fg_dictionary.keys():
+                train_sub_fg_dictionary[sub_finderprint]=[index_train]
+            else:
+                train_sub_fg_dictionary[sub_finderprint].append(index_train)
+        train_sub_fg_list=list(train_sub_fg_dictionary.keys())
+
+        remove_index=[]
+        for index_test in test:
+            #join the fingerprint to a sting for searching
+            list_sub_fg = test.loc[index_test,:numbit*2].values.tolist()
+            sub_fingerprint = "".join(list_sub_fg)
+            print(sub_fingerprint)
+            if sub_fingerprint in train_sub_fg_list:
+                test_entry = test.loc[index_test,"Entry"]
+                test_seq=seq_dictionary[test_entry]
+                for index in train_sub_fg_dictionary[sub_fingerprint]:
+                    train_entry=train.loc[index_test,"Entry"]
+                    train_seq=seq_dictionary[train_entry]
+
+
+
+        # self.test=
+        # self.train=
 # class Testreaction_class(unittest.TestCase):
 #     mol = Model_class()
-#
-#     def test0_keep_longest_smile(self):
-#         """
-#         Test if keep_longest_smile() will get expected result
-#         """
-#         df1=pd.DataFrame()
-#         df1["sub_smiles"]=["c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18OH:49])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].C[S+:1]([1CH2:2][2CH2:3][3C@H:4]([NH3+:5])[4C:6]([O-:7])=[1O:8])[5CH2:9][6C@H:10]1[2O:11][7C@@H:12]([1n:17]2[10cH:18][2n:19][11c:20]3[12c:21]2[3n:22][13cH:23][4n:24][14c:25]3[5NH2:26])[8C@H:13]([3OH:14])[9C@@H:15]1[4OH:16]"]*2
-#         df1["pro_smiles"]=["c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18O:49][22CH3:57])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14].[C@H]1([2OH:6])[1C@@H:1]([1OH:5])[2C@H:2]([n:7]2[4c:8]3[6c:10]([2n:12][5cH:9]2)[7c:13]([4NH2:16])[3n:15][8cH:14][1n:11]3)[O:3][3C@@H:4]1[9CH2:17][S:18][10CH2:19][11CH2:20][12C@@H:21]([13C:24]([3O-:22])=[4O:23])[5NH3+:25]"]*2
-#         df2 = self.mol.keep_longest_smile(df1)
-#         print(df2)
-#         self.assertEqual(df2.loc[0,"main_sub"],"c1(=[4O:19])[nH:1][9c:17]([4NH2:18])[1n:2][1c:3]2[2c:4]1[2n+:5]([15CH3:41])[3cH:6][3n:7]2[4C@@H:8]1[O:9][5C@H:10]([8CH2:16][3O:15][P:28]([8O:29][1P:30]([9O:31][2P:32]([10O:33][14CH2:40][10C@H:20]2[5O:21][13C@@H:24]([*:25])[12C@H:23]([6O:26][16CH3:42])[11C@@H:22]2[7O:27][3P:52]([20O:53][21CH2:56][17C@H:43]2[17O:44][20C@@H:47]([1*:48])[19C@H:46]([18OH:49])[18C@@H:45]2[19O:50][2*:51])(=[21O:54])[22O-:55])(=[13O:36])[16O-:39])(=[12O:35])[15O-:38])(=[11O:34])[14O-:37])[6C@@H:11]([1OH:12])[7C@H:13]1[2OH:14]")
 #
 #     def test1_return_reactions(self):
 #         """
@@ -1035,14 +1064,26 @@ class Model_class():
 #         products="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1O:7][11CH3:13])[4cH:4][2cH:2]1"
 #         df1["sub_smiles"] =[substrates]
 #         df1["pro_smiles"] =[products]
-#         df_with_reactant_site=self.mol.return_reactions(dataframe_rr=df1)
+#         df_with_reactant_site = self.mol.return_reactions(dataframe_rr=df1,test=True)
 #         self.assertEqual(df_with_reactant_site.loc[0,"reactant_site"], "O:10")
 #         self.assertEqual(df_with_reactant_site.loc[0,"methyl_type"], "O")
+#
+#     def test2_save_fingerprints_to_dataframe(self):
+#         df=pd.DataFrame()
+#         substrate="[4O]=[3c]1[1cH2]c[8n]([9C@H]2[20CH2][18C@H]([19OH])[11C@@H]([12CH2][13O][14P]([15O-])(=[16O])[17O-])[10O]2)[6c](=[7O])[5nH]1"
+#         mol = Chem.MolFromSmiles(substrate)
+#         Draw.ShowMol(mol)
+#         df["main_sub"] =[substrate]
+#         df["Entry"] = "Q7WP13"
+#         df["methyl_type"] = "C"
+#         df["reactant_site"]="C:1"
+#         atom_dictionary={0:"C:1"}
+#         self.mol.save_fingerprints_to_dataframe(df,atom_dictionary,128,3,True,"test")
 
 def main():
-    #unittest.main()
+    # unittest.main()
     model=Model_class()
-    #model.check_file_exist("../autodata/seq_smiles_all_script.csv","../autodata/diction_atom_all")
+    model.check_file_exist("../autodata/seq_smiles_all_script.csv","../autodata/diction_atom_all")
     data_with_site = pd.read_csv("../autodata/seq_smiles_all.csv",
                                  header=0, index_col=0)
     with open('../autodata/diction_atom_all', 'rb') as file1:

@@ -412,38 +412,38 @@ def k_mer_encoding(file_name,k):
 def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_name:str=None,structure_chain="3rod.pdb_chainA_s001"):
     #add properties as features
     seq = Sequences()
-    input_df=seq.get_sites_from_alignment(file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",start_pos=3)
-
+    #input_df=seq.get_sites_from_alignment(file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",start_pos=3)
+    input_df=pd.read_csv("../autodata/align/align_seed_sequences_with_structure/N_active_site_df.csv",header=0,index_col=0)
     print(input_df)
-    properties=['charge', 'volume', 'hydropathy', 'hydrophobicity']
+    properties=['charge', 'volume', 'hydropathy', 'hydrophobicity','similarity_score']
     # create empty dataframe
     property_df=pd.DataFrame(index=input_df.index)
     for col in input_df.columns:
         for pro in properties:
-            col_name=str(col)+pro
-            property_df[col_name]=["NA"]*len(property_df.index)
+            col_name = str(col)+pro
+            property_df[col_name] = ["NA"]*len(property_df.index)
 
     # calculate properties and save to dataframe
     for i in property_df.index:
 
         for col in input_df.columns:
-            structure_aa = input_df.loc[structure_chain,col]
+            structure_aa = input_df.loc[structure_chain, col]
             aa = input_df.loc[i, col]
-            propertites_dictionary=seq.amino_acid_properties(amino_acid=aa,structure_aa=structure_aa)
+            propertites_dictionary=seq.amino_acid_properties(amino_acid=aa, structure_aa=structure_aa)
             for pro in properties:
                 col_name = str(col) + pro
-                property_df.loc[i,col_name]=propertites_dictionary[pro]
+                property_df.loc[i, col_name] = propertites_dictionary[pro]
     print(property_df)
-    #property_df.to_csv("../autodata/align/align_seed_sequences_with_structure/N_AA_properties_encoding.csv")
+    property_df.to_csv("../autodata/align/align_seed_sequences_with_structure/N_AA_properties_encoding.csv")
     return property_df
 
 def merge_encoding_to_onefile():
 
-    files=["O","N","S","C","Co"]
-    pd_list=[]
+    files = ["O","N","S","C","Co"]
+    pd_list = []
     for file in files:
         try:
-            p=pd.read_table("jdb")
+            p = pd.read_table("jdb")
             #pd_add = pd.read_csv("../autodata/protein_encoding/{}_k_mer_encoding_without_align.csv".format(file),header=0,index_col=0)
             #print(pd_add)
         except:
@@ -465,7 +465,7 @@ def get_active_and_binding_site_realted_to_methylation():
     The input data is downloaded from Uniprot database
     :return:
     """
-    entry_acs_pd=pd.read_excel("../autodata/uniprot_activesite.xlsx",header=0,index_col=None)
+    entry_acs_pd = pd.read_excel("../autodata/uniprot_activesite.xlsx",header=0,index_col=None)
     entry_acs_pd["active_site_AA"]=pd.DataFrame(
             len(entry_acs_pd.index) * [0])
     entry_acs_pd["binding_site_AA"]=pd.DataFrame(
@@ -487,12 +487,13 @@ def get_active_and_binding_site_realted_to_methylation():
         else:
             entry_acs_pd.loc[index,"active_site_AA"]=",".join(siteAA_list)
         # split binding site and save ligand's CHEBI, save intwo columns in same order
-        if pd.isna(entry_acs_pd.loc[index,"Binding site"])==False:
 
-            binding_sites_list=(entry_acs_pd.loc[index,"Binding site"]).split("BINDING")[1:]
-            bindingsiteAA_list=[]
-            chebi_list =[]
-            pdb_id_list=[]
+        if pd.isna(entry_acs_pd.loc[index,"Binding site"]) == False:
+
+            binding_sites_list = (entry_acs_pd.loc[index,"Binding site"]).split("BINDING")[1:]
+            bindingsiteAA_list = []
+            chebi_list = []
+            pdb_id_list = []
             print(index)
 
             for binding_site_list in binding_sites_list:
@@ -509,33 +510,36 @@ def get_active_and_binding_site_realted_to_methylation():
                     print(pdb_id_list)
                 except:
                     pdb_id_list.append(" ")
-            entry_acs_pd.loc[index,"binding_site_AA"]=",".join(bindingsiteAA_list)
-            entry_acs_pd.loc[index,"CHEBI"] = ",".join(chebi_list)
-            entry_acs_pd.loc[index,"PDB_binding_site"] = ",".join(pdb_id_list)
+            entry_acs_pd.loc[index, "binding_site_AA"]=",".join(bindingsiteAA_list)
+            entry_acs_pd.loc[index, "CHEBI"] = ",".join(chebi_list)
+            entry_acs_pd.loc[index, "PDB_binding_site"] = ",".join(pdb_id_list)
         else:
             entry_acs_pd.loc[index, "binding_site_AA"] = ""
             entry_acs_pd.loc[index, "CHEBI"] = "NA"
-            entry_acs_pd.loc[index,"PDB_binding_site"] = ""
+            entry_acs_pd.loc[index, "PDB_binding_site"] = ""
     #drop those without related active sites
     entry_acs_pd=entry_acs_pd[~((entry_acs_pd["active_site_AA"] == "") & (entry_acs_pd["binding_site_AA"] == ""))]
     #entry_acs_pd.dropna(subset=["active_site_AA","binding_site_AA"],inplace=True)
     print(entry_acs_pd)
     entry_acs_pd.to_csv("../autodata/entry_with_activesite.csv")
-def merge_active_site_and_methyltype(activesite_file,fingerprint_file):
-    active_site_df= pd.read_csv(activesite_file,header=0,index_col=0)
+def merge_active_site_and_methyltype (activesite_file, fingerprint_file):
+    active_site_df= pd.read_csv(activesite_file, header=0, index_col=0)
     #active_site_df=active_site_df.fillna(0)
-    active_site_df=pd.DataFrame(active_site_df,columns=["active_site_AA","Entry"])
+    active_site_df=pd.DataFrame(active_site_df,columns=["active_site_AA", "Entry"])
     fg_df=pd.read_csv(fingerprint_file,header=0,index_col=0)
     merg_df=fg_df.merge(active_site_df, on="Entry", how="left")
     print(merg_df)
     merg_df.dropna(inplace=True)
     print(merg_df)
     merg_df.to_csv("../autodata/AC_merge.csv")
+
 def clean_seq():
     #remove duplicate sequneces in fasta file
-    file_list = ["PF08241","PF05175","PF08242","PF13489","PF13649","PF13847"]
+    file_list = ["PF08241", "PF05175", "PF08242", "PF13489", "PF13649",
+                 "PF13847"]
     seq = Sequences()
     seq.remove_duplicate(file_list)
+
 def read_fasta_file(file_name=""):
     """
     This function is reading fasta file into dictionary
@@ -543,12 +547,12 @@ def read_fasta_file(file_name=""):
     :param file_name: path and name of a fasta file
     :return: dictionary of sequences
     """
-    file= open(file_name).readlines()
-    seq_dictionary={}
+    file = open(file_name).readlines()
+    seq_dictionary = {}
     seq_name = ""
     for line in file:
         if line.startswith(">"):
-            seq_name="".join(list(line.strip("\n"))[1:])
+            seq_name = "".join(list(line.strip("\n"))[1:])
             seq_dictionary[seq_name]=""
             continue
         seq_dictionary[seq_name] += line.strip("\n")

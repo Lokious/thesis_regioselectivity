@@ -10,7 +10,7 @@ This code is to parse sequence data
 import unittest
 import pandas as pd
 import numpy as np
-
+#import mmseqs
 from Bio import AlignIO, SeqIO
 from Bio.Seq import Seq
 from Bio.Align import MultipleSeqAlignment
@@ -181,21 +181,23 @@ class Sequences():
                     else:
                         amino_acide_close_to_active_site[residue1.get_id()[1]].append((residue2.get_id()[1],residue2.get_resname(),distance))
 
-        #!!!!!!notice: something wrong with the length, it also contains the ligind and other stuff
-        structure_seq_length=0
+        structure_seq_length = 0
         for residue in residues:
-            if residue.id[0]== ' ':
-                structure_seq_length +=1
+            if residue.id[0] == ' ':
+                structure_seq_length += 1
                 print(residue.id)
                 print(residue.get_resname())
         print(structure_seq_length)
         return amino_acide_close_to_active_site, structure_seq_length
 
-    def get_sites_from_alignment(self,fileformat="fasta",file="",active_site_dictionary:dict={},start_pos:int=0,structure_chain="3rod.pdb_chainA_s001")->pd.DataFrame:
+    def get_sites_from_alignment(self, fileformat="fasta", file="",
+                                 active_site_dictionary: dict={},
+                                 start_pos: int = 0,
+                                 structure_chain="3rod.pdb_chainA_s001") -> pd.DataFrame:
         """
         This is the function to get the site close to active site for aligned sequences
 
-        :param format:string, format of input alignment
+        :param fileformat:string, format of input alignment
         :param file:string, path and name of the aligned sequences
         :param start_pos: int, the starting position of the sequneces compare to the author annnotated index
         :return:
@@ -259,6 +261,7 @@ class Sequences():
             print(seq,seq_id)
             file.write(">{}\n".format(seq_id))
             file.write("{}\n".format(seq))
+
         ##save pd.Dataframe to csv file
         active_site_pd.to_csv("../autodata/align/align_seed_sequences_with_structure/N_active_site_df.csv")
         return active_site_pd
