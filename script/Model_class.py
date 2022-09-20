@@ -1027,16 +1027,17 @@ class Model_class():
 
         return X_train, X_test, Y_train, Y_test
 
-    def check_test_train_similarity(self, test, train, numbit, seq_file = ""):
+    def check_test_train_similarity(self, test, train, numbit, seq_file = "",similarity_dictionary:dict={}):
         """
 
         :param test: entry in test
         :param train: entry in train
+        similarity_dictionary: {entry；[entry1,entry2,....,identity1,identity2...]}
         :return:
         """
 
         seq_dictionary=parse_data.read_fasta_file(file_name=seq_file)
-
+        # this dictionary is to save fingerprint and corresponding index in train data
         train_sub_fg_dictionary={}
         for index_train in train:
             list_sub_fg = test.loc[index_train, :numbit * 2].values.tolist()
@@ -1045,6 +1046,7 @@ class Model_class():
                 train_sub_fg_dictionary[sub_finderprint]=[index_train]
             else:
                 train_sub_fg_dictionary[sub_finderprint].append(index_train)
+        #list odf all fingerprint present in train data
         train_sub_fg_list=list(train_sub_fg_dictionary.keys())
 
         remove_index=[]
@@ -1055,12 +1057,18 @@ class Model_class():
             print(sub_fingerprint)
             if sub_fingerprint in train_sub_fg_list:
                 test_entry = test.loc[index_test,"Entry"]
-                test_seq=seq_dictionary[test_entry]
-                for index in train_sub_fg_dictionary[sub_fingerprint]:
-                    train_entry=train.loc[index_test,"Entry"]
-                    train_seq=seq_dictionary[train_entry]
+                #test_seq=seq_dictionary[test_entry]
+                #check all the index for this substrate in train data
+                for index_train in train_sub_fg_dictionary[sub_fingerprint]:
+                    train_entry=train.loc[index_train,"Entry"]
+                    #train_seq=seq_dictionary[train_entry]
+                    #if train seq is similar to test seq, remove this row in train
+                    if train_entry in similarity_dictionary[test_entry]:
+                        remove_index.append(index_train)
 
 
+    def create_similarity_matrix(self):
+        pd_result_mmseqs=pd.read_csv("",header=None,index_col=None)
 
         # self.test=
         # self.train=
