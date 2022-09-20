@@ -10,7 +10,6 @@ This code is to parse sequence data
 import unittest
 import pandas as pd
 import numpy as np
-#import mmseqs
 from Bio import AlignIO, SeqIO
 from Bio.Seq import Seq
 from Bio.Align import MultipleSeqAlignment

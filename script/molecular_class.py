@@ -252,8 +252,10 @@ class Reaction:
                                 mol_remove_methylation = mol.GetMol()
                                 # Add H after remove methyl group
                                 for atom in mol_remove_methylation.GetAtoms():
-                                    if atom.GetIsotope()==atom_index:
+                                    if atom.GetIsotope() == atom_index:
                                         # Add H after remove methyl group
+                                        num_H=atom.GetNumExplicitHs()
+                                        #print("num_H:{}".format(atom.GetNumExplicitHs()))
                                         try:
                                             atom.SetNumExplicitHs((atom.GetExplicitValence() - atom.GetTotalDegree()))
                                             similiarity = DataStructs.FingerprintSimilarity(
@@ -262,9 +264,12 @@ class Reaction:
                                                 # get the substrate_mol through index which is saved in the key of dictionary
                                                 Chem.RDKFingerprint(substrate_mol))
                                             print(similiarity)
-                                            assert similiarity==1
+                                            assert similiarity == 1
                                             Chem.Kekulize(mol_remove_methylation)
                                         except:
+                                            #print("num_H:{}".format(atom.GetNumExplicitHs()))
+                                            atom.SetNumExplicitHs(num_H)
+                                            #print("num_H:{}".format(atom.GetNumExplicitHs()))
                                             print("Kekulize error after add H, won't add H to the atom")
                                 # Draw.ShowMol(mol_remove_methylation,
                                 #              (600, 600))
