@@ -605,18 +605,18 @@ class Model_class():
 
         #n_jobs number of cores used for it
         #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
-        rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
-                             hyperparameters, scoring='roc_auc',
-                             cv=3,
-                             verbose=3,
-                             n_jobs=14)
-
-        ####use MCC as scoring#####
         # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
-        #                      hyperparameters, scoring=make_scorer(matthews_corrcoef),
+        #                      hyperparameters, scoring='roc_auc',
         #                      cv=3,
         #                      verbose=3,
         #                      n_jobs=14)
+
+        ####use MCC as scoring#####
+        rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
+                             hyperparameters, scoring=make_scorer(matthews_corrcoef),
+                             cv=3,
+                             verbose=3,
+                             n_jobs=14)
         rf_cv.fit(X_train, y_train)
         print(rf_cv.best_params_)
         # roc for train data
@@ -631,7 +631,7 @@ class Model_class():
         #              (file_name + "test (use train threshold)"))
 
         #lineplot the roc score with differnt hyparameters
-        plt.figure()
+        plt.figure(figsize=(16,16))
         print(rf_cv.cv_results_)
         sns.lineplot(y=rf_cv.cv_results_["mean_test_score"],
                      x=rf_cv.cv_results_['param_max_features'].data,
@@ -650,6 +650,7 @@ class Model_class():
         #And visualize
         sns.barplot(data=fi.head(20), x="Importance", y=(fi.head(20)).index).set_title(
             "feature importance for RF model")
+        sns.set(rc={'figure.figsize': (16, 16)})
         #fig = ax.get_figure()
         plt.savefig('../autodata/separate_seed_result/trainmodel_output_figure/feature_importance{}.png'.format(file_name))
         plt.close()
@@ -790,23 +791,33 @@ class Model_class():
         :return:
         """
         y_pred = rf.best_estimator_.predict(X_test)
+        y_probs = rf.predict_proba(X_test)
+        # keep probabilities for the positive outcome only
+        yhat = y_probs[:, 1]
         accuracy = accuracy_score(y_test, y_pred)
         mcc_score = matthews_corrcoef(y_test, y_pred)
+        roc_score=roc_auc_score(y_true=y_test,y_score=yhat)
         TP = cm_matrix[0][0]
         FP = cm_matrix[0][1]
         FN = cm_matrix[1][0]
         TN = cm_matrix[1][1]
+        print("TP:{}".format(TP))
+        print("FP:{}".format(FP))
+        print("FN:{}".format(FN))
+        print("TN:{}".format(TN))
         sensitivity = TP / (TP + FN)
         specificity = TN / (TN + FP)
         precision = TP / (TP + FP)
         file1 = open(
             "../autodata/separate_seed_result/{}prediction_summary.txt".format(
                 file_name), "a")
+        file1.write("The following is the result for {}:".format(file_name))
         file1.write("accuracy: {}\n".format(accuracy))
-        file1.write("mcc_score: {}\n".format(mcc_score))
         file1.write("sensitivity : {}\n".format(sensitivity))
         file1.write("specificity : {}\n".format(specificity))
         file1.write("precision : {}\n".format(precision))
+        file1.write("mcc_score: {}\n".format(mcc_score))
+        file1.write("roc_score: {}\n".format(roc_score))
         file1.write("###############################################")
         file1.close()
 
@@ -829,6 +840,7 @@ class Model_class():
 
         display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr,
                                           roc_auc=roc_auc).plot()
+        display.set_size_inches(18, 18)
         plt.title('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
         display.figure_.savefig("../autodata/separate_seed_result/RF ROC_curve_{}_data".format(file_name))
         #plt.show()

@@ -18,7 +18,7 @@ from Bio.PDB import PDBParser
 from Bio.Data.IUPACData import protein_letters_1to3,protein_letters_3to1
 from quantiprot.metrics.aaindex import get_aa2volume, get_aa2hydropathy, get_aa2charge,get_aa2mj
 import blosum as bl
-
+import matplotlib.pyplot as plt
 
 from os import path
 
@@ -102,7 +102,7 @@ class Sequences():
                     # print(record_rename)
 
 
-    def get_active_site_dictionary_from_file(self,file="../autodata/align/align_seed_sequences_with_structure/3ROD_active_site.txt")->dict:
+    def get_active_site_dictionary_from_file(self,file="../autodata/align/align_seed_sequences_with_structure/3ROD_active_site_N.txt")->dict:
         """
         This function is to read active sits as dictionary
 
@@ -216,6 +216,15 @@ class Sequences():
         align_pd = pd.DataFrame(data=align_array,index=ids)
         print('Q9KUA0' in list(align_pd.index))
 
+        #remove sequences from seed
+        for i in align_pd.index:
+            if i != structure_chain:
+                if "-" in i:
+                    align_pd.drop(index=i,inplace=True)
+                    ids.remove(i)
+
+        print(align_pd)
+        print(ids)
         #drop the column which the guided structure is a gap, and drop 'X' amino acid
         ## change - and X
         align_pd.replace("X", "-", inplace=True)
@@ -247,22 +256,75 @@ class Sequences():
 
         for id in ids:
             for column in active_site_pd.columns:
-                #print(column)
+                print(column)
                 aa = align_pd.loc[id,column]
                 active_site_pd.loc[id,column]=aa
+        print("active_site pd:")
         print(active_site_pd)
+        # gap_count_list=[]
+        # x_list=[]
+        # for column in active_site_pd.columns:
+        #     value_count=active_site_pd[column].value_counts()
+        #     # print(column)
+        #     # print(value_count["-"])
+        #     gap_count_list.append(value_count["-"])
+        #     x_list.append(str(column)+"aa")
+        #
+        # plt.figure(figsize=(40, 50))
+        # plt.bar(x_list,gap_count_list)
+        # plt.show()
+        # print("active_site pd after drop:")
+        # print(active_site_pd)
+        # #count and drop gap for each sequences
+        # gap_count_list=[]
+        # x_list=[]
+        # for column in (active_site_pd.T).columns:
+        #     value_count=(active_site_pd.T)[column].value_counts()
+        #     print(column)
+        #     if "-" in value_count.keys():
+        #         print(value_count["-"])
+        #         gap_count_list.append(value_count["-"])
+        #         x_list.append(column)
+        #         #
+        #         if ((value_count["-"]/len(active_site_pd.columns))>0.4):
+        #             print("drop {}".format(column))
+        #             active_site_pd.drop(index=column,inplace=True)
+        # plt.figure(figsize=(30, 30))
+        # plt.bar(x_list,gap_count_list)
+        # plt.show()
+        print(active_site_pd)
+        # gap_count_list = []
+        # x_list = []
+        # for column in active_site_pd.columns:
+        #     value_count = active_site_pd[column].value_counts()
+        #     if "-" in value_count.keys():
+        #         print(column)
+        #         print(value_count["-"])
+        #         gap_count_list.append(value_count["-"])
+        #         x_list.append(str(column)+"aa")
+        #         if (value_count["-"] > 0):
+        #             print("drop{}".format(column))
+        #             print("value_count:{}".format(value_count["-"]))
+        #             active_site_pd.drop(columns=column,inplace=True)
+        # plt.figure(figsize=(40, 50))
+        # plt.bar(x_list, gap_count_list)
+        # plt.show()
+        # print(active_site_pd)
 
+        count=0
         #construct MSA with amino acids close to active sites
         ##save sequences to fasta file
         for seq_id in active_site_pd.index:
-            file = open("../autodata/align/align_seed_sequences_with_structure/N_seq_close_to_active_sites.fasta", "a")
+            #file = open("../autodata/align/align_seed_sequences_with_structure/N_seq_close_to_active_sites.fasta", "a")
             seq= "".join(active_site_pd.loc[seq_id,:].values.tolist())
-            print(seq,seq_id)
-            file.write(">{}\n".format(seq_id))
-            file.write("{}\n".format(seq))
-
+            #print(seq,seq_id)
+            if "-" in seq:
+                count +=1
+            # file.write(">{}\n".format(seq_id))
+            # file.write("{}\n".format(seq))
+        print("count:{}".format(count))
         ##save pd.Dataframe to csv file
-        active_site_pd.to_csv("../autodata/align/align_seed_sequences_with_structure/N_active_site_df.csv")
+        # active_site_pd.to_csv("../autodata/align/align_seed_sequences_with_structure/N_active_site_df.csv")
         return active_site_pd
 
     def amino_acid_properties(self, amino_acid: str, structure_aa: str) -> dict:
@@ -301,9 +363,11 @@ def main():
     seq=Sequences()
     #seq.get_active_site_dictionary_from_file()
     #seq.get_AA_within_distance_from_structure_file()
-
+    seq.get_sites_from_alignment(
+        file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",
+        start_pos=3)
     #seq.get_sites_from_alignment(file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",start_pos=3)
-    seq.amino_acid_properties("Y", "Y")
+    #seq.amino_acid_properties("Y", "Y")
     #seq.group_seq_based_on_methylated_type(inputfile="../autodata/seq_smiles_all.csv",save_directory="../autodata/sequences")
     #seq.remove_duplicate()
     #seq.group_fg_based_on_methylated_type("../autodata/seq_smiles_all.csv",)
