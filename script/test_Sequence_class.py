@@ -11,7 +11,6 @@ class TestModelClass(unittest.TestCase):
 
         """
         acs_dictionary, seq_length = self.seq.get_AA_within_distance_from_structure_file(
-            file = "../autodata/align/align_seed_sequences_with_structure/3rod.pdb",
             residue_dictionary={11:"Y"})
         print(acs_dictionary)
         list1 = acs_dictionary[11]

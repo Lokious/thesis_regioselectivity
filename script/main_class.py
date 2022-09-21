@@ -402,10 +402,10 @@ def main():
     #
     # #
     #sepreate_input("auto","../autodata/fingerprint/fingerprint_bit128_radius3_all_data_drop_atom_19_09.csv",128,3)
-
+    """
     #for active site encoding
-    X=pd.read_csv("../autodata/group/['N']_128_3_with_bitinfo_19_09.csv",header=0,index_col=0)
-    add_dataframe=pd.read_csv("../autodata/protein_encoding/active_site/N_AA_properties_encoding.csv",header=0,index_col=0)
+    X=pd.read_csv("../autodata/group/['O']_128_3_with_bitinfo_19_09.csv",header=0,index_col=0)
+    add_dataframe=pd.read_csv("../autodata/protein_encoding/active_site/O_AA_properties_encoding.csv",header=0,index_col=0)
     add_dataframe["Entry"]=add_dataframe.index
     add_dataframe.reset_index(drop=True,inplace=True)
     print(add_dataframe)
@@ -413,7 +413,8 @@ def main():
     print(input_dataframe)
     input_dataframe = input_dataframe.dropna(axis=0,how="any")
     print(input_dataframe)
-    input_dataframe.to_csv("../autodata/input_data/active_site/N_bit128_3.csv")
+    input_dataframe.to_csv("../autodata/input_data/active_site/O_bit128_3.csv")
+    """
 
     #
     # #

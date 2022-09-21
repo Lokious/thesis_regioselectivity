@@ -409,12 +409,20 @@ def k_mer_encoding(file_name,k):
     align_pd.to_csv("../autodata/protein_encoding/{}_k_mer_encoding_without_align_26_08.csv".format(file_name))
     return align_pd
 
-def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_name:str=None,structure_chain="3rod.pdb_chainA_s001"):
+def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_name:str=None,structure_chain="3rod.pdb_chainA_s001",start:int=0,group:str=""):
     #add properties as features
     seq = Sequences()
-    #input_df=seq.get_sites_from_alignment(file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",start_pos=3)
-    input_df=pd.read_csv("../autodata/align/align_seed_sequences_with_structure/N_active_site_df.csv",header=0,index_col=0)
-    print(input_df)
+    if input_df != None:
+        print("use input dataframe")
+        input_df=pd.read_csv("../autodata/align/align_seed_sequences_with_structure/{}_active_site_df.csv".format(group),header=0,index_col=0)
+        print(input_df)
+    else:
+        input_df = seq.get_sites_from_alignment(
+            file=file_name,structure_chain=structure_chain,
+            start_pos=start,group=group)
+        print(input_df)
+
+
     properties=['charge', 'volume', 'hydropathy', 'hydrophobicity','similarity_score']
     # create empty dataframe
     property_df=pd.DataFrame(index=input_df.index)
@@ -434,7 +442,7 @@ def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_n
                 col_name = str(col) + pro
                 property_df.loc[i, col_name] = propertites_dictionary[pro]
     print(property_df)
-    property_df.to_csv("../autodata/align/align_seed_sequences_with_structure/N_AA_properties_encoding.csv")
+    property_df.to_csv("../autodata/align/align_seed_sequences_with_structure/{}_AA_properties_encoding.csv".format(group))
     return property_df
 
 def merge_encoding_to_onefile():
@@ -614,7 +622,8 @@ def main():
     #unittest.main()
     #check_sequences_similarity()
 
-    use_atom_properties_for_sequences_encoding()
+    use_atom_properties_for_sequences_encoding(file_name="../autodata/align/align_seed_sequences_with_structure/O_1vid_align_sequences",structure_chain="1vid.pdb_chainA_s001",
+        start=4,group="O")
     #merge_active_site_and_methyltype("../autodata/entry_with_activesite.csv","../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv")
     # read_msa_and_encoding(file_name="N_seed")
     #merge_encoding_to_onefile()

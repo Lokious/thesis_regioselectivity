@@ -797,10 +797,10 @@ class Model_class():
         accuracy = accuracy_score(y_test, y_pred)
         mcc_score = matthews_corrcoef(y_test, y_pred)
         roc_score=roc_auc_score(y_true=y_test,y_score=yhat)
-        TP = cm_matrix[0][0]
+        TN = cm_matrix[0][0]
         FP = cm_matrix[0][1]
         FN = cm_matrix[1][0]
-        TN = cm_matrix[1][1]
+        TP = cm_matrix[1][1]
         print("TP:{}".format(TP))
         print("FP:{}".format(FP))
         print("FN:{}".format(FN))
@@ -840,7 +840,6 @@ class Model_class():
 
         display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr,
                                           roc_auc=roc_auc).plot()
-        display.set_size_inches(18, 18)
         plt.title('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
         display.figure_.savefig("../autodata/separate_seed_result/RF ROC_curve_{}_data".format(file_name))
         #plt.show()
@@ -1014,6 +1013,8 @@ class Model_class():
                                          num_bit,similarity_dictionary=simliar_dictionary)
 
         train=self.train
+        print('Q6AWU6' in list(train["Entry"]))
+        print('Q6AWU6' in list(test["Entry"]))
         X_train = (copy.deepcopy(train)).drop(
             columns=["Entry", "molecular_id", "label"])
         X_test = (copy.deepcopy(test)).drop(
@@ -1065,7 +1066,8 @@ class Model_class():
                 #test_seq=seq_dictionary[test_entry]
                 #check all the index for this substrate in train data
                 for index_train in train_sub_fg_dictionary[sub_fingerprint]:
-                    train_entry=train.loc[index_train,"Entry"]
+                    print(test_entry,"test",test_entry)
+                    train_entry = train.loc[index_train,"Entry"]
                     #train_seq=seq_dictionary[train_entry]
                     #if train seq is similar to test seq, remove this row in train
                     if train_entry in similarity_dictionary[test_entry]:
@@ -1080,7 +1082,7 @@ class Model_class():
     def create_similarity_dictionary(self,file="../autodata\sequences\S_result_db.m8"):
         """
         This is the function to get the similarity dictionary
-        
+
         :param file: string, file name and path with mmseqs result
         :return:
         similarity_dictionary: {entry1；[entry2,identity2,...],entry2:[...]}
@@ -1093,7 +1095,7 @@ class Model_class():
 
         # remove sequences compared to themselves and seed sequences
         for index in pd_result_mmseqs.index:
-            if pd_result_mmseqs.loc[index,"Entry1"]==pd_result_mmseqs.loc[index,"Entry2"]:
+            if pd_result_mmseqs.loc[index,"Entry1"] == pd_result_mmseqs.loc[index,"Entry2"]:
                 pd_result_mmseqs.drop(index=index,inplace=True)
             elif "-" in (pd_result_mmseqs.loc[index,"Entry1"] or pd_result_mmseqs.loc[index,"Entry2"]):
                 pd_result_mmseqs.drop(index=index,inplace=True)
