@@ -882,6 +882,7 @@ class Model_class():
             # plt.show()
             plt.close()
         return cm
+
     def hierarchical_clustering(self,sequence_data,label):
         from sklearn.cluster import AgglomerativeClustering
         from scipy.cluster.hierarchy import fcluster, cut_tree, linkage, \
@@ -980,8 +981,6 @@ class Model_class():
         print(input)
         return copy.deepcopy(input)
 
-
-
     def multidata_predict(self,dataset=None,inputmodel = None):
 
         if (dataset == None) or (inputmodel == None):
@@ -991,7 +990,7 @@ class Model_class():
             methyl_site_atom= self.predict(loded_data,num_bits=1024)
             print(methyl_site_atom)
 
-    def use_less_similar_data_for_test(self,df,test:float=0.3,group_column:str='molecular_id',i:int=0,num_bit=2048):
+    def use_less_similar_data_for_test(self,df,test:float=0.2,group_column:str='molecular_id',i:int=0,num_bit=2048):
         """
 
         :param df: input_dataframe with substrate fingerprint and sequences encoding
@@ -1009,11 +1008,11 @@ class Model_class():
         train = df.iloc[train_inds]
         test = df.iloc[test_inds]
 
-
+        simliar_dictionary=self.create_similarity_dictionary()
         self.check_test_train_similarity(test,
                                          train,
-                                         num_bit)
-        test=self.test
+                                         num_bit,similarity_dictionary=simliar_dictionary)
+
         train=self.train
         X_train = (copy.deepcopy(train)).drop(
             columns=["Entry", "molecular_id", "label"])
@@ -1027,7 +1026,7 @@ class Model_class():
 
         return X_train, X_test, Y_train, Y_test
 
-    def check_test_train_similarity(self, test, train, numbit, seq_file = "",similarity_dictionary:dict={}):
+    def check_test_train_similarity(self, test, train, numbit,similarity_dictionary:dict={}):
         """
 
         :param test: entry in test
@@ -1036,25 +1035,31 @@ class Model_class():
         :return:
         """
 
-        seq_dictionary=parse_data.read_fasta_file(file_name=seq_file)
+        print(len(train.index))
         # this dictionary is to save fingerprint and corresponding index in train data
+        print(train.index)
         train_sub_fg_dictionary={}
-        for index_train in train:
-            list_sub_fg = test.loc[index_train, :numbit * 2].values.tolist()
+        for index_train in train.index:
+            column_name=[str(x) for x in range(numbit * 2)]
+            list_sub_fg = (train.loc[index_train,column_name]).values.tolist()
+            list_sub_fg = [str(x) for x in list_sub_fg]
             sub_finderprint = "".join(list_sub_fg)
             if sub_finderprint not in train_sub_fg_dictionary.keys():
                 train_sub_fg_dictionary[sub_finderprint]=[index_train]
             else:
                 train_sub_fg_dictionary[sub_finderprint].append(index_train)
+
         #list odf all fingerprint present in train data
         train_sub_fg_list=list(train_sub_fg_dictionary.keys())
 
         remove_index=[]
-        for index_test in test:
+        for index_test in test.index:
             #join the fingerprint to a sting for searching
-            list_sub_fg = test.loc[index_test,:numbit*2].values.tolist()
+            column_name = [str(x) for x in range(numbit * 2)]
+            list_sub_fg = (test.loc[index_test,column_name]).values.tolist()
+            list_sub_fg = [str(x) for x in list_sub_fg]
             sub_fingerprint = "".join(list_sub_fg)
-            print(sub_fingerprint)
+
             if sub_fingerprint in train_sub_fg_list:
                 test_entry = test.loc[index_test,"Entry"]
                 #test_seq=seq_dictionary[test_entry]
@@ -1066,39 +1071,55 @@ class Model_class():
                     if train_entry in similarity_dictionary[test_entry]:
                         remove_index.append(index_train)
 
+        train.drop(index=remove_index,inplace=True)
+        print(len(train))
+        self.train = train
 
-    def create_similarity_matrix(self):
-        pd_result_mmseqs=pd.read_csv("",header=None,index_col=None)
+        return train
 
-        # self.test=
-        # self.train=
-# class Testreaction_class(unittest.TestCase):
-#     mol = Model_class()
-#
-#     def test1_return_reactions(self):
-#         """
-#         Test if return_reactions() will get the correct output for methyl_type and reactant_site
-#         """
-#         df1 = pd.DataFrame()
-#         substrates="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1OH:7])[4cH:4][2cH:2]1"
-#         products="c1[1c:1]([6CH2:8][7CH:9]=[8C:10]([9CH3:11])[10CH3:12])[3c:3]([OH:6])[5c:5]([1O:7][11CH3:13])[4cH:4][2cH:2]1"
-#         df1["sub_smiles"] =[substrates]
-#         df1["pro_smiles"] =[products]
-#         df_with_reactant_site = self.mol.return_reactions(dataframe_rr=df1,test=True)
-#         self.assertEqual(df_with_reactant_site.loc[0,"reactant_site"], "O:10")
-#         self.assertEqual(df_with_reactant_site.loc[0,"methyl_type"], "O")
-#
-#     def test2_save_fingerprints_to_dataframe(self):
-#         df=pd.DataFrame()
-#         substrate="[4O]=[3c]1[1cH2]c[8n]([9C@H]2[20CH2][18C@H]([19OH])[11C@@H]([12CH2][13O][14P]([15O-])(=[16O])[17O-])[10O]2)[6c](=[7O])[5nH]1"
-#         mol = Chem.MolFromSmiles(substrate)
-#         Draw.ShowMol(mol)
-#         df["main_sub"] =[substrate]
-#         df["Entry"] = "Q7WP13"
-#         df["methyl_type"] = "C"
-#         df["reactant_site"]="C:1"
-#         atom_dictionary={0:"C:1"}
-#         self.mol.save_fingerprints_to_dataframe(df,atom_dictionary,128,3,True,"test")
+    def create_similarity_dictionary(self,file="../autodata\sequences\S_result_db.m8"):
+        """
+        This is the function to get the similarity dictionary
+        
+        :param file: string, file name and path with mmseqs result
+        :return:
+        similarity_dictionary: {entry1；[entry2,identity2,...],entry2:[...]}
+        """
+
+        pd_result_mmseqs=pd.read_csv(file,header=None,index_col=None,sep="\t")
+        pd_result_mmseqs=pd_result_mmseqs.loc[:,0:2]
+        pd_result_mmseqs.columns=["Entry1","Entry2","identity"]
+        pd_result_mmseqs=pd_result_mmseqs.sort_values('identity', ascending=False)
+
+        # remove sequences compared to themselves and seed sequences
+        for index in pd_result_mmseqs.index:
+            if pd_result_mmseqs.loc[index,"Entry1"]==pd_result_mmseqs.loc[index,"Entry2"]:
+                pd_result_mmseqs.drop(index=index,inplace=True)
+            elif "-" in (pd_result_mmseqs.loc[index,"Entry1"] or pd_result_mmseqs.loc[index,"Entry2"]):
+                pd_result_mmseqs.drop(index=index,inplace=True)
+
+        print(pd_result_mmseqs)
+        print(len(pd_result_mmseqs.index))
+        count = (pd_result_mmseqs['identity'] > 0.5).sum()
+        print(count)
+        similarity_dictionary = {}
+        for i in pd_result_mmseqs.index:
+            entry1 = pd_result_mmseqs.loc[i,"Entry1"]
+            entry2 = pd_result_mmseqs.loc[i,"Entry2"]
+            identity = pd_result_mmseqs.loc[i,"identity"]
+            # save in the dictionary idf identity larger than 0.5
+            if identity >= 0.5:
+                if entry1 not in similarity_dictionary.keys():
+                    similarity_dictionary[entry1]=[entry2,identity]
+                else:
+                    similarity_dictionary[entry1].append(entry2)
+                    similarity_dictionary[entry1].append(identity)
+            else:
+                break
+
+        print(similarity_dictionary)
+        return similarity_dictionary
+
 
 def main():
     # unittest.main()

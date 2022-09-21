@@ -124,7 +124,7 @@ class Sequences():
         print(active_sites_dictionary)
         return active_sites_dictionary
 
-    def get_AA_within_distance_from_structure_file(self,file="../autodata/align/align_seed_sequences_with_structure/3rod.pdb",residue_dictionary:dict={11:"Y"},chain_id:str="A"):
+    def get_AA_within_distance_from_structure_file(self,pdb_name="3rod.pdb",residue_dictionary:dict={11:"Y"},chain_id:str="A"):
         """
         This function is to get the id of residues close to active sites
 
@@ -139,6 +139,7 @@ class Sequences():
 
         Some related problem: https://www.biostars.org/p/401105/
         """
+        file="../autodata/align/align_seed_sequences_with_structure/{}".format(pdb_name)
         try:
             residue_dictionary=self.get_active_site_dictionary_from_file()
             print(residue_dictionary)
@@ -151,8 +152,8 @@ class Sequences():
         structure = parser.get_structure("pdb_structure",file)
         model = structure[0]
         chain = model[chain_id]
-        residues=list(chain.get_residues())
-        active_sites=[]
+        residues = list(chain.get_residues())
+        active_sites = []
 
         for id in residue_dictionary.keys():
             amino_acid= residue_dictionary[id]
@@ -192,7 +193,7 @@ class Sequences():
     def get_sites_from_alignment(self, fileformat="fasta", file="",
                                  active_site_dictionary: dict={},
                                  start_pos: int = 0,
-                                 structure_chain="3rod.pdb_chainA_s001") -> pd.DataFrame:
+                                 structure_chain="3rod.pdb_chainA_s001",group:str="") -> pd.DataFrame:
         """
         This is the function to get the site close to active site for aligned sequences
 
@@ -204,7 +205,7 @@ class Sequences():
         """
         if active_site_dictionary=={}:
             print("Need active_site_dictionary, creating....")
-            active_site_dictionary,sequence_length =self.get_AA_within_distance_from_structure_file()
+            active_site_dictionary,sequence_length =self.get_AA_within_distance_from_structure_file(structure_chain.split("_")[0])
             print(active_site_dictionary)
 
 
@@ -263,12 +264,18 @@ class Sequences():
         print(active_site_pd)
         # gap_count_list=[]
         # x_list=[]
-        # for column in active_site_pd.columns:
-        #     value_count=active_site_pd[column].value_counts()
-        #     # print(column)
-        #     # print(value_count["-"])
-        #     gap_count_list.append(value_count["-"])
-        #     x_list.append(str(column)+"aa")
+
+        #drop sites with over 80% gap
+        for column in active_site_pd.columns:
+            value_count=active_site_pd[column].value_counts()
+            if (value_count["-"]/len(active_site_pd.index))>0.8:
+                active_site_pd.drop(columns=column,inplace=True)
+        print(active_site_pd)
+
+            # print(column)
+            # print(value_count["-"])
+            # gap_count_list.append(value_count["-"])
+            # x_list.append(str(column)+"aa")
         #
         # plt.figure(figsize=(40, 50))
         # plt.bar(x_list,gap_count_list)
@@ -292,7 +299,7 @@ class Sequences():
         # plt.figure(figsize=(30, 30))
         # plt.bar(x_list,gap_count_list)
         # plt.show()
-        print(active_site_pd)
+
         # gap_count_list = []
         # x_list = []
         # for column in active_site_pd.columns:
@@ -315,16 +322,16 @@ class Sequences():
         #construct MSA with amino acids close to active sites
         ##save sequences to fasta file
         for seq_id in active_site_pd.index:
-            #file = open("../autodata/align/align_seed_sequences_with_structure/N_seq_close_to_active_sites.fasta", "a")
+            file = open("../autodata/align/align_seed_sequences_with_structure/{}_seq_close_to_active_sites.fasta".format(group), "a")
             seq= "".join(active_site_pd.loc[seq_id,:].values.tolist())
             #print(seq,seq_id)
             if "-" in seq:
                 count +=1
-            # file.write(">{}\n".format(seq_id))
-            # file.write("{}\n".format(seq))
+            file.write(">{}\n".format(seq_id))
+            file.write("{}\n".format(seq))
         print("count:{}".format(count))
         ##save pd.Dataframe to csv file
-        # active_site_pd.to_csv("../autodata/align/align_seed_sequences_with_structure/N_active_site_df.csv")
+        active_site_pd.to_csv("../autodata/align/align_seed_sequences_with_structure/{}_active_site_df.csv".format(group))
         return active_site_pd
 
     def amino_acid_properties(self, amino_acid: str, structure_aa: str) -> dict:
@@ -364,8 +371,8 @@ def main():
     #seq.get_active_site_dictionary_from_file()
     #seq.get_AA_within_distance_from_structure_file()
     seq.get_sites_from_alignment(
-        file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",
-        start_pos=3)
+        file="../autodata/align/align_seed_sequences_with_structure/O_1vid_align_sequences",structure_chain="1vid.pdb_chainA_s001",
+        start_pos=3,group="O")
     #seq.get_sites_from_alignment(file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",start_pos=3)
     #seq.amino_acid_properties("Y", "Y")
     #seq.group_seq_based_on_methylated_type(inputfile="../autodata/seq_smiles_all.csv",save_directory="../autodata/sequences")
