@@ -261,7 +261,7 @@ class Sequences():
 
         for id in ids:
             for column in active_site_pd.columns:
-                #print(column)
+                print(column)
                 aa = align_pd.loc[id,column]
                 active_site_pd.loc[id,column]=aa
         print("active_site pd:")

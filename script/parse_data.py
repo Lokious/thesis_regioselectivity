@@ -622,8 +622,8 @@ def main():
     #unittest.main()
     #check_sequences_similarity()
 
-    use_atom_properties_for_sequences_encoding(file_name="../autodata/align/align_seed_sequences_with_structure/O_1vid_align_sequences",structure_chain="1vid.pdb_chainA_s001",
-        start=4,group="O")
+    use_atom_properties_for_sequences_encoding(file_name="../autodata/align/align_seed_sequences_with_structure/C_4u1q_align_sequences",structure_chain="4u1q.pdb_chainA_s001",
+        start=4,group="C")
     #merge_active_site_and_methyltype("../autodata/entry_with_activesite.csv","../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv")
     # read_msa_and_encoding(file_name="N_seed")
     #merge_encoding_to_onefile()
