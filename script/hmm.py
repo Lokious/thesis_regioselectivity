@@ -2,6 +2,7 @@
 Run hmmscan
 """
 import os
+import parse_data
 def main():
     seeds = ["PF05175","PF08241","PF08242","PF13489","PF13649","PF13847"]
     # for seed in seeds:
@@ -18,7 +19,9 @@ def main():
     #     tblout="data/hmm_out/{}_seed_hit.tsv".format(seed)
     #     os.system("nohup hmmscan -o {} --domtblout {} --tblout {} --cpu 2 {} {} &\n".format(o,domtblout,tblout,buildfile,inputfile))
     for seed in seeds:
-        os.system("nohup hmmalign --amino ../autodata/align/{0}.hmm ../autodata/sequences/{0}_rm.fasta > {0}_hmmalign_out&\n".format(seed))
+        parse_data.get_fasta_file_from_hmmsearch_hit(
+            "../autodata/align/{}_tbout.tsv".format(seed), domain="{}".format(seed))
+        #os.system("nohup hmmalign --amino ../autodata/align/{0}.hmm ../autodata/sequences/{0}_rm.fasta > {0}_hmmalign_out&\n".format(seed))
 
 if __name__ == "__main__":
     main()

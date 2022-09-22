@@ -30,20 +30,41 @@ import unittest
 def target_sequences(file):
     """
     This function is used to return Uniprot entry of target sequences from hmmscan
+
     :param file:string, file name
     :return: hmmscan_df: dataframe, include all the Uniprot entry from hmmscan output
     """
     name = ['target_name', 'accession_domain','query_name', 'accession',
             'E-value1',  'score1',  'bias1',   'E-value',  'score',  'bias',
             'exp', 'reg', 'clu',  'ov', 'env', 'dom','rep','inc', 'description_of_target']
-    hmmscan_df = (pd.read_table(file, header=None, comment='#',names=name,sep= '\s+', skip_blank_lines=True)).dropna()
-
+    #hmmscan_df = (pd.read_table(file, header=None, comment='#',names=name,sep= '\s+', skip_blank_lines=True)).dropna()
+    hmmscan_df=pd.read_csv(file,sep="\t")
     hmmscan_df = hmmscan_df.iloc[:,[0,2]]
     for i in hmmscan_df.index:
         hmmscan_df.iloc[i][1] = (hmmscan_df.iloc[i][1]).split("|")[1]
     hmmscan_df.columns = ["index","id"]
 
     return hmmscan_df
+
+def get_fasta_file_from_hmmsearch_hit(file,domain=""):
+
+    hmm_df=read_hmmscan_out(file)
+    print(hmm_df)
+    seq_entry_df=pd.read_csv("../autodata/rawdata/uniprot-ec2.1.1.tsv",header=0,sep="\t")
+    print(seq_entry_df)
+    seq_entry_df=seq_entry_df.loc[:,["Entry","Sequence"]]
+    seq_entry_df.index=seq_entry_df["Entry"]
+    seq_entry_df.drop(columns="Entry",inplace=True)
+    print(seq_entry_df)
+    entry_list=[]
+    file = open("../autodata/sequences/{}.fasta".format(domain), "w")
+    for i in hmm_df.index:
+        entry = hmm_df.loc[i,"entry"]
+        if entry not in entry_list:
+            file.write(">{}\n".format(entry))
+            file.write("{}\n".format(seq_entry_df.loc[entry, "Sequence"]))
+    else:
+        file.close()
 def read_hmmscan_out(file):
     print(file)
     file = open(file).readlines()
@@ -53,12 +74,12 @@ def read_hmmscan_out(file):
     hmmscan_df["entry"] = []
     for i,line in enumerate(file):
         if line.startswith("#")==False:
-            domian=line.split()[0]
-            entry= line.split()[3]
-            hmmscan_df["entry"].append(domian)
-            hmmscan_df["domain"].append(entry)
+            entry = line.split()[0]
+            domain = line.split()[3]
+            hmmscan_df["entry"].append(entry.split("|")[1])
+            hmmscan_df["domain"].append(domain)
     hmmscan_df=pd.DataFrame(hmmscan_df,index=range(len(hmmscan_df["domain"])))
-    print((hmmscan_df["domain"].value_counts())[:10])
+    #print((hmmscan_df["domain"].value_counts())[:10])
     return hmmscan_df
 
 
@@ -75,6 +96,8 @@ def remove_duplicated_id(directory):
         datafrmae_list += df['id'].tolist()
         #return uniprot id
         return list(set(datafrmae_list))
+
+
 
 def readrhlist(file_name):
 
@@ -619,11 +642,11 @@ def check_sequences_similarity(fasta_file=""):
 
 
 def main():
-    #unittest.main()
+    unittest.main()
     #check_sequences_similarity()
 
-    use_atom_properties_for_sequences_encoding(file_name="../autodata/align/align_seed_sequences_with_structure/C_4u1q_align_sequences",structure_chain="4u1q.pdb_chainA_s001",
-        start=4,group="C")
+    # use_atom_properties_for_sequences_encoding(file_name="../autodata/align/align_seed_sequences_with_structure/C_4u1q_align_sequences",structure_chain="4u1q.pdb_chainA_s001",
+    #     start=4,group="C")
     #merge_active_site_and_methyltype("../autodata/entry_with_activesite.csv","../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv")
     # read_msa_and_encoding(file_name="N_seed")
     #merge_encoding_to_onefile()
