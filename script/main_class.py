@@ -95,7 +95,11 @@ def build_different_input(auto="",x="",num_bit:int=0,radius:int=0,seqfile:str="6
             print("../{}data/protein_encoding/{}_{}fg.csv missing, build protein_encoding data------".format(auto,seqfile,str(num_bit)))
             # create_add_dataframe=input("please input Y to continue:")
             # if create_add_dataframe == "y" or "Y":
-            add_dataframe=parse_data.read_msa_and_encoding(group)
+            try:
+                add_dataframe=pd.read_csv("../{}data/protein_encoding/{}".format(auto,seqfile),header=0,index_col=0)
+            except:
+                print("create sequence encoding from msa......")
+                add_dataframe=parse_data.read_msa_and_encoding(group)
             # else:
             #     print("existing-----")
             #     exit()
@@ -296,10 +300,10 @@ def main():
     #     parse_data.read_msa_and_encoding("{}".format(group))
 
 
-    # groups1 = ["S","C","O","N"]
-    # for group in groups1:
-    #     print(group)
-    #     build_different_input(auto="auto",x="../autodata/group/['{}']_128_3_with_bitinfo.csv".format(group),num_bit=128,radius=3,seqfile="{}_seed_onehot_encoding.csv".format(group),group=group)
+    groups1 = ["S","C","O","N"]
+    for group in groups1:
+        print(group)
+        build_different_input(auto="auto",x="../autodata/group/['{}']_128_3_with_bitinfo_19_09.csv".format(group),num_bit=128,radius=3,seqfile="{}_seed_onehot_encoding_sepreate.csv".format(group),group=group)
 
     '''
     for file in groups:

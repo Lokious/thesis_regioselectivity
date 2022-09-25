@@ -7,6 +7,7 @@ Dependencies:   Python3.9
                 pandas
 This code is to parse sequence data
 """
+import os
 import unittest
 import pandas as pd
 import numpy as np
@@ -21,6 +22,7 @@ import blosum as bl
 import matplotlib.pyplot as plt
 
 from os import path
+import subprocess
 
 class Sequences():
 
@@ -101,6 +103,14 @@ class Sequences():
                     # print(record)
                     # print(record_rename)
 
+    def remove_redundant_sequence(self,sequences_file="../autodata/rawdata/uniprot_ec2.1.1.fasta"):
+
+        try:
+            file=open("../autodata/sequences/uniprot_ec2.1.1_rm.fasta")
+        except:
+            print("removing redundant sequences from {}".format(sequences_file))
+            if subprocess.check_output("bash runmmseqs.sh"):
+                file = open("../autodata/sequences/uniprot_ec2.1.1_rep_seq.fasta")
 
     def get_active_site_dictionary_from_file(self,file="../autodata/align/align_seed_sequences_with_structure/3ROD_active_site_N.txt")->dict:
         """

@@ -18,7 +18,7 @@ from rdkit.Chem import RDKFingerprint, SDMolSupplier
 from rdkit.Chem.Draw import IPythonConsole
 from rdkit.Chem import Draw, AllChem, rdChemReactions
 #import pikachu
-
+from upsetplot import plot
 from molecular_class import Molecule
 import glob
 import dill
@@ -74,14 +74,48 @@ def read_hmmscan_out(file):
     hmmscan_df["entry"] = []
     for i,line in enumerate(file):
         if line.startswith("#")==False:
-            entry = line.split()[0]
-            domain = line.split()[3]
+            #print(line.split())
+            entry = line.split()[3]
+            domain = line.split()[1]
             hmmscan_df["entry"].append(entry.split("|")[1])
             hmmscan_df["domain"].append(domain)
     hmmscan_df=pd.DataFrame(hmmscan_df,index=range(len(hmmscan_df["domain"])))
-    #print((hmmscan_df["domain"].value_counts())[:10])
+    print((hmmscan_df["domain"].value_counts()[:30]))
     return hmmscan_df
 
+def upsetplot(seq_domain_df):
+    columns=seq_domain_df["domain"].unique()[:20]
+    #
+    # new_df = pd.DataFrame(columns=columns, index=seq_domain_df["entry"])
+    # print(new_df)
+    # for index_old in seq_domain_df.index:
+    #     entry=seq_domain_df.loc[index_old,"entry"]
+    #     domain = seq_domain_df.loc[index_old, "domain"]
+    #     new_df.loc[entry,domain] = True
+    # else:
+    #     new_df.fillna(False,inplace=True)
+    #     print(new_df)
+    #     new_df.to_csv("new_df.csv")
+    from upsetplot import plot as upset_plot
+    from upsetplot import from_indicators
+    new_df=pd.read_csv("new_df.csv",header=0,index_col=0)
+    plot1=upset_plot(from_indicators(new_df), subset_size='count')
+    from matplotlib import pyplot
+    pyplot.show()
+    # #build multiple index
+    #preindex_list = []
+    # i = 2**(len(columns))
+    # while i >= 2:
+    #     i = int(i/2)
+    #     print(i)
+    #     preindex_list.append(([True]*i+[False]*i)*(int(len(columns)/(2*i))+1))
+    #
+    # tuples = list(zip(*preindex_list))
+    # print(tuples)
+    # multi_index = pd.MultiIndex.from_tuples(tuples, names=columns)
+    # print(columns)
+    # upset_df=pd.DataFrame(columns=columns,index=multi_index)
+    # print(upset_df)
 
 def remove_duplicated_id(directory):
     """
@@ -642,7 +676,9 @@ def check_sequences_similarity(fasta_file=""):
 
 
 def main():
-    unittest.main()
+    #unittest.main()
+    seq_domain_df=read_hmmscan_out("../autodata/align/hmmscandomout_ec2_1_1.txt")
+    upsetplot(seq_domain_df)
     #check_sequences_similarity()
 
     # use_atom_properties_for_sequences_encoding(file_name="../autodata/align/align_seed_sequences_with_structure/C_4u1q_align_sequences",structure_chain="4u1q.pdb_chainA_s001",

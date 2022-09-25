@@ -16,6 +16,7 @@ bio-embedding
 plotly-5.9.0 
 blosum
 mmseqs 1.0.0
+upsetplot
 
 running steps：(19/08/2022)
 1. Model_class check_file_exist(),save_fingerprints_to_dataframe()

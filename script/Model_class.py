@@ -600,23 +600,23 @@ class Model_class():
         """
 
         hyperparameters = {'n_estimators': [500,1000,2000],
-                           'max_features': [0.3,0.5,0.7,0.9],
+                           'max_features': [0.3,0.5,0.7],
                            }
 
         #n_jobs number of cores used for it
         #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
-        # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
-        #                      hyperparameters, scoring='roc_auc',
-        #                      cv=3,
-        #                      verbose=3,
-        #                      n_jobs=14)
-
-        ####use MCC as scoring#####
         rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
-                             hyperparameters, scoring=make_scorer(matthews_corrcoef),
+                             hyperparameters, scoring='roc_auc',
                              cv=3,
                              verbose=3,
                              n_jobs=14)
+
+        ####use MCC as scoring#####
+        # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
+        #                      hyperparameters, scoring=make_scorer(matthews_corrcoef),
+        #                      cv=3,
+        #                      verbose=3,
+        #                      n_jobs=14)
         rf_cv.fit(X_train, y_train)
         print(rf_cv.best_params_)
         # roc for train data
@@ -631,7 +631,7 @@ class Model_class():
         #              (file_name + "test (use train threshold)"))
 
         #lineplot the roc score with differnt hyparameters
-        plt.figure(figsize=(16,16))
+
         print(rf_cv.cv_results_)
         sns.lineplot(y=rf_cv.cv_results_["mean_test_score"],
                      x=rf_cv.cv_results_['param_max_features'].data,
@@ -805,6 +805,7 @@ class Model_class():
         print("FP:{}".format(FP))
         print("FN:{}".format(FN))
         print("TN:{}".format(TN))
+        print("accuracy:{}".format(((TP+TN)/(TP+TN+FP+FN))))
         sensitivity = TP / (TP + FN)
         specificity = TN / (TN + FP)
         precision = TP / (TP + FP)
@@ -812,6 +813,7 @@ class Model_class():
             "../autodata/separate_seed_result/{}prediction_summary.txt".format(
                 file_name), "a")
         file1.write("The following is the result for {}:".format(file_name))
+        file1.write("best parameters:{}".format(rf.best_params_))
         file1.write("accuracy: {}\n".format(accuracy))
         file1.write("sensitivity : {}\n".format(sensitivity))
         file1.write("specificity : {}\n".format(specificity))
