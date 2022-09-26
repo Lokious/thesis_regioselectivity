@@ -26,6 +26,7 @@ from Bio import AlignIO, SeqIO
 from sequence import Sequences
 import numpy as np
 import unittest
+import  sys
 
 def target_sequences(file):
     """
@@ -90,25 +91,27 @@ def upsetplot(seq_domain_df):
     :return: None
     """
     #only  show the top 20 domains
-    # columns=list((seq_domain_df["domain"].value_counts()[:15]).index)
-    # print(columns)
-    # new_df = pd.DataFrame(columns=columns, index=seq_domain_df["entry"])
-    # print(new_df)
-    # for index_old in seq_domain_df.index:
-    #     entry=seq_domain_df.loc[index_old,"entry"]
-    #     domain = seq_domain_df.loc[index_old, "domain"]
-    #     if domain in columns:
-    #         new_df.loc[entry,domain] = True
-    # else:
-    #     new_df.fillna(False,inplace=True)
-    #     print(new_df)
-    #     new_df.to_csv("new_df.csv")
+    columns=list((seq_domain_df["domain"].value_counts()[:15]).index)
+    print(columns)
+    new_df = pd.DataFrame(columns=columns, index=seq_domain_df["entry"])
+    print(new_df)
+    for index_old in seq_domain_df.index:
+        entry=seq_domain_df.loc[index_old,"entry"]
+        domain = seq_domain_df.loc[index_old, "domain"]
+        if domain in columns:
+            new_df.loc[entry,domain] = True
+    else:
+        new_df.fillna(False,inplace=True)
+        print(new_df)
+        new_df.to_csv("new_df.csv")
     from upsetplot import plot as upset_plot
     from upsetplot import from_indicators
-    new_df=pd.read_csv("new_df.csv",header=0,index_col=0)
+    #new_df=pd.read_csv("new_df.csv",header=0,index_col=0)
     input_plotdf = from_indicators(new_df)
+    input_plotdf.sort_values(ascending=False, inplace=True)
     print(input_plotdf)
-    upset_plot(input_plotdf, subset_size='count',sort_by='cardinality',min_subset_size=100)
+
+    upset_plot(input_plotdf, subset_size='count',sort_by='cardinality',show_counts=True,min_subset_size=100,max_degree=4)
     from matplotlib import pyplot
     current_figure = pyplot.gcf()
     current_figure.savefig("upset.png")
@@ -697,7 +700,8 @@ def check_sequences_similarity(fasta_file=""):
 
 def main():
     #unittest.main()
-    seq_domain_df=read_hmmscan_out("../autodata/align/hmmscandomout_ec2_1_1.txt")
+    version=sys.argv[2]
+    seq_domain_df=read_hmmscan_out("../autodata/align/hmmscandomout_ec2_1_1_{}.txt".format(version))
     upsetplot(seq_domain_df)
 
     # extract_pdb_structure_from_hmmer_output(domain="PF13847",
