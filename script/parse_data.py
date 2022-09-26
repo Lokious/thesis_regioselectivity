@@ -84,14 +84,21 @@ def read_hmmscan_out(file):
     return hmmscan_df
 
 def upsetplot(seq_domain_df):
-    columns=seq_domain_df["domain"].unique()[:20]
-    #
+    """
+    This is the function for plot the upsetplot for domains and sequences overlap
+    :param seq_domain_df: pd.Dataframe includes two columns["entry","domain"]
+    :return: None
+    """
+    #only  show the top 20 domains
+    # columns=list((seq_domain_df["domain"].value_counts()[:15]).index)
+    # print(columns)
     # new_df = pd.DataFrame(columns=columns, index=seq_domain_df["entry"])
     # print(new_df)
     # for index_old in seq_domain_df.index:
     #     entry=seq_domain_df.loc[index_old,"entry"]
     #     domain = seq_domain_df.loc[index_old, "domain"]
-    #     new_df.loc[entry,domain] = True
+    #     if domain in columns:
+    #         new_df.loc[entry,domain] = True
     # else:
     #     new_df.fillna(False,inplace=True)
     #     print(new_df)
@@ -99,23 +106,35 @@ def upsetplot(seq_domain_df):
     from upsetplot import plot as upset_plot
     from upsetplot import from_indicators
     new_df=pd.read_csv("new_df.csv",header=0,index_col=0)
-    plot1=upset_plot(from_indicators(new_df), subset_size='count')
+    input_plotdf = from_indicators(new_df)
+    print(input_plotdf)
+    upset_plot(input_plotdf, subset_size='count',sort_by='cardinality',min_subset_size=100)
     from matplotlib import pyplot
-    pyplot.show()
-    # #build multiple index
-    #preindex_list = []
-    # i = 2**(len(columns))
-    # while i >= 2:
-    #     i = int(i/2)
-    #     print(i)
-    #     preindex_list.append(([True]*i+[False]*i)*(int(len(columns)/(2*i))+1))
-    #
-    # tuples = list(zip(*preindex_list))
-    # print(tuples)
-    # multi_index = pd.MultiIndex.from_tuples(tuples, names=columns)
-    # print(columns)
-    # upset_df=pd.DataFrame(columns=columns,index=multi_index)
-    # print(upset_df)
+    current_figure = pyplot.gcf()
+    current_figure.savefig("upset.png")
+
+def extract_pdb_structure_from_hmmer_output(domain="PF13847",path="../autodata/align/separate_by_domain/"):
+    file=open("{}pdb_{}_trim.hmmer".format(path,domain)).readlines()
+
+    pdb_df={}
+    pdb_df["pdb_entry"]=[]
+    pdb_df["description"] = []
+    print(file)
+    start=False
+    for i,line in enumerate(file):
+        if line.startswith("#")==False:
+            if start==True:
+                if line == "\n":
+                    break
+                print(line.split())
+                pdb_entry = line.split()[8]
+                description = "".join(line.split()[9:])
+                pdb_df["pdb_entry"].append(pdb_entry)
+                pdb_df["description"].append(description)
+            if line.startswith("-")==True:
+                start=True
+    pdb_df=pd.DataFrame(pdb_df,index=range(len(pdb_df["pdb_entry"])))
+    print(pdb_df)
 
 def remove_duplicated_id(directory):
     """
@@ -587,6 +606,7 @@ def get_active_and_binding_site_realted_to_methylation():
     #entry_acs_pd.dropna(subset=["active_site_AA","binding_site_AA"],inplace=True)
     print(entry_acs_pd)
     entry_acs_pd.to_csv("../autodata/entry_with_activesite.csv")
+
 def merge_active_site_and_methyltype (activesite_file, fingerprint_file):
     active_site_df= pd.read_csv(activesite_file, header=0, index_col=0)
     #active_site_df=active_site_df.fillna(0)
@@ -679,6 +699,10 @@ def main():
     #unittest.main()
     seq_domain_df=read_hmmscan_out("../autodata/align/hmmscandomout_ec2_1_1.txt")
     upsetplot(seq_domain_df)
+
+    # extract_pdb_structure_from_hmmer_output(domain="PF13847",
+    #                                         path="../autodata/align/separate_by_domain/")
+
     #check_sequences_similarity()
 
     # use_atom_properties_for_sequences_encoding(file_name="../autodata/align/align_seed_sequences_with_structure/C_4u1q_align_sequences",structure_chain="4u1q.pdb_chainA_s001",

@@ -4,4 +4,4 @@
 #	echo $cmd1
 #done
 
-mmseqs easy-cluster ../autodata/sequences/${group}.fasta ${group}cluster_result tmp
+mmseqs easy-cluster ../autodata/sequences/uniprot_ec2.1.1.fasta uniprot_ec2.1.1.fasta uniprot——2.1.1cluster_result tmp
