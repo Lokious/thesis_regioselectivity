@@ -49,7 +49,7 @@ def target_sequences(file):
 
 def get_fasta_file_from_hmmsearch_hit(file,domain=""):
 
-    hmm_df=read_hmmscan_out(file)
+    hmm_df=read_hmmsearch_out(file)
     print(hmm_df)
     seq_entry_df=pd.read_csv("../autodata/rawdata/uniprot-ec2.1.1.tsv",header=0,sep="\t")
     print(seq_entry_df)
@@ -66,31 +66,37 @@ def get_fasta_file_from_hmmsearch_hit(file,domain=""):
             file.write("{}\n".format(seq_entry_df.loc[entry, "Sequence"]))
     else:
         file.close()
-def read_hmmscan_out(file):
-    print(file)
-    file = open(file).readlines()
 
-    hmmscan_df={}
-    hmmscan_df["domain"]=[]
-    hmmscan_df["entry"] = []
+def read_hmmsearch_out(file):
+    """
+
+    :param file: hmmsearch domout.tsv
+    :return:hmmsearch_df
+    """
+    print(file)
+    file = open(file,encoding='utf-8').readlines()
+
+    hmmsearch_df={}
+    hmmsearch_df["domain"]=[]
+    hmmsearch_df["entry"] = []
     for i,line in enumerate(file):
         if line.startswith("#")==False:
             #print(line.split())
-            entry = line.split()[3]
-            domain = line.split()[1]
-            hmmscan_df["entry"].append(entry.split("|")[1])
-            hmmscan_df["domain"].append(domain)
-    hmmscan_df=pd.DataFrame(hmmscan_df,index=range(len(hmmscan_df["domain"])))
-    print((hmmscan_df["domain"].value_counts()[:30]))
-    return hmmscan_df
+            entry = line.split()[0]
+            domain = line.split()[4]
+            hmmsearch_df["entry"].append(entry.split("|")[1])
+            hmmsearch_df["domain"].append(domain)
+    hmmsearch_df=pd.DataFrame(hmmsearch_df,index=range(len(hmmsearch_df["domain"])))
+    print((hmmsearch_df["domain"].value_counts()[:30]))
+    return hmmsearch_df
 
-def upsetplot(seq_domain_df):
+def upsetplot(seq_domain_df,version):
     """
     This is the function for plot the upsetplot for domains and sequences overlap
     :param seq_domain_df: pd.Dataframe includes two columns["entry","domain"]
     :return: None
     """
-    #only  show the top 20 domains
+    #only  show the top 15 domains
     columns=list((seq_domain_df["domain"].value_counts()[:15]).index)
     print(columns)
     new_df = pd.DataFrame(columns=columns, index=seq_domain_df["entry"])
@@ -103,18 +109,19 @@ def upsetplot(seq_domain_df):
     else:
         new_df.fillna(False,inplace=True)
         print(new_df)
-        new_df.to_csv("new_df.csv")
+        #new_df.to_csv("new_df.csv")
     from upsetplot import plot as upset_plot
     from upsetplot import from_indicators
     #new_df=pd.read_csv("new_df.csv",header=0,index_col=0)
+    print(new_df)
     input_plotdf = from_indicators(new_df)
     input_plotdf.sort_values(ascending=False, inplace=True)
     print(input_plotdf)
 
-    upset_plot(input_plotdf, subset_size='count',sort_by='cardinality',show_counts=True,min_subset_size=100,max_degree=4)
+    upset_plot(input_plotdf, subset_size='count',sort_by='cardinality',show_counts=True)
     from matplotlib import pyplot
     current_figure = pyplot.gcf()
-    current_figure.savefig("upset.png")
+    current_figure.savefig("upset_{}.png".format(version))
 
 def extract_pdb_structure_from_hmmer_output(domain="PF13847",path="../autodata/align/separate_by_domain/"):
     file=open("{}pdb_{}_trim.hmmer".format(path,domain)).readlines()
@@ -126,10 +133,15 @@ def extract_pdb_structure_from_hmmer_output(domain="PF13847",path="../autodata/a
     start=False
     for i,line in enumerate(file):
         if line.startswith("#")==False:
+            if line == "\n":
+                print("emptyline")
             if start==True:
                 if line == "\n":
-                    break
-                print(line.split())
+                    pdb_df = pd.DataFrame(pdb_df, index=range(
+                        len(pdb_df["pdb_entry"])))
+                    print(pdb_df)
+                    return pdb_df
+                #print(line.split())
                 pdb_entry = line.split()[8]
                 description = "".join(line.split()[9:])
                 pdb_df["pdb_entry"].append(pdb_entry)
@@ -138,7 +150,36 @@ def extract_pdb_structure_from_hmmer_output(domain="PF13847",path="../autodata/a
                 start=True
     pdb_df=pd.DataFrame(pdb_df,index=range(len(pdb_df["pdb_entry"])))
     print(pdb_df)
+def sepreate_sequence_based_on_domain_without_overlap(seq_domain_df):
+    """
+    This function is use to extract sequences only has one domian for top 10 domains
 
+    :param seq_domain_df: pd.Dataframe with domain and uniprot entry
+    :return: None
+    """
+    print(seq_domain_df)
+    seq_domain_df.drop_duplicates(subset=['entry'], inplace=True)
+    print(seq_domain_df)
+    domains = list(seq_domain_df["domain"].value_counts()[:10].index)
+    print(domains)
+
+    seq_entry_df=pd.read_csv("../autodata/rawdata/uniprot-ec2.1.1.tsv",header=0,sep="\t")
+    print(seq_entry_df)
+    seq_entry_df=seq_entry_df.loc[:,["Entry","Sequence"]]
+    seq_entry_df.index=seq_entry_df["Entry"]
+    seq_entry_df.drop(columns="Entry",inplace=True)
+    print(seq_entry_df)
+    for domain in domains:
+        file = open("../autodata/sequences/no_overlap_sequences/{}.fasta".format(domain), "w")
+        hmm_df=seq_domain_df.loc[seq_domain_df['domain'] == domain]
+        print(hmm_df)
+        for i in hmm_df.index:
+            entry = hmm_df.loc[i,"entry"]
+            file.write(">{}\n".format(entry))
+            file.write("{}\n".format(seq_entry_df.loc[entry, "Sequence"]))
+        else:
+            file.close()
+    return domains
 def remove_duplicated_id(directory):
     """
     This is to extract the hits uniprot id from hmmscan and remove the repeat part
@@ -699,10 +740,14 @@ def check_sequences_similarity(fasta_file=""):
 
 
 def main():
-    #unittest.main()
-    version=sys.argv[2]
-    seq_domain_df=read_hmmscan_out("../autodata/align/hmmscandomout_ec2_1_1_{}.txt".format(version))
-    upsetplot(seq_domain_df)
+    unittest.main()
+    #, min_subset_size = 100, max_degree = 4
+
+    #upsetplot(seq_domain_df,"ec211_represent_seq")
+    # versions = ["Pfam25.0", "Pfam29.0", "Pfam35.0"]
+    # for version in versions:
+    #     seq_domain_df=read_hmmsearch_out("../autodata/align/{}uniprot_2_1_1_domout.tsv".format(version))
+    #     upsetplot(seq_domain_df,version)
 
     # extract_pdb_structure_from_hmmer_output(domain="PF13847",
     #                                         path="../autodata/align/separate_by_domain/")

@@ -14,7 +14,7 @@ echo `python3 hmm.py`
 for group in "${Domain[@]}"; do
 	cmd1=`hmmalign --amino --trim ../autodata/align/${group}.hmm ../autodata/sequences/${group}.fasta > ../autodata/align/${group}_hmmalign_out_trim`
 	cmd2=`hmmbuild ../autodata/align/${group}_hmmalign_out_trim.hmm ../autodata/align/${group}_hmmalign_out_trim`
-	cmd3=`hmmsearch ../autodata/align/${group}_hmmalign_out_trim.hmm pdbaa > pdb_${group}_trim.hmmer`
+	cmd3=`hmmsearch --noali ../autodata/align/${group}_hmmalign_out_trim.hmm pdbaa > pdb_${group}_trim.hmmer`
 	echo "start"
 	wait
 	echo $cmd1

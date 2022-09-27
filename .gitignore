@@ -12,4 +12,5 @@ data/*
 autodata/*
 *.png
 script/*.csv
+script/new_df.csv
 #data/seq_smiles.csv
