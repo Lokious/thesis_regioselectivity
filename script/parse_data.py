@@ -11,6 +11,7 @@ includes Rhea-ec_2_1_1.tsv
 import os
 import subprocess
 import pandas as pd
+import typing
 from sys import argv
 from urllib.request import urlopen
 from rdkit import Chem, DataStructs
@@ -47,26 +48,43 @@ def target_sequences(file):
 
     return hmmscan_df
 
-def get_fasta_file_from_hmmsearch_hit(file,domain=""):
-
-    hmm_df=read_hmmsearch_out(file)
-    print(hmm_df)
-    seq_entry_df=pd.read_csv("../autodata/rawdata/uniprot-ec2.1.1.tsv",header=0,sep="\t")
-    print(seq_entry_df)
-    seq_entry_df=seq_entry_df.loc[:,["Entry","Sequence"]]
-    seq_entry_df.index=seq_entry_df["Entry"]
-    seq_entry_df.drop(columns="Entry",inplace=True)
-    print(seq_entry_df)
-    entry_list=[]
-    file = open("../autodata/sequences/{}.fasta".format(domain), "w")
-    for i in hmm_df.index:
-        entry = hmm_df.loc[i,"entry"]
-        if entry not in entry_list:
-            file.write(">{}\n".format(entry))
-            file.write("{}\n".format(seq_entry_df.loc[entry, "Sequence"]))
-    else:
-        file.close()
-
+def get_fasta_file_from_hmmsearch_hit( input: typing.Optional[typing.Union[str, pd.DataFrame]] = None,domain=""):
+    if isinstance(input, str):
+        hmmsearch_df = read_hmmsearch_out(input)
+        print(hmmsearch_df)
+        seq_entry_df = pd.read_csv("../autodata/rawdata/uniprot-ec2.1.1.tsv",header=0,sep="\t")
+        print(seq_entry_df)
+        seq_entry_df = seq_entry_df.loc[:,["Entry","Sequence"]]
+        seq_entry_df.index = seq_entry_df["Entry"]
+        seq_entry_df.drop(columns="Entry",inplace=True)
+        print(seq_entry_df)
+        entry_list=[]
+        file = open("../autodata/sequences/{}.fasta".format(domain), "w")
+        for i in hmmsearch_df.index:
+            entry = hmmsearch_df.loc[i,"entry"]
+            if entry not in entry_list:
+                file.write(">{}\n".format(entry))
+                file.write("{}\n".format(seq_entry_df.loc[entry, "Sequence"]))
+        else:
+            file.close()
+    elif isinstance(input, pd.DataFrame):
+        print("input is dataframe")
+        print(input)
+        seq_entry_df = pd.read_csv("../autodata/rawdata/uniprot-ec2.1.1.tsv",
+                                   header=0, sep="\t")
+        seq_entry_df = seq_entry_df.loc[:, ["Entry", "Sequence"]]
+        seq_entry_df.index = seq_entry_df["Entry"]
+        seq_entry_df.drop(columns="Entry", inplace=True)
+        print(seq_entry_df)
+        entry_list = []
+        file = open("../autodata/sequences/{}.fasta".format(domain), "w")
+        for i in input.index:
+            entry = input.loc[i, "entry"]
+            if entry not in entry_list:
+                file.write(">{}\n".format(entry))
+                file.write("{}\n".format(seq_entry_df.loc[entry, "Sequence"]))
+        else:
+            file.close()
 def read_hmmsearch_out(file):
     """
 
@@ -156,6 +174,7 @@ def extract_pdb_structure_from_hmmer_output(domain="PF13847",path="../autodata/a
                 start=True
     pdb_df=pd.DataFrame(pdb_df,index=range(len(pdb_df["pdb_entry"])))
     print(pdb_df)
+
 def sepreate_sequence_based_on_domain_without_overlap(seq_domain_df):
     """
     This function is use to extract sequences only has one domian for top 10 domains
@@ -187,6 +206,27 @@ def sepreate_sequence_based_on_domain_without_overlap(seq_domain_df):
         else:
             file.close()
     return domains
+
+def save_sequences_from_hmmscan_result(file="../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/all_sequences_build_hmm_search.tsv"):
+    file = open(file, encoding='utf-8').readlines()
+
+    hmmscan_df = {}
+
+    hmmscan_df["entry"] = []
+    for i, line in enumerate(file):
+        if line.startswith("#") == False:
+
+            entry = line.split()[3]
+
+            hmmscan_df["entry"].append(entry.split("|")[1])
+    hmmscan_df = pd.DataFrame(hmmscan_df,
+                                index=range(len(hmmscan_df["entry"])))
+    # print((hmmscan_df["domain"].value_counts()[:30]))
+    get_fasta_file_from_hmmsearch_hit(hmmscan_df,"all_sequences_build_hmm_search")
+    hmmscan_df.drop_duplicates(subset=["entry"],inplace=True)
+    print(hmmscan_df)
+    return hmmscan_df
+
 def remove_duplicated_id(directory):
     """
     This is to extract the hits uniprot id from hmmscan and remove the repeat part
