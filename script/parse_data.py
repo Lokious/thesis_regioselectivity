@@ -87,7 +87,7 @@ def read_hmmsearch_out(file):
             hmmsearch_df["entry"].append(entry.split("|")[1])
             hmmsearch_df["domain"].append(domain)
     hmmsearch_df=pd.DataFrame(hmmsearch_df,index=range(len(hmmsearch_df["domain"])))
-    print((hmmsearch_df["domain"].value_counts()[:30]))
+    #print((hmmsearch_df["domain"].value_counts()[:30]))
     return hmmsearch_df
 
 def upsetplot(seq_domain_df,version):
@@ -124,6 +124,12 @@ def upsetplot(seq_domain_df,version):
     current_figure.savefig("upset_{}.png".format(version))
 
 def extract_pdb_structure_from_hmmer_output(domain="PF13847",path="../autodata/align/separate_by_domain/"):
+    """
+    This function is use to find the pdb structure include active site and related to methyl
+    :param domain:
+    :param path:
+    :return:
+    """
     file=open("{}pdb_{}_trim.hmmer".format(path,domain)).readlines()
 
     pdb_df={}
@@ -157,8 +163,9 @@ def sepreate_sequence_based_on_domain_without_overlap(seq_domain_df):
     :param seq_domain_df: pd.Dataframe with domain and uniprot entry
     :return: None
     """
-    print(seq_domain_df)
+    print(seq_domain_df["domain"].value_counts()[:15])
     seq_domain_df.drop_duplicates(subset=['entry'], inplace=True)
+    print(seq_domain_df["domain"].value_counts()[:15])
     print(seq_domain_df)
     domains = list(seq_domain_df["domain"].value_counts()[:10].index)
     print(domains)

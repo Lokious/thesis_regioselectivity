@@ -24,7 +24,8 @@ for group in "${Version[@]}"; do
 done
 for group in "${Version[@]}"; do 
 	cmd3=`hmmpress ../autodata/align/${group}/Pfam-A.hmm`
-	cmd4=`hmmsearch -T 15 --domT 15 --domtblout ../autodata/align/${group}uniprot_2_1_1_domout.tsv --tblout ../autodata/align/${group}uniprot_2_1_1_tbout.tsv --cpu 4 ../autodata/align/${group}/Pfam-A.hmm ../autodata/rawdata/uniprot_ec2.1.1.fasta`
+	#-T 15 --domT 15 
+	cmd4=`hmmsearch --domtblout ../autodata/align/${group}uniprot_2_1_1_domout.tsv --tblout ../autodata/align/${group}uniprot_2_1_1_tbout.tsv --cpu 4 ../autodata/align/${group}/Pfam-A.hmm ../autodata/rawdata/uniprot_ec2.1.1.fasta`
 	wait
 	echo $cmd3
 	wait
