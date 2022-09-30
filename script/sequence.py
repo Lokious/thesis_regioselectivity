@@ -331,21 +331,58 @@ class Sequences():
                                      "similarity_score":0}
         return properties_dictionary
 
+    def drop_sequences(self,sequences_file=""):
+        """This function is to remove too long and too short sequences from fasta file
+
+        :param sequences_file: string, name and path of fasta file
+        :return: record_dict
+        """
+        record_dict = SeqIO.to_dict(SeqIO.parse(sequences_file, "fasta"))
+        print(len(record_dict))
+        #save sequences length
+        length_dictionary = {}
+        for key in record_dict.keys():
+            length = len(record_dict[key])
+            if length not in length_dictionary:
+                length_dictionary[length] = 1
+            else:
+                length_dictionary[length] += 1
+
+        sorted_length_dict = sorted(length_dictionary.items(), key=lambda x: x[1], reverse=True)
+        #get the most frequent sequences length, use the first 10 to calculate the sverage length
+        print(sorted_length_dict[:20])
+        average=(sum([x[1] for x in sorted_length_dict])/20)
+        print(average)
+        #remove too long and too short sequences
+        remove_list = []
+        for entry in record_dict.keys():
+            length_seq=len(record_dict[entry])
+            #if the distance between sequence length and average length larger than 100
+            if abs(length_seq-average)>100:
+                remove_list.append(entry)
+
+        for entry in remove_list:
+            del record_dict[entry]
+        print(len(record_dict))
+        return record_dict
+
 def main():
 
     #unittest.main()
     seq=Sequences()
     #seq.get_active_site_dictionary_from_file()
     #seq.get_AA_within_distance_from_structure_file()
-    seq.get_sites_from_alignment(
-        file="../autodata/align/align_seed_sequences_with_structure/O_1vid_align_sequences",structure_chain="1vid.pdb_chainA_s001",
-        start_pos=4,group="O")
+
+    # seq.get_sites_from_alignment(
+    #     file="../autodata/align/align_seed_sequences_with_structure/O_1vid_align_sequences",structure_chain="1vid.pdb_chainA_s001",
+    #     start_pos=4,group="O")
+
     #seq.get_sites_from_alignment(file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",start_pos=3)
-    #seq.amino_acid_properties("Y", "Y")
+
     #seq.group_seq_based_on_methylated_type(inputfile="../autodata/seq_smiles_all.csv",save_directory="../autodata/sequences")
     #seq.remove_duplicate()
     #seq.group_fg_based_on_methylated_type("../autodata/seq_smiles_all.csv",)
 
-
+    seq.drop_sequences("../autodata/sequences/PF08242.fasta")
 if __name__ == "__main__":
     main()

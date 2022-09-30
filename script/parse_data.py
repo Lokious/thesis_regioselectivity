@@ -52,6 +52,7 @@ def get_fasta_file_from_hmmsearch_hit( input: typing.Optional[typing.Union[str, 
     if isinstance(input, str):
         hmmsearch_df = read_hmmsearch_out(input)
         print(hmmsearch_df)
+        hmmsearch_df.drop_duplicates(subset=['entry'], inplace=True)
         seq_entry_df = pd.read_csv("../autodata/rawdata/uniprot-ec2.1.1.tsv",header=0,sep="\t")
         print(seq_entry_df)
         seq_entry_df = seq_entry_df.loc[:,["Entry","Sequence"]]

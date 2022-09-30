@@ -2,7 +2,7 @@
 import os
 import pandas as pd
 import parse_data
-
+from sequence import Sequences
 
 def hhalign(domian_list):
     """This function is to run hhalign to merge hmm and build new hmm for searching sequences"""
@@ -31,7 +31,7 @@ def hhalign(domian_list):
         log_file.write("\n")
 
         #use hmmsearch to search sequences with built hmm model
-        hmmsearch_cmd = "hmmsearch --domtblout ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim_domtblout.tsv ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm ../autodata/sequences/uniprot_ec2.1.1.fasta".format(out_align)
+        hmmsearch_cmd = "hmmsearch --domT 15 -T 15 --domtblout ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim_domtblout.tsv ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm ../autodata/sequences/uniprot_ec2.1.1.fasta".format(out_align)
         os.system("wait")
         print("running command line:\n{}".format(hmmsearch_cmd))
         os.system(hmmsearch_cmd)
@@ -98,9 +98,9 @@ def hmmsearch_for_no_overlap_sequence(domains):
 
 def main():
     #count number of sequences for most frequennt domains
-    seq_domain_df = parse_data.read_hmmsearch_out(
-       "../autodata/align/different_version_pfam/Pfam35.0uniprot_2_1_1_domout.tsv")
-    domains = parse_data.sepreate_sequence_based_on_domain_without_overlap(seq_domain_df)
+    # seq_domain_df = parse_data.read_hmmsearch_out(
+    #    "../autodata/align/different_version_pfam/Pfam35.0uniprot_2_1_1_domout.tsv")
+    # domains = parse_data.sepreate_sequence_based_on_domain_without_overlap(seq_domain_df)
     # for domain in domains:
     #
     #     cmd_hmmfetch ="hmmfetch ../autodata/align/different_version_pfam/Pfam35.0/Pfam-A.hmm {0} > ../autodata/align/{0}.hmm".format(domain)
@@ -115,6 +115,7 @@ def main():
     # print(domains)
     #use hmmsearch for closest pdb structure
     #hmmsearch_for_no_overlap_sequence(domains.copy())
+    domains=["PF08241.15","PF03602.18"]
     hhalign(domains.copy())
     #parse_data.save_sequences_from_hmmscan_result()
 if __name__ == "__main__":
