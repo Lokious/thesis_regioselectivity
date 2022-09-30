@@ -16,16 +16,27 @@ def hhalign(domian_list):
                                                                template,
                                                                out_align)
         os.system("wait")
+        print("running command line:\n{}".format(hhalign_cmd))
         os.system(hhalign_cmd)
         log_file.write("{}\n".format(hhalign_cmd))
         log_file.write("\n")
-        hmmsearch_cmd = "hmmsearch --domtblout {0}_hmmalign_out_trim_domtblout.tsv {0}_hmmalign_out_trim.hmm ../autodata/sequences/uniprot_ec2.1.1.fasta".format(out_align)
+
+        hmmbuild_cmd="hmmbuild ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm  ../autodata/align/separate_by_domain/no_overlap_sequences/{0}_hmmalign_out_trim.a2m".format(out_align)
         os.system("wait")
+        print("running command line:\n{}".format(hmmbuild_cmd))
+        os.system(hmmbuild_cmd)
+        log_file.write("{}\n".format(hmmbuild_cmd))
+        log_file.write("\n")
+
+        hmmsearch_cmd = "hmmsearch --domtblout ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim_domtblout.tsv ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm ../autodata/sequences/uniprot_ec2.1.1.fasta".format(out_align)
+        os.system("wait")
+        print("running command line:\n{}".format(hmmsearch_cmd))
         os.system(hmmsearch_cmd)
         log_file.write("{}\n".format(hmmsearch_cmd))
         log_file.write("\n")
         hmmsearch_pdb_cmd = "hmmsearch {0}_hmmalign_out_trim.hmm pdbaa >{0}_pdb.tsv".format(out_align)
         os.system("wait")
+        print("running command line:\n{}".format(hmmsearch_pdb_cmd))
         os.system(hmmsearch_pdb_cmd)
         log_file.write("{}\n".format(hmmsearch_pdb_cmd))
         log_file.write("\n")
@@ -39,7 +50,7 @@ def hmmsearch_for_no_overlap_sequence(domains):
         print(domain)
         os.system("wait")
         os.system(
-            "hmmfetch ../autodata/align/Pfam35.0/Pfam-A.hmm {0} > ../autodata/align/{0}.hmm".format(
+            "hmmfetch ../autodata/align/separate_by_domain/Pfam35.0/Pfam-A.hmm {0} > ../autodata/align/{0}.hmm".format(
                 domain))
         os.system("wait")
         cmd1 = 'hmmalign --amino  --outformat A2M ../autodata/align/{0}.hmm ../autodata/sequences/no_overlap_sequences/{0}.fasta > ../autodata/align/separate_by_domain/no_overlap_sequences/{0}_hmmalign_out.a2m'.format(
@@ -77,8 +88,8 @@ def main():
     #         domains.remove(domain)
     # print(domains)
     #use hmmsearch for closest pdb structure
-    hmmsearch_for_no_overlap_sequence(domains.copy())
-    #hhalign(domains.copy())
+    #hmmsearch_for_no_overlap_sequence(domains.copy())
+    hhalign(domains.copy())
     #parse_data.save_sequences_from_hmmscan_result()
 if __name__ == "__main__":
     main()
