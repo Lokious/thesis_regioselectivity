@@ -66,6 +66,7 @@ def get_fasta_file_from_hmmsearch_hit( input: typing.Optional[typing.Union[str, 
                 file.write(">{}\n".format(entry))
                 file.write("{}\n".format(seq_entry_df.loc[entry, "Sequence"]))
         else:
+            print("File saved.\n ../autodata/sequences/{}.fasta".format(domain))
             file.close()
     elif isinstance(input, pd.DataFrame):
         print("input is dataframe")

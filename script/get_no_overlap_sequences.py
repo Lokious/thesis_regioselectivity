@@ -8,10 +8,11 @@ def hhalign(domian_list):
     """This function is to run hhalign to merge hmm and build new hmm for searching sequences"""
 
     template = domian_list.pop(0)
-    log_file=open("../autodata/align/separate_by_domain/no_overlap_sequences/log_file_hhalign.txt",'a')
+    log_file=open("../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/log_file_hhalign.txt",'a')
     while domian_list:
         domain_new = domian_list.pop(0)
         out_align = template + domain_new
+        #use hhalign merge hmm model to MSA
         hhalign_cmd = "hhalign -i ../autodata/align/separate_by_domain/no_overlap_sequences/{0}_hmmalign_out_trim.a2m -t ../autodata/align/separate_by_domain/no_overlap_sequences/{1}_hmmalign_out_trim.a2m -oa3m ../autodata/align/separate_by_domain/no_overlap_sequences/{2}_hmmalign_out_trim.a2m".format(domain_new,
                                                                template,
                                                                out_align)
@@ -21,6 +22,7 @@ def hhalign(domian_list):
         log_file.write("{}\n".format(hhalign_cmd))
         log_file.write("\n")
 
+        #build hmm model with MSA
         hmmbuild_cmd="hmmbuild ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm  ../autodata/align/separate_by_domain/no_overlap_sequences/{0}_hmmalign_out_trim.a2m".format(out_align)
         os.system("wait")
         print("running command line:\n{}".format(hmmbuild_cmd))
@@ -28,24 +30,48 @@ def hhalign(domian_list):
         log_file.write("{}\n".format(hmmbuild_cmd))
         log_file.write("\n")
 
+        #use hmmsearch to search sequences with built hmm model
         hmmsearch_cmd = "hmmsearch --domtblout ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim_domtblout.tsv ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm ../autodata/sequences/uniprot_ec2.1.1.fasta".format(out_align)
         os.system("wait")
         print("running command line:\n{}".format(hmmsearch_cmd))
         os.system(hmmsearch_cmd)
         log_file.write("{}\n".format(hmmsearch_cmd))
         log_file.write("\n")
-        hmmsearch_pdb_cmd = "hmmsearch {0}_hmmalign_out_trim.hmm pdbaa >{0}_pdb.tsv".format(out_align)
+
+        #save sequences got from hmmsearch
+        parse_data.get_fasta_file_from_hmmsearch_hit("../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim_domtblout.tsv".format(out_align),out_align)
+
+        # use hmmalign align searched sequences to MSA
+        hmmalign_cmd = "hmmalign --amino  --outformat clustal ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm ../autodata/sequences/{0}.fasta > ../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/{0}_hmmalign_out.aln".format(
+            out_align)
+        os.system("wait")
+        print("running command line:\n{}".format(hmmalign_cmd))
+        os.system(hmmalign_cmd)
+        log_file.write("{}\n".format(hmmalign_cmd))
+        log_file.write("\n")
+
+        #use hmmsearch for pdb structure wfrom pdbaa
+        hmmsearch_pdb_cmd = "hmmsearch ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm pdbaa > ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_pdb.tsv".format(out_align)
         os.system("wait")
         print("running command line:\n{}".format(hmmsearch_pdb_cmd))
         os.system(hmmsearch_pdb_cmd)
         log_file.write("{}\n".format(hmmsearch_pdb_cmd))
         log_file.write("\n")
         template = out_align
+
+
     print(out_align)
     log_file.close()
     return out_align
 
 def hmmsearch_for_no_overlap_sequence(domains):
+    """
+    This function is to use hmmsearch to search pdb structure against hmm model
+    built by align sequences only hits from one domain to hmm
+
+    :param domains: domain name list["PF08241.15","PF03602.18"...]
+    :return:None
+    """
     for domain in domains:
         print(domain)
         os.system("wait")
