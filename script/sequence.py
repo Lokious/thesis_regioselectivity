@@ -337,12 +337,15 @@ class Sequences():
         :param sequences_file: string, name and path of fasta file
         :return: record_dict
         """
-        record_dict = SeqIO.to_dict(SeqIO.parse(sequences_file, "fasta"))
-        print(len(record_dict))
+
+        record_dict= {rec.id: rec.seq for rec in SeqIO.parse(sequences_file, "fasta")}
+        print("sequence number:{}".format(len(record_dict)))
         #save sequences length
         length_dictionary = {}
         for key in record_dict.keys():
             length = len(record_dict[key])
+            #print(length)
+            #print(record_dict[key])
             if length not in length_dictionary:
                 length_dictionary[length] = 1
             else:
@@ -351,19 +354,28 @@ class Sequences():
         sorted_length_dict = sorted(length_dictionary.items(), key=lambda x: x[1], reverse=True)
         #get the most frequent sequences length, use the first 10 to calculate the sverage length
         print(sorted_length_dict[:20])
-        average=(sum([x[1] for x in sorted_length_dict])/20)
-        print(average)
+        average=(sum([x[0] for x in sorted_length_dict[:20]])/20)
+        print("average length of top 20 length{}".format(average))
         #remove too long and too short sequences
         remove_list = []
         for entry in record_dict.keys():
             length_seq=len(record_dict[entry])
             #if the distance between sequence length and average length larger than 100
-            if abs(length_seq-average)>100:
+            if abs(length_seq-average) > 150:
+                print("remove length {}".format(length_seq))
                 remove_list.append(entry)
 
         for entry in remove_list:
             del record_dict[entry]
-        print(len(record_dict))
+        #print(len(record_dict))
+        #write left sequences to file
+        file=open(sequences_file,"w")
+        for key in record_dict:
+            print(key)
+            print(record_dict[key])
+            file.write(">{}\n".format(key))
+            file.write("{}\n".format(record_dict[key]))
+        print("Finish removing sequences!")
         return record_dict
 
 def main():

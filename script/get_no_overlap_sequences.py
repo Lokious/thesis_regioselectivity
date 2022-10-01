@@ -30,35 +30,47 @@ def hhalign(domian_list):
         log_file.write("{}\n".format(hmmbuild_cmd))
         log_file.write("\n")
 
-        #use hmmsearch to search sequences with built hmm model
+        #use hmmsearch (1) to search sequences with built hmm model
         hmmsearch_cmd = "hmmsearch --domT 15 -T 15 --domtblout ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim_domtblout.tsv ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm ../autodata/sequences/uniprot_ec2.1.1.fasta".format(out_align)
         os.system("wait")
-        print("running command line:\n{}".format(hmmsearch_cmd))
+        print("######running command line:\n{}######".format(hmmsearch_cmd))
         os.system(hmmsearch_cmd)
         log_file.write("{}\n".format(hmmsearch_cmd))
         log_file.write("\n")
 
-        #save sequences got from hmmsearch
-        parse_data.get_fasta_file_from_hmmsearch_hit("../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim_domtblout.tsv".format(out_align),out_align)
-
-        # use hmmalign align searched sequences to MSA
-        hmmalign_cmd = "hmmalign --amino  --outformat clustal ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm ../autodata/sequences/{0}.fasta > ../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/{0}_hmmalign_out.aln".format(
-            out_align)
-        os.system("wait")
-        print("running command line:\n{}".format(hmmalign_cmd))
-        os.system(hmmalign_cmd)
-        log_file.write("{}\n".format(hmmalign_cmd))
-        log_file.write("\n")
-
-        #use hmmsearch for pdb structure wfrom pdbaa
+        #use hmmsearch (2
+        # 0for pdb structure wfrom pdbaa
         hmmsearch_pdb_cmd = "hmmsearch ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm pdbaa > ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_pdb.tsv".format(out_align)
         os.system("wait")
-        print("running command line:\n{}".format(hmmsearch_pdb_cmd))
+        print("######running command line:\n{}######".format(hmmsearch_pdb_cmd))
         os.system(hmmsearch_pdb_cmd)
         log_file.write("{}\n".format(hmmsearch_pdb_cmd))
         log_file.write("\n")
-        template = out_align
 
+        #save sequences got from hmmsearch (1)
+        parse_data.get_fasta_file_from_hmmsearch_hit("../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim_domtblout.tsv".format(out_align),out_align)
+        seq=Sequences()
+        seq.drop_sequences(sequences_file="../autodata/sequences/{}.fasta".format(out_align))
+
+        #add structure sequences to seq file
+        file=open("../autodata/sequences/{}.fasta".format(out_align),"a")
+        structure_seq_entry=open("rcsb_pdb_2FPO_{}.fasta".format(out_align)).readlines()[0].strip(">")
+        structure_seq=open("rcsb_pdb_2FPO_{}.fasta".format(out_align)).readlines()[1]
+        print(structure_seq_entry)
+        print(structure_seq)
+        file.write(">{}".format(structure_seq_entry))
+        file.write("{}".format(structure_seq))
+
+
+        # use hmmalign align searched sequences to MSA
+        hmmalign_cmd = "hmmalign --amino  --outformat --trim clustal ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm ../autodata/sequences/{0}.fasta > ../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/{0}_hmmalign_out_trim.aln".format(
+            out_align)
+        os.system("wait")
+        print("######running command line:\n{}######".format(hmmalign_cmd))
+        os.system(hmmalign_cmd)
+        log_file.write("{}\n".format(hmmalign_cmd))
+        log_file.write("\n")
+        template = out_align
 
     print(out_align)
     log_file.close()
