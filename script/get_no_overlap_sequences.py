@@ -4,6 +4,7 @@ import pandas as pd
 import parse_data
 from sequence import Sequences
 import time
+from Model_class import Model_class
 def hhalign(domian_list):
     """This function is to run hhalign to merge hmm and build new hmm for searching sequences"""
 
@@ -106,10 +107,29 @@ def hhalign(domian_list):
         print(add_dataframe)
         input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
         print(input_dataframe)
+        print("remove NA")
         input_dataframe = input_dataframe.dropna(axis=0, how="any")
         print(input_dataframe)
         input_dataframe.to_csv(
             "../autodata/input_data/active_site/{}_ACS_bit128_3_remove_redundant.csv".format(out_align))
+        #train model
+        mo_del = Model_class()
+        print(input_dataframe)
+        X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
+            input_dataframe)
+        #
+        #     # mo_del.three_D_pca(X_train, y_train, "{}_128_2".format(file))
+        # mo_del.run_PCA(sequence_data, group_label, "{}".format("k_mer_sequences"))
+
+        X_train = X_train.drop(columns=["methyl_type"])
+        X_test = X_test.drop(columns=["methyl_type"])
+        y_train = y_train.drop(columns=["methyl_type"])
+        y_test = y_test.drop(columns=["methyl_type"])
+        # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
+        #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
+        model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
+                                 "active_site_128fg_bi_type_bond3_rf_{}_remove_redundant".format(
+                                     out_align), i=0)
     print(out_align)
     log_file.close()
     return out_align

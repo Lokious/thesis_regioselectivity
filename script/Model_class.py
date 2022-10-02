@@ -872,8 +872,7 @@ class Model_class():
             cm = confusion_matrix(y, y_pre_threshold)
             cm_display = ConfusionMatrixDisplay(cm).plot()
             cm_display.figure_.savefig(
-                'cm_{}_{}.png'.format(threshold, file_name),
-                dpi=300)
+                'cm_{}_{}.png'.format(threshold, file_name),dpi=300)
             plt.title(
                 "RF confusion matrix threshold:{}".format(
                     threshold))
