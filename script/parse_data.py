@@ -578,18 +578,21 @@ def k_mer_encoding(file_name,k):
     align_pd.to_csv("../autodata/protein_encoding/{}_k_mer_encoding_without_align_26_08.csv".format(file_name))
     return align_pd
 
-def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_name:str=None,structure_chain="3rod.pdb_chainA_s001",start:int=0,group:str=""):
+def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_name:str=None,structure_chain="3rod.pdb_chainA_s001",start:int=0,group:str="",file_format="fasta",pdb_name="3rod.pdb"):
     #add properties as features
     seq = Sequences()
-    if input_df != None:
-        print("use input dataframe")
-        input_df=pd.read_csv("../autodata/align/align_seed_sequences_with_structure/{}_active_site_df.csv".format(group),header=0,index_col=0)
+    if input_df!=None:
         print(input_df)
     else:
-        input_df = seq.get_sites_from_alignment(
-            file=file_name,structure_chain=structure_chain,
-            start_pos=start,group=group)
-        print(input_df)
+        try:
+            print("use input dataframe")
+            input_df=pd.read_csv("../autodata/protein_encoding/active_site/{}_active_site_df.csv".format(group),header=0,index_col=0)
+            print(input_df)
+        except:
+            input_df = seq.get_sites_from_alignment(fileformat=file_format,pdb_name=pdb_name,
+                file=file_name,structure_chain=structure_chain,
+                start_pos=start,group=group)
+            print(input_df)
 
 
     properties=['charge', 'volume', 'hydropathy', 'hydrophobicity','similarity_score']
@@ -611,7 +614,7 @@ def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_n
                 col_name = str(col) + pro
                 property_df.loc[i, col_name] = propertites_dictionary[pro]
     print(property_df)
-    property_df.to_csv("../autodata/align/align_seed_sequences_with_structure/{}_AA_properties_encoding.csv".format(group))
+    property_df.to_csv("../autodata/protein_encoding/active_site/{}_AA_properties_encoding.csv".format(group))
     return property_df
 
 def merge_encoding_to_onefile():
@@ -789,7 +792,8 @@ def check_sequences_similarity(fasta_file=""):
 
 
 def main():
-    unittest.main()
+    use_atom_properties_for_sequences_encoding(file_name="../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/PF08241.15PF03602.18/PF08241.15PF03602.18_hmmalign_out_pdb_5WP4.aln",group="PF08241.15PF03602.18",file_format="clustal",start=0, structure_chain="5WP4_1|Chain",pdb_name="5wp4.pdb")
+    #unittest.main()
     #, min_subset_size = 100, max_degree = 4
 
     #upsetplot(seq_domain_df,"ec211_represent_seq")

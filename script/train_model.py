@@ -46,7 +46,7 @@ def main():
         # for file in filename_list:
         #     input_dataframe = pd.read_csv("../autodata/input_data/bit_info/input128fg_dpna_bond3_{}_seed_onehot_encoding.csv.csv".format(file), header=0, index_col=0)
         #     #input_dataframe.dropna(inplace=True)
-        for group in ["O","N"]:
+        for group in ["PF08241.15PF03602.18_ACS"]:
                 input_dataframe=pd.read_csv("../autodata/input_data/active_site/{}_bit128_3.csv".format(group),header=0,index_col=0)
                 print(input_dataframe)
                 X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(input_dataframe)

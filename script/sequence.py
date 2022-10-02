@@ -151,14 +151,19 @@ class Sequences():
 
         Some related problem: https://www.biostars.org/p/401105/
         """
-        file="../autodata/align/align_seed_sequences_with_structure/{}".format(pdb_name)
+        file="../autodata/structure/{}".format(pdb_name)
         if residue_dictionary != {}:
             print("use input residue dictionary")
         else:
             try:
-                residue_dictionary=self.get_active_site_dictionary_from_file("../autodata/align/align_seed_sequences_with_structure/{}_active_site_{}.txt".format(pdb_name.split(".")[0],group))
+                print("../autodata/structure/{}_active_site_{}.txt can not found".format(pdb_name.split(".")[0],group))
+                residue_dictionary=self.get_active_site_dictionary_from_file("../autodata/structure/{}_active_site_{}.txt".format(pdb_name.split(".")[0],group))
             except:
-                raise EOFError ("can not get residue_dictionary from get_active_site_dictionary_from_file function")
+                # try:
+                #     path=input("please input the path of active site file")
+                #     residue_dictionary = self.get_active_site_dictionary_from_file(path)
+                # except:
+                    raise EOFError ("can not get residue_dictionary from get_active_site_dictionary_from_file function")
         # create parser
         parser = PDBParser()
 
@@ -170,12 +175,16 @@ class Sequences():
         active_sites = []
 
         for id in residue_dictionary.keys():
+            #print(id)
             amino_acid = residue_dictionary[id]
             # check the id from the dictionary and id from pdb structure refers
             # to the same amino acid
             if protein_letters_1to3[amino_acid].upper() == chain[id].get_resname().upper():
                 active_sites.append(chain[id])
-
+            else:
+                print("AA in active site file:{}, AA in pdb chainA: {}".format(protein_letters_1to3[amino_acid].upper(),chain[id].get_resname().upper()))
+                print("Warning: The amino acid in active site file is not the same as that from pdb file")
+                active_sites.append(chain[id])
         amino_acide_close_to_active_site={}
         for id1,residue1 in enumerate(active_sites):
             for id2,residue2 in enumerate(residues):
@@ -195,19 +204,24 @@ class Sequences():
                     else:
                         amino_acide_close_to_active_site[residue1.get_id()[1]].append((residue2.get_id()[1],residue2.get_resname(),distance))
 
-        structure_seq_length = 0
+        # structure_seq_length = 0
         for residue in residues:
             if residue.id[0] == ' ':
-                structure_seq_length += 1
+                #can not add to count the length because it does not start at 1
+                # structure_seq_length += 1
                 print(residue.id)
                 print(residue.get_resname())
-        print(structure_seq_length)
+                structure_seq_length = residue.id[1]
+            else:
+
+                break
+        print("length of the sequence: {}".format(structure_seq_length))
         return amino_acide_close_to_active_site, structure_seq_length
 
     def get_sites_from_alignment(self, fileformat="fasta", file="",
                                  active_site_dictionary: dict={},
                                  start_pos: int = 0,
-                                 structure_chain="3rod.pdb_chainA_s001",group:str="") -> pd.DataFrame:
+                                 structure_chain="3rod.pdb_chainA_s001",group:str="",pdb_name="3rod.pdb") -> pd.DataFrame:
         """
         This is the function to get the site close to active site for aligned sequences
 
@@ -219,18 +233,18 @@ class Sequences():
         """
         if active_site_dictionary=={}:
             print("Need active_site_dictionary, creating....")
-            active_site_dictionary,sequence_length =self.get_AA_within_distance_from_structure_file((structure_chain.split("_")[0]),group=group)
+            active_site_dictionary,sequence_length =self.get_AA_within_distance_from_structure_file(pdb_name=pdb_name,group=group)
             print(active_site_dictionary)
 
 
         #read the alignment and save to dataframe
         align = AlignIO.read(file, fileformat)
-        print(align.get_alignment_length())
+        #print(align.get_alignment_length())
         align_array = np.array([list(rec) for rec in align])
         ids = list(rec.id for rec in align)
         align_pd = pd.DataFrame(data=align_array,index=ids)
-        print('Q9KUA0' in list(align_pd.index))
-
+        if fileformat !="fasta":
+            align_pd.replace(".", "-", inplace=True)
         #remove sequences from seed
         for i in align_pd.index:
             if i != structure_chain:
@@ -251,10 +265,13 @@ class Sequences():
         #rest column names to fit the index from author
         index_list=list(align_pd.index)
         align_pd.index=[int(x)+start_pos for x in index_list]
-        print(len(align_pd.columns))
+
+
         align_pd=align_pd.T
         align_pd.replace( np.nan,"-", inplace=True)
-        print('Q9KUA0' in align_pd.index)
+        print("length columns:{}".format(len(align_pd.columns)))
+        print(sequence_length)
+        #print('Q9KUA0' in align_pd.index)
         #  double check the sequences length are the same with the structure chain sequences
         if len(align_pd.columns) != sequence_length:
             raise ValueError("The alignment length is not as same as the structure sequence")
@@ -271,7 +288,7 @@ class Sequences():
 
         for id in ids:
             for column in active_site_pd.columns:
-                print(column)
+                #print(column)
                 aa = align_pd.loc[id,column]
                 active_site_pd.loc[id,column]=aa
         print("active_site pd:")
@@ -280,7 +297,7 @@ class Sequences():
         #drop sites with over 80% gap
         for column in active_site_pd.columns:
             value_count=active_site_pd[column].value_counts()
-            if (value_count["-"]/len(active_site_pd.index)) > 0.8:
+            if (value_count["-"]/len(active_site_pd.index)) > 0.5:
                 print("drop:{}".format(column))
                 active_site_pd.drop(columns=column,inplace=True)
         print(active_site_pd)
@@ -288,8 +305,10 @@ class Sequences():
         count=0
         #construct MSA with amino acids close to active sites
         ##save sequences to fasta file
+        file = open(
+            "../autodata/protein_encoding/active_site/{}_seq_close_to_active_sites.fasta".format(
+                group), "w")
         for seq_id in active_site_pd.index:
-            file = open("../autodata/align/align_seed_sequences_with_structure/{}_seq_close_to_active_sites.fasta".format(group), "a")
             seq= "".join(active_site_pd.loc[seq_id,:].values.tolist())
             #print(seq,seq_id)
             if "-" in seq:
@@ -297,8 +316,9 @@ class Sequences():
             file.write(">{}\n".format(seq_id))
             file.write("{}\n".format(seq))
         print("count:{}".format(count))
+        file.close()
         ##save pd.Dataframe to csv file
-        active_site_pd.to_csv("../autodata/align/align_seed_sequences_with_structure/{}_active_site_df.csv".format(group))
+        active_site_pd.to_csv("../autodata/protein_encoding/active_site/{}_active_site_df.csv".format(group))
         return active_site_pd
 
     def amino_acid_properties(self, amino_acid: str, structure_aa: str) -> dict:
@@ -310,14 +330,22 @@ class Sequences():
         structure_aa: amino acid from the samr position of structure sequence
         :return: properties_dictionary
         """
+
+        structure_aa=structure_aa.upper()
         if len(amino_acid) == 3:
             amino_acid = protein_letters_3to1[amino_acid]
+        else:
+            amino_acid = amino_acid.upper()
         try:
             charge = get_aa2charge().mapping[amino_acid]
             volume = get_aa2volume().mapping[amino_acid]
             hydropathy = get_aa2hydropathy().mapping[amino_acid]
             hydrophobicity = get_aa2mj().mapping[amino_acid]
-            similarity_score = bl.BLOSUM(62)[(amino_acid+structure_aa)]
+            if amino_acid == "-":
+                similarity_score = bl.BLOSUM(62)[("*"+structure_aa)]
+            else:
+                print(amino_acid+structure_aa)
+                similarity_score = bl.BLOSUM(62)[(amino_acid+structure_aa)]
             print(similarity_score)
             properties_dictionary = {"charge": charge, "volume": volume,
                                      "hydropathy": hydropathy,
@@ -325,13 +353,13 @@ class Sequences():
                                      "similarity_score": similarity_score}
         except:
             print("please check input {} in the amino acids list".format(amino_acid))
-            properties_dictionary = {"charge": 0, "volume": 0,
-                                     "hydropathy": 0,
-                                     "hydrophobicity": 0,
-                                     "similarity_score":0}
+            properties_dictionary = {"charge": -1000, "volume": -1000,
+                                     "hydropathy": -1000,
+                                     "hydrophobicity": -1000,
+                                     "similarity_score":-4}
         return properties_dictionary
 
-    def drop_sequences(self,sequences_file=""):
+    def drop_sequences(self,sequences_file="",length=None):
         """This function is to remove too long and too short sequences from fasta file
 
         :param sequences_file: string, name and path of fasta file
@@ -350,18 +378,21 @@ class Sequences():
                 length_dictionary[length] = 1
             else:
                 length_dictionary[length] += 1
-
-        sorted_length_dict = sorted(length_dictionary.items(), key=lambda x: x[1], reverse=True)
-        #get the most frequent sequences length, use the first 10 to calculate the sverage length
-        print(sorted_length_dict[:20])
-        average=(sum([x[0] for x in sorted_length_dict[:20]])/20)
-        print("average length of top 20 length{}".format(average))
+        if length ==None:
+            sorted_length_dict = sorted(length_dictionary.items(), key=lambda x: x[1], reverse=True)
+            #get the most frequent sequences length, use the first 10 to calculate the sverage length
+            print(sorted_length_dict[:20])
+            average=(sum([x[0] for x in sorted_length_dict[:20]])/20)
+            print("average length of top 20 length{}".format(average))
+        else:
+            print("drop sequences whose length are 50 AA longer or shorter than structure sequences")
+            average = length
         #remove too long and too short sequences
         remove_list = []
         for entry in record_dict.keys():
             length_seq=len(record_dict[entry])
             #if the distance between sequence length and average length larger than 100
-            if abs(length_seq-average) > 150:
+            if abs(length_seq-average) > 100:
                 print("remove length {}".format(length_seq))
                 remove_list.append(entry)
 
@@ -371,13 +402,50 @@ class Sequences():
         #write left sequences to file
         file=open(sequences_file,"w")
         for key in record_dict:
-            print(key)
-            print(record_dict[key])
+            # print(key)
+            # print(record_dict[key])
             file.write(">{}\n".format(key))
             file.write("{}\n".format(record_dict[key]))
         print("Finish removing sequences!")
         return record_dict
 
+    def remove_sequences_from_result_of_mmseqs(self,tab_file=".tab",seq_file=".fasta"):
+        """
+        remove high similarity sequences get from mmseqs map
+
+        :param tab_file:
+        :param seq_file:
+        :return:
+        """
+        tab_result= pd.read_csv(tab_file,sep="\t",header=None)
+        tab_result=tab_result.iloc[:, :3]
+        print(tab_result)
+        record_dict= {rec.id: rec.seq for rec in SeqIO.parse(seq_file, "fasta")}
+        #print(record_dict)
+        print("sequence number:{}".format(len(record_dict)))
+
+        remove_list = []
+        keep_list=[]
+        for index in tab_result.index:
+            remove_list.append(tab_result.loc[index,1])
+            keep_list.append(tab_result.loc[index,0])
+        for entry in keep_list:
+            if entry in remove_list:
+                remove_list.remove(entry)
+        remove_list=list(set(remove_list))
+        print(remove_list)
+        for entry in remove_list:
+            del record_dict[entry]
+        print(len(record_dict))
+        #write left sequences to file
+        file=open(seq_file,"w")
+        for key in record_dict:
+            # print(key)
+            # print(record_dict[key])
+            file.write(">{}\n".format(key))
+            file.write("{}\n".format(record_dict[key]))
+        print("Finish removing redundant sequences!")
+        return record_dict
 def main():
 
     #unittest.main()
@@ -389,12 +457,12 @@ def main():
     #     file="../autodata/align/align_seed_sequences_with_structure/O_1vid_align_sequences",structure_chain="1vid.pdb_chainA_s001",
     #     start_pos=4,group="O")
 
-    #seq.get_sites_from_alignment(file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",start_pos=3)
-
+    #seq.get_sites_from_alignment(file="../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/PF08241.15PF03602.18/PF08241.15PF03602.18_hmmalign_out_pdb_5WP4.aln",fileformat="clustal",start_pos=0, structure_chain="5WP4_1|Chain",group="PF08241.15PF03602.18",pdb_name="5wp4.pdb")
+    seq.remove_sequences_from_result_of_mmseqs("../autodata/sequences/alnRes.tab",seq_file="../autodata/sequences/PF08241.15PF03602.18.fasta")
     #seq.group_seq_based_on_methylated_type(inputfile="../autodata/seq_smiles_all.csv",save_directory="../autodata/sequences")
     #seq.remove_duplicate()
     #seq.group_fg_based_on_methylated_type("../autodata/seq_smiles_all.csv",)
 
-    seq.drop_sequences("../autodata/sequences/PF08242.fasta")
+    #seq.drop_sequences("../autodata/sequences/PF08242.fasta")
 if __name__ == "__main__":
     main()
