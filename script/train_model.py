@@ -61,7 +61,7 @@ def main():
                 # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
                 #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
                 model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                                        "active_site_128fg_bi_type_bond3_rf{}_{}".format(d1,group),i=0)
+                                        "active_site_128fg_bi_type_bond3_rf{}_{}".format(d1,"PF08241_PF03602_ACS"),i=0)
 
 if __name__ == "__main__":
     main()

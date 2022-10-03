@@ -82,7 +82,7 @@ def hhalign(domian_list):
         file.write("{}".format(structure_seq))
         file.close()
 
-        # use hmmalign align searched sequences to MSA
+        # use hmmalign align searched sequences to get MSA
         hmmalign_cmd = "hmmalign --amino --outformat clustal ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm ../autodata/sequences/{0}.fasta > ../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/{0}_hmmalign_out_{1}.aln".format(
             out_align,"pdb_5WP4")
         os.system("wait")
@@ -117,9 +117,6 @@ def hhalign(domian_list):
         print(input_dataframe)
         X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
             input_dataframe)
-        #
-        #     # mo_del.three_D_pca(X_train, y_train, "{}_128_2".format(file))
-        # mo_del.run_PCA(sequence_data, group_label, "{}".format("k_mer_sequences"))
 
         X_train = X_train.drop(columns=["methyl_type"])
         X_test = X_test.drop(columns=["methyl_type"])
@@ -129,7 +126,7 @@ def hhalign(domian_list):
         #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
         model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
                                  "active_site_128fg_bi_type_bond3_rf_{}_remove_redundant".format(
-                                     out_align), i=0)
+                                     "PF08241_PF03602_ACS"), i=0)
     print(out_align)
     log_file.close()
     return out_align
@@ -168,9 +165,9 @@ def hmmsearch_for_no_overlap_sequence(domains):
 
 def main():
     #count number of sequences for most frequennt domains
-    # seq_domain_df = parse_data.read_hmmsearch_out(
-    #    "../autodata/align/different_version_pfam/Pfam35.0uniprot_2_1_1_domout.tsv")
-    # domains = parse_data.sepreate_sequence_based_on_domain_without_overlap(seq_domain_df)
+    seq_domain_df = parse_data.read_hmmsearch_out(
+       "../autodata/align/different_version_pfam/Pfam35.0uniprot_2_1_1_domout.tsv")
+    domains = parse_data.sepreate_sequence_based_on_domain_without_overlap(seq_domain_df)
     # for domain in domains:
     #
     #     cmd_hmmfetch ="hmmfetch ../autodata/align/different_version_pfam/Pfam35.0/Pfam-A.hmm {0} > ../autodata/align/{0}.hmm".format(domain)
@@ -185,8 +182,8 @@ def main():
     # print(domains)
     #use hmmsearch for closest pdb structure
     #hmmsearch_for_no_overlap_sequence(domains.copy())
-    domains=["PF08241.15","PF03602.18"]
-    hhalign(domains.copy())
+    # domains=["PF08241.15","PF03602.18"]
+    # hhalign(domains.copy())
     #parse_data.save_sequences_from_hmmscan_result()
 if __name__ == "__main__":
     main()

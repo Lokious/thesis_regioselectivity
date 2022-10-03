@@ -99,6 +99,7 @@ def read_hmmsearch_out(file):
     hmmsearch_df={}
     hmmsearch_df["domain"]=[]
     hmmsearch_df["entry"] = []
+    print(len(hmmsearch_df.keys()))
     for i,line in enumerate(file):
         if line.startswith("#")==False:
             #print(line.split())
@@ -107,7 +108,7 @@ def read_hmmsearch_out(file):
             hmmsearch_df["entry"].append(entry.split("|")[1])
             hmmsearch_df["domain"].append(domain)
     hmmsearch_df=pd.DataFrame(hmmsearch_df,index=range(len(hmmsearch_df["domain"])))
-    #print((hmmsearch_df["domain"].value_counts()[:30]))
+    #print((hmmsearch_df["domain"].value_counts()[:10]))
     return hmmsearch_df
 
 def upsetplot(seq_domain_df,version):

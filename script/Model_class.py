@@ -599,7 +599,7 @@ class Model_class():
         :return: randomforest model
         """
 
-        hyperparameters = {'n_estimators': [500,1000,2000],
+        hyperparameters = {'n_estimators': [500,1000,1500],
                            'max_features': [0.3,0.5,0.7],
                            }
 
@@ -609,7 +609,7 @@ class Model_class():
                              hyperparameters, scoring='roc_auc',
                              cv=3,
                              verbose=3,
-                             n_jobs=14)
+                             n_jobs=20)
 
         ####use MCC as scoring#####
         # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
