@@ -87,6 +87,7 @@ def get_fasta_file_from_hmmsearch_hit( input: typing.Optional[typing.Union[str, 
                 file.write("{}\n".format(seq_entry_df.loc[entry, "Sequence"]))
         else:
             file.close()
+
 def read_hmmsearch_out(file):
     """
 
@@ -99,17 +100,48 @@ def read_hmmsearch_out(file):
     hmmsearch_df={}
     hmmsearch_df["domain"]=[]
     hmmsearch_df["entry"] = []
-    print(len(hmmsearch_df.keys()))
+    hmmsearch_df["domain_length"] = []
+    hmmsearch_df["seq_start_align"]=[]
+    hmmsearch_df["seq_end_align"] = []
+    hmmsearch_df["domain_start_align"]=[]
+    hmmsearch_df["domain_end_align"] = []
+
     for i,line in enumerate(file):
         if line.startswith("#")==False:
             #print(line.split())
             entry = line.split()[0]
             domain = line.split()[4]
+            domain_length = line.split()[5]
             hmmsearch_df["entry"].append(entry.split("|")[1])
             hmmsearch_df["domain"].append(domain)
+            hmmsearch_df["domain_start_align"].append(line.split()[15])
+            hmmsearch_df["domain_end_align"].append(line.split()[16])
+            hmmsearch_df["seq_start_align"].append(line.split()[17])
+            hmmsearch_df["seq_end_align"].append(line.split()[18])
+            hmmsearch_df["domain_length"].append(domain_length)
     hmmsearch_df=pd.DataFrame(hmmsearch_df,index=range(len(hmmsearch_df["domain"])))
+    #print(hmmsearch_df)
     #print((hmmsearch_df["domain"].value_counts()[:10]))
     return hmmsearch_df
+
+def remove_not_fully_aligned_domain(hmmsearch_df:pd.DataFrame=None,hmmsearch_file:str=None,allowed_not_aligned_length:int=0):
+
+
+    print("allowed number of aa NOT aligned in domain sequence: {}".format(allowed_not_aligned_length))
+    remove_row_index = []
+    if hmmsearch_df == None:
+        hmmsearch_df = read_hmmsearch_out(hmmsearch_file)
+    #print(hmmsearch_df)
+    for index in hmmsearch_df.index:
+        if (int(hmmsearch_df.loc[index, "domain_end_align"]) - int(
+                hmmsearch_df.loc[index, "domain_start_align"]) + 1) < (int(
+                hmmsearch_df.loc[
+                    index, "domain_length"]) - allowed_not_aligned_length):
+            remove_row_index.append(index)
+
+    else:
+        hmmsearch_df.drop(index=remove_row_index,inplace=True)
+        print(len(hmmsearch_df.index))
 
 def upsetplot(seq_domain_df,version):
     """
@@ -793,7 +825,10 @@ def check_sequences_similarity(fasta_file=""):
 
 
 def main():
-    use_atom_properties_for_sequences_encoding(file_name="../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/PF08241.15PF03602.18/PF08241.15PF03602.18_hmmalign_out_pdb_5WP4.aln",group="PF08241.15PF03602.18",file_format="clustal",start=0, structure_chain="5WP4_1|Chain",pdb_name="5wp4.pdb")
+    for i in range(10):
+        for j in [3,5,7,9,11,13,15,17,19,21]:
+            remove_not_fully_aligned_domain(hmmsearch_file="../autodata/align/different_version_pfam/Pfam35.0/Bit_Score_{}/uniprot_2_1_1_domout.tsv".format(j),allowed_not_aligned_length=i)
+    #use_atom_properties_for_sequences_encoding(file_name="../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/PF08241.15PF03602.18/PF08241.15PF03602.18_hmmalign_out_pdb_5WP4.aln",group="PF08241.15PF03602.18",file_format="clustal",start=0, structure_chain="5WP4_1|Chain",pdb_name="5wp4.pdb")
     #unittest.main()
     #, min_subset_size = 100, max_degree = 4
 

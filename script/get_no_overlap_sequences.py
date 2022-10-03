@@ -12,7 +12,7 @@ def hhalign(domian_list):
     log_file=open("../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/log_file_hhalign.txt",'a')
     while domian_list:
         domain_new = domian_list.pop(0)
-        out_align = template + domain_new
+        out_align = template.split(".")[0] + domain_new.split(".")[0]
         #use hhalign merge hmm model to MSA
         hhalign_cmd = "hhalign -i ../autodata/align/separate_by_domain/no_overlap_sequences/{0}_hmmalign_out_trim.a2m -t ../autodata/align/separate_by_domain/no_overlap_sequences/{1}_hmmalign_out_trim.a2m -oa3m ../autodata/align/separate_by_domain/no_overlap_sequences/{2}_hmmalign_out_trim.a2m".format(domain_new,
                                                                template,
@@ -50,7 +50,7 @@ def hhalign(domian_list):
 
         #save sequences got from hmmsearch (1)
         parse_data.get_fasta_file_from_hmmsearch_hit("../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim_domtblout.tsv".format(out_align),out_align)
-        seq=Sequences()
+        seq = Sequences()
 
         #remove high similarity sequences
         ##run mmseqs
@@ -112,24 +112,25 @@ def hhalign(domian_list):
         print(input_dataframe)
         input_dataframe.to_csv(
             "../autodata/input_data/active_site/{}_ACS_bit128_3_remove_redundant.csv".format(out_align))
-        #train model
-        mo_del = Model_class()
-        print(input_dataframe)
-        X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
-            input_dataframe)
 
-        X_train = X_train.drop(columns=["methyl_type"])
-        X_test = X_test.drop(columns=["methyl_type"])
-        y_train = y_train.drop(columns=["methyl_type"])
-        y_test = y_test.drop(columns=["methyl_type"])
-        # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
-        #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
-        model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                                 "active_site_128fg_bi_type_bond3_rf_{}_remove_redundant".format(
-                                     "PF08241_PF03602_ACS"), i=0)
-    print(out_align)
-    log_file.close()
-    return out_align
+    #     #train model
+    #     mo_del = Model_class()
+    #     print(input_dataframe)
+    #     X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
+    #         input_dataframe)
+    #
+    #     X_train = X_train.drop(columns=["methyl_type"])
+    #     X_test = X_test.drop(columns=["methyl_type"])
+    #     y_train = y_train.drop(columns=["methyl_type"])
+    #     y_test = y_test.drop(columns=["methyl_type"])
+    #     # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
+    #     #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
+    #     model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
+    #                              "active_site_128fg_bi_type_bond3_rf_{}_remove_redundant".format(
+    #                                  "PF08241_PF03602_ACS"), i=0)
+    # print(out_align)
+    # log_file.close()
+    # return out_align
 
 def hmmsearch_for_no_overlap_sequence(domains):
     """
@@ -162,12 +163,23 @@ def hmmsearch_for_no_overlap_sequence(domains):
         # print("runing: {}".format(cmd3))
         # os.system(cmd3)
 
+def hmmsearch_for_all_domains() ->list :
+    """
+    Run hmmsearch for all sequences from ec2.1.1
 
-def main():
-    #count number of sequences for most frequennt domains
+    :return: list of domains
+    """
+    #hmmsearch uniprot 2.1.1 against all pfamA domains
+    hmmsearch_cmd="bash hmmsearch_different_bit_score.sh"
+    os.system(hmmsearch_cmd)
     seq_domain_df = parse_data.read_hmmsearch_out(
        "../autodata/align/different_version_pfam/Pfam35.0uniprot_2_1_1_domout.tsv")
     domains = parse_data.sepreate_sequence_based_on_domain_without_overlap(seq_domain_df)
+
+    return domains
+def main():
+    #count number of sequences for most frequennt domains
+    domains=hmmsearch_for_all_domains()
     # for domain in domains:
     #
     #     cmd_hmmfetch ="hmmfetch ../autodata/align/different_version_pfam/Pfam35.0/Pfam-A.hmm {0} > ../autodata/align/{0}.hmm".format(domain)
