@@ -227,7 +227,7 @@ class Sequences():
 
         :param fileformat:string, format of input alignment
         :param file:string, path and name of the aligned sequences
-        :param start_pos: int, the starting position of the sequneces compare to the author annnotated index
+        :param start_pos: int, the starting position of the sequneces compare to the author annnotated index(start from 1)
         :return:
 
         """
@@ -265,7 +265,7 @@ class Sequences():
         #rest column names to fit the index from author
         index_list=list(align_pd.index)
         align_pd.index=[int(x)+start_pos for x in index_list]
-
+        print(align_pd)
 
         align_pd=align_pd.T
         align_pd.replace( np.nan,"-", inplace=True)
@@ -273,7 +273,7 @@ class Sequences():
         print(sequence_length)
         #print('Q9KUA0' in align_pd.index)
         #  double check the sequences length are the same with the structure chain sequences
-        if len(align_pd.columns) != sequence_length:
+        if (len(align_pd.columns)+start_pos-1) != sequence_length:
             raise ValueError("The alignment length is not as same as the structure sequence")
 
         #print(align_pd)
@@ -411,7 +411,7 @@ class Sequences():
 
     def remove_sequences_from_result_of_mmseqs(self,tab_file=".tab",seq_file=".fasta"):
         """
-        remove high similarity sequences get from mmseqs map
+        remove high similarity sequences (0.9)get from mmseqs map
 
         :param tab_file:
         :param seq_file:
@@ -424,27 +424,70 @@ class Sequences():
         #print(record_dict)
         print("sequence number:{}".format(len(record_dict)))
 
+        #list of entry will be kept
         remove_list = []
-        keep_list=[]
+        #list of entry will be removed
+        keep_list = []
+        ##NB: if entry1 and entry2 are both possiable to be kept keep entry1###
         for index in tab_result.index:
-            remove_list.append(tab_result.loc[index,1])
-            keep_list.append(tab_result.loc[index,0])
-        for entry in keep_list:
-            if entry in remove_list:
-                remove_list.remove(entry)
+            entry1 = tab_result.loc[index,0]
+            entry2 = tab_result.loc[index,1]
+            if entry1 == entry2:
+                continue
+            #check if entry1 in remove list(similar to at least one entry in keep list)
+            if entry1 not in remove_list:
+                #check if entry1 in keep list(not similar to all entries in keep list)
+                #one in keep, another should be add to remove list
+                if entry1 in keep_list:
+                    if entry2 not in keep_list:
+                        remove_list.append(entry2)
+                    else:
+                        #print(entry1,entry2)
+                        keep_list.remove(entry2)
+                        remove_list.append(entry2)
+                else:
+                    if entry2 in keep_list:
+                         remove_list.append(entry1)
+                    else:
+                        #if both of entry1 and 2 are not in keep list and entry1 not in remove list,
+                        #add entry1 to keep and entry2 to remove
+                        remove_list.append(entry2)
+                        ###this is the one situation add entry1 to keep list
+                        keep_list.append(entry1)
+            else:
+                #becaue if one entry is in remove list, it could not be add to keep,
+                #so do not need to check
+                if entry2 not in remove_list:
+                    if entry2 in keep_list:
+                        continue
+                    else:
+                        ###this is the one situation add entry2 to keep list
+                        keep_list.append(entry2)
+                else:
+                    #both in remove, continue
+                    continue
+
+        # for entry in keep_list:
+        #     if entry in remove_list:
+        #         remove_list.remove(entry)
+        keep_list = list(set(keep_list))
         remove_list=list(set(remove_list))
         print(remove_list)
+        print(keep_list)
         for entry in remove_list:
-            del record_dict[entry]
+            if entry in keep_list:
+                print(entry)
+                print("!!!!!!!!!!!!error!!!!!!!!!!!")
+            #del record_dict[entry]
         print(len(record_dict))
         #write left sequences to file
-        file=open(seq_file,"w")
-        for key in record_dict:
-            # print(key)
-            # print(record_dict[key])
-            file.write(">{}\n".format(key))
-            file.write("{}\n".format(record_dict[key]))
-        print("Finish removing redundant sequences!")
+        # file=open(seq_file,"w")
+        # for key in record_dict:
+        #     # print(key)
+        #     # print(record_dict[key])
+        #     file.write(">{}\n".format(key))
+        #     file.write("{}\n".format(record_dict[key]))
+        # print("Finish removing redundant sequences!")
         return record_dict
 def main():
 
@@ -454,8 +497,8 @@ def main():
     #seq.get_AA_within_distance_from_structure_file()
 
     # seq.get_sites_from_alignment(
-    #     file="../autodata/align/align_seed_sequences_with_structure/O_1vid_align_sequences",structure_chain="1vid.pdb_chainA_s001",
-    #     start_pos=4,group="O")
+    #     file="../autodata/align/align_seed_sequences_with_structure/N_3rod_align_sequences",structure_chain="3rod.pdb_chainA_s001",pdb_name="3rod.pdb",
+    #     start_pos=3,group="N")
 
     #seq.get_sites_from_alignment(file="../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/PF08241.15PF03602.18/PF08241.15PF03602.18_hmmalign_out_pdb_5WP4.aln",fileformat="clustal",start_pos=0, structure_chain="5WP4_1|Chain",group="PF08241.15PF03602.18",pdb_name="5wp4.pdb")
     seq.remove_sequences_from_result_of_mmseqs("../autodata/sequences/alnRes.tab",seq_file="../autodata/sequences/PF08241.15PF03602.18.fasta")
