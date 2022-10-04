@@ -51,7 +51,7 @@ def hhalign(domian_list,bit_score:int=0,not_aligned_length=0):
         log_file.write("\n")
 
         #save sequences got from hmmsearch (1)
-        parse_data.remove_not_fully_aligned_domain(hmmsearch_file="../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim_domtblout_{1}.tsv".format(out_align,bit_score),domain=(out_align+str(bit_score)),allowed_not_aligned_length=not_aligned_length,bit_score=bit_score)
+        parse_data.remove_not_fully_aligned_domain(hmmsearch_file="../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim_domtblout_{1}.tsv".format(out_align,bit_score),domain=out_align,allowed_not_aligned_length=not_aligned_length,bit_score=bit_score)
         seq = Sequences()
 
         #remove high similarity sequences
@@ -221,10 +221,11 @@ def main():
             print("####bit_score = {}#####".format(score))
             seq_number=hhalign(domains.copy(),score,not_aligned_length=j)
             seq_number_df.loc[score,j]=seq_number
+            print(seq_number_df)
     seq_number_df=seq_number_df.astype(int)
     f, ax = plt.subplots(figsize=(20,20))
     ax=sns.heatmap(seq_number_df, annot=True, fmt='d')
     plt.savefig('heatmap.png', dpi=800)
-    #parse_data.save_sequences_from_hmmscan_result()
+
 if __name__ == "__main__":
     main()
