@@ -17,7 +17,7 @@ class TestModelClass(unittest.TestCase):
         self.assertEqual(9, list1[0][0])
         self.assertEqual('ASP', list1[0][1])
         self.assertEqual(int(4.878653-list1[0][2]), 0)
-        self.assertEqual(seq_length,259)
+        self.assertEqual(seq_length,261)
 
     def test1_amino_acid_properties(self):
         """

@@ -10,6 +10,8 @@ includes Rhea-ec_2_1_1.tsv
 """
 import os
 import subprocess
+
+import matplotlib.pyplot as plt
 import pandas as pd
 import typing
 from sys import argv
@@ -20,6 +22,7 @@ from rdkit.Chem.Draw import IPythonConsole
 from rdkit.Chem import Draw, AllChem, rdChemReactions
 #import pikachu
 from upsetplot import plot
+import seaborn as sns
 from molecular_class import Molecule
 import glob
 import dill
@@ -52,6 +55,7 @@ def get_fasta_file_from_hmmsearch_hit( input: typing.Optional[typing.Union[str, 
     if isinstance(input, str):
         hmmsearch_df = read_hmmsearch_out(input)
         print(hmmsearch_df)
+        #default will keep the first, hmmsearch is ordered from more significant to less, so it will keep the most significant one
         hmmsearch_df.drop_duplicates(subset=['entry'], inplace=True)
         seq_entry_df = pd.read_csv("../autodata/rawdata/uniprot-ec2.1.1.tsv",header=0,sep="\t")
         print(seq_entry_df)
@@ -110,6 +114,7 @@ def read_hmmsearch_out(file):
         if line.startswith("#")==False:
             #print(line.split())
             entry = line.split()[0]
+            #print(entry.split("|")[1])
             domain = line.split()[4]
             domain_length = line.split()[5]
             hmmsearch_df["entry"].append(entry.split("|")[1])
@@ -124,7 +129,7 @@ def read_hmmsearch_out(file):
     #print((hmmsearch_df["domain"].value_counts()[:10]))
     return hmmsearch_df
 
-def remove_not_fully_aligned_domain(hmmsearch_df:pd.DataFrame=None,hmmsearch_file:str=None,allowed_not_aligned_length:int=0):
+def remove_not_fully_aligned_domain(hmmsearch_df:pd.DataFrame=None,hmmsearch_file:str=None,allowed_not_aligned_length:int=0,bit_score=0,domain="uniprot_ec_2_1_1"):
 
 
     print("allowed number of aa NOT aligned in domain sequence: {}".format(allowed_not_aligned_length))
@@ -141,8 +146,10 @@ def remove_not_fully_aligned_domain(hmmsearch_df:pd.DataFrame=None,hmmsearch_fil
 
     else:
         hmmsearch_df.drop(index=remove_row_index,inplace=True)
-        print(len(hmmsearch_df.index))
-
+        left_sequences=len(hmmsearch_df.index)
+        print(left_sequences)
+        get_fasta_file_from_hmmsearch_hit(hmmsearch_df,domain="{}_not_align_length{}_bit_score{}".format(domain,allowed_not_aligned_length,bit_score))
+    return left_sequences
 def upsetplot(seq_domain_df,version):
     """
     This is the function for plot the upsetplot for domains and sequences overlap
@@ -825,9 +832,17 @@ def check_sequences_similarity(fasta_file=""):
 
 
 def main():
+    #seq_number_df=pd.DataFrame(index=list(range(10)),columns=[("bit_score" + str(x)) for x in [5,7,9,11,13,15,17,19,21]])
+    seq_number_df = pd.DataFrame(index=list(range(10)),columns=[5,7,9,11,13,15,17,19,21])
     for i in range(10):
-        for j in [3,5,7,9,11,13,15,17,19,21]:
-            remove_not_fully_aligned_domain(hmmsearch_file="../autodata/align/different_version_pfam/Pfam35.0/Bit_Score_{}/uniprot_2_1_1_domout.tsv".format(j),allowed_not_aligned_length=i)
+        for j in [5,7,9,11,13,15,17,19,21]:
+            length=remove_not_fully_aligned_domain(hmmsearch_file="../autodata/align/different_version_pfam/Pfam35.0/Bit_Score_{}/uniprot_2_1_1_domout.tsv".format(j),allowed_not_aligned_length=i,bit_score=j)
+            seq_number_df.loc[i,j] = int(length)
+            print(seq_number_df)
+    seq_number_df=seq_number_df.astype(int)
+    f, ax = plt.subplots(figsize=(20,20))
+    ax=sns.heatmap(seq_number_df, annot=True, fmt='d')
+    plt.savefig('heatmap.png', dpi=800)
     #use_atom_properties_for_sequences_encoding(file_name="../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/PF08241.15PF03602.18/PF08241.15PF03602.18_hmmalign_out_pdb_5WP4.aln",group="PF08241.15PF03602.18",file_format="clustal",start=0, structure_chain="5WP4_1|Chain",pdb_name="5wp4.pdb")
     #unittest.main()
     #, min_subset_size = 100, max_degree = 4

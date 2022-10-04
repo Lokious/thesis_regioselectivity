@@ -481,13 +481,13 @@ class Sequences():
             #del record_dict[entry]
         print(len(record_dict))
         #write left sequences to file
-        # file=open(seq_file,"w")
-        # for key in record_dict:
-        #     # print(key)
-        #     # print(record_dict[key])
-        #     file.write(">{}\n".format(key))
-        #     file.write("{}\n".format(record_dict[key]))
-        # print("Finish removing redundant sequences!")
+        file=open(seq_file,"w")
+        for key in record_dict:
+            # print(key)
+            # print(record_dict[key])
+            file.write(">{}\n".format(key))
+            file.write("{}\n".format(record_dict[key]))
+        print("Finish removing redundant sequences!")
         return record_dict
 def main():
 
