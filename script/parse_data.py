@@ -136,7 +136,7 @@ def remove_not_fully_aligned_domain(hmmsearch_df:pd.DataFrame=None,hmmsearch_fil
     remove_row_index = []
     if hmmsearch_df == None:
         hmmsearch_df = read_hmmsearch_out(hmmsearch_file)
-    #print(hmmsearch_df)
+    print(hmmsearch_df)
     for index in hmmsearch_df.index:
         if (int(hmmsearch_df.loc[index, "domain_end_align"]) - int(
                 hmmsearch_df.loc[index, "domain_start_align"]) + 1) < (int(
@@ -833,16 +833,18 @@ def check_sequences_similarity(fasta_file=""):
 
 def main():
     #seq_number_df=pd.DataFrame(index=list(range(10)),columns=[("bit_score" + str(x)) for x in [5,7,9,11,13,15,17,19,21]])
-    seq_number_df = pd.DataFrame(index=list(range(10)),columns=[5,7,9,11,13,15,17,19,21])
-    for i in range(10):
+    seq_number_df = pd.DataFrame(index=list(range(0,65,5)),columns=[5,7,9,11,13,15,17,19,21])
+    for i in range(0,65,5):
         for j in [5,7,9,11,13,15,17,19,21]:
             length=remove_not_fully_aligned_domain(hmmsearch_file="../autodata/align/different_version_pfam/Pfam35.0/Bit_Score_{}/uniprot_2_1_1_domout.tsv".format(j),allowed_not_aligned_length=i,bit_score=j)
+            print(length)
             seq_number_df.loc[i,j] = int(length)
             print(seq_number_df)
     seq_number_df=seq_number_df.astype(int)
     f, ax = plt.subplots(figsize=(20,20))
     ax=sns.heatmap(seq_number_df, annot=True, fmt='d')
-    plt.savefig('heatmap.png', dpi=800)
+    ax.set(xlabel='Bit score', ylabel='not aligned amino acid (count)')
+    plt.savefig('heatmap_uniprot.png', dpi=800)
     #use_atom_properties_for_sequences_encoding(file_name="../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/PF08241.15PF03602.18/PF08241.15PF03602.18_hmmalign_out_pdb_5WP4.aln",group="PF08241.15PF03602.18",file_format="clustal",start=0, structure_chain="5WP4_1|Chain",pdb_name="5wp4.pdb")
     #unittest.main()
     #, min_subset_size = 100, max_degree = 4

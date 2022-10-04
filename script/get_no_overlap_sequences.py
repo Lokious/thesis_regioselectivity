@@ -214,12 +214,12 @@ def main():
     #hmmsearch_for_no_overlap_sequence(domains.copy())
     domains=["PF08241.15","PF03602.18"]
     bit_score=[5,7,9,11,13,15,17,19,21]
-    number_of_not_aligned_AA=list(range(10))
+    number_of_not_aligned_AA=list(range(0,65,5))
     seq_number_df = pd.DataFrame(index=bit_score,columns=number_of_not_aligned_AA)
     for score in bit_score:
         for j in number_of_not_aligned_AA:
             print("####bit_score = {}#####".format(score))
-            seq_number=hhalign(domains.copy(),score,not_aligned_length=j)
+            seq_number,combined_domains=hhalign(domains.copy(),score,not_aligned_length=j)
             seq_number_df.loc[score,j]=seq_number
             print(seq_number_df)
     seq_number_df=seq_number_df.astype(int)
