@@ -7,7 +7,7 @@ import time
 import seaborn as sns
 import matplotlib.pyplot as plt
 from Model_class import Model_class
-def hhalign(domian_list,bit_score:int=0,not_aligned_length=0):
+def hhalign(domian_list, bit_score:int=0, coverage:float=0):
     """This function is to run hhalign to merge hmm and build new hmm for searching sequences"""
 
     template = domian_list.pop(0)
@@ -51,14 +51,15 @@ def hhalign(domian_list,bit_score:int=0,not_aligned_length=0):
         log_file.write("\n")
 
         #save sequences got from hmmsearch (1)
-        parse_data.remove_not_fully_aligned_domain(hmmsearch_file="../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim_domtblout_{1}.tsv".format(out_align,bit_score),domain=out_align,allowed_not_aligned_length=not_aligned_length,bit_score=bit_score)
+        parse_data.remove_not_fully_aligned_domain(hmmsearch_file="../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim_domtblout_{1}.tsv".format(out_align,bit_score), domain=out_align,
+                                                   coverage=coverage, bit_score=bit_score)
         seq = Sequences()
 
         #remove high similarity sequences
         ##run mmseqs
-        mmseqs_build_database="mmseqs createdb ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}.fasta ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_db --createdb-mode 1".format(out_align,not_aligned_length,bit_score)
-        mmseqs_map = "mmseqs map ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_db ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_db ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_map_result tmp".format(out_align,not_aligned_length,bit_score)
-        mmseqs_covert_to_tab = "mmseqs convertalis ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_db ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_db ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_map_result ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}.tab".format(out_align,not_aligned_length,bit_score)
+        mmseqs_build_database="mmseqs createdb ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}.fasta ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_db --createdb-mode 1".format(out_align, coverage, bit_score)
+        mmseqs_map = "mmseqs map ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_db ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_db ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_map_result tmp".format(out_align, coverage, bit_score)
+        mmseqs_covert_to_tab = "mmseqs convertalis ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_db ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_db ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}_map_result ../autodata/sequences/{0}_not_align_length{1}_bit_score{2}.tab".format(out_align, coverage, bit_score)
         os.system(mmseqs_build_database)
         os.system("wait")
         os.system(mmseqs_map)
@@ -66,12 +67,11 @@ def hhalign(domian_list,bit_score:int=0,not_aligned_length=0):
         os.system(mmseqs_covert_to_tab)
         os.system("wait")
         ## remove sequences
-        seq.remove_sequences_from_result_of_mmseqs(tab_file="../autodata/sequences/{0}_not_align_length{1}_bit_score{2}.tab".format(out_align,not_aligned_length,bit_score), seq_file="../autodata/sequences/{0}_not_align_length{1}_bit_score{2}.fasta".format(out_align,not_aligned_length,bit_score))
-
+        seq.remove_sequences_from_result_of_mmseqs(tab_file="../autodata/sequences/{0}_not_align_length{1}_bit_score{2}.tab".format(out_align, coverage, bit_score), seq_file="../autodata/sequences/{0}_not_align_length{1}_bit_score{2}.fasta".format(out_align, coverage, bit_score))
 
         #drop too long and too short sequences
         seq_dictionary=seq.drop_sequences(
-            sequences_file="../autodata/sequences/{0}_not_align_length{1}_bit_score{2}.fasta".format(out_align,not_aligned_length,bit_score))
+            sequences_file="../autodata/sequences/{0}_not_align_length{1}_bit_score{2}.fasta".format(out_align, coverage, bit_score))
         print("seq number: {}".format(len(seq_dictionary.keys())))
 
         return len(seq_dictionary.keys()),out_align
@@ -79,40 +79,42 @@ def hhalign(domian_list,bit_score:int=0,not_aligned_length=0):
     log_file.close()
     # return out_align
 
-def hmmalign_for_combination_of_domains(out_align,bit_score,not_aligned_length):
+def hmmalign_for_combination_of_domains(out_align, bit_score, coverage, sturcture="pdb_5WP4"):
     """
     Use the choosen bitscore result to build MSA  and for protein encoding
     :param out_align:
     :param bit_score:
     :return:
     """
-    file = open("../autodata/sequences/{0}_not_align_length{1}_bit_score{2}.fasta".format(out_align,not_aligned_length,bit_score), "a")
+    file = open("../autodata/sequences/{0}_not_align_length{1}_bit_score{2}.fasta".format(out_align, coverage, bit_score), "a")
 
     # add structure sequences to seq file
 
     structure_seq_entry = open(
-        "../autodata/sequences/rcsb_pdb_5WP4_{}.fasta".format(
+        "../autodata/sequences/rcsb_{}_{}.fasta".format(sturcture,
             out_align)).readlines()[0].strip(">")
-    structure_seq = open("../autodata/sequences/rcsb_pdb_5WP4_{0}_not_align_length{1}_bit_score{2}.fasta".format(
-        out_align,not_aligned_length,bit_score)).readlines()[1]
+    structure_seq = open("../autodata/sequences/rcsb_{3}_{0}_not_align_length{1}_bit_score{2}.fasta".format(
+        out_align,coverage,bit_score,sturcture)).readlines()[1]
     print(structure_seq_entry)
     print(structure_seq)
     file.write(">{}".format(structure_seq_entry))
     file.write("{}".format(structure_seq))
     file.close()
     # use hmmalign align searched sequences to get MSA
-    hmmalign_cmd = "hmmalign --amino --outformat clustal ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm ../autodata/sequences/rcsb_pdb_5WP4_{0}_not_align_length{3}_bit_score{2}.fasta > ../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/{0}_hmmalign_out_{1}.aln".format(
-        out_align, "pdb_5WP4",bit_score,not_aligned_length)
+    hmmalign_cmd = "hmmalign --amino --outformat clustal ../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/{0}_hmmalign_out_trim.hmm ../autodata/sequences/rcsb_{1}_{0}_not_align_length{3}_bit_score{2}.fasta > ../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/{0}_hmmalign_out_{1}.aln".format(
+        out_align, sturcture,bit_score,coverage)
     os.system("wait")
     print("######running command line:\n{}######".format(hmmalign_cmd))
     os.system(hmmalign_cmd)
 
+def protein_encoding_and_trainning(out_align,sturcture,structure_chain="5WP4_1|Chain",pdb_name="5wp4.pdb"):
+
     # create protein encoding dataframe
     parse_data.use_atom_properties_for_sequences_encoding(
-        file_name="../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/{}_hmmalign_out_pdb_5WP4.aln".format(
-            out_align),
+        file_name="../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/{}_hmmalign_out_{}.aln".format(
+            out_align,sturcture),
         group=out_align, file_format="clustal", start=1,
-        structure_chain="5WP4_1|Chain", pdb_name="5wp4.pdb")
+        structure_chain=structure_chain, pdb_name=pdb_name)
     # create input dataframe
     X = pd.read_csv(
         "../autodata/fingerprint/fingerprint_bit128_radius3_all_data_drop_atom_19_09.csv",
@@ -146,8 +148,8 @@ def hmmalign_for_combination_of_domains(out_align,bit_score,not_aligned_length):
     # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
     #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
     model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                             "active_site_128fg_bi_type_bond3_rf_{}_remove_redundant".format(
-                                 "PF08241_PF03602_ACS"), i=0)
+                             "active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant".format(
+                                 out_align), i=0)
 
 
 def hmmsearch_for_no_overlap_sequence(domains):
@@ -192,10 +194,30 @@ def hmmsearch_for_all_domains() ->list :
     os.system(hmmsearch_cmd)
     seq_domain_df = parse_data.read_hmmsearch_out(
        "../autodata/align/different_version_pfam/Pfam35.0uniprot_2_1_1_domout.tsv")
-    domains = parse_data.sepreate_sequence_based_on_domain_without_overlap(seq_domain_df)
+    domains,seq_df = parse_data.sepreate_sequence_based_on_domain_without_overlap(seq_domain_df)
 
     return domains
+
+def align_PF08241_PF01795_domain():
+    domains=["PF08241.15","PF01795.22"]
+
+    bit_score=[5,7,9,11,13,15,17,19,21]
+    coverage=[round(x*0.1,2) for x in list(range(1,11,1))]
+    seq_number_df = pd.DataFrame(index=bit_score,columns=coverage)
+    for score in bit_score:
+        for j in coverage:
+            print("####bit_score = {}#####".format(score))
+            seq_number,combined_domains=hhalign(domains.copy(), score,
+                                                coverage=j)
+            seq_number_df.loc[score,j]=seq_number
+            print(seq_number_df)
+    seq_number_df=seq_number_df.astype(int)
+    f, ax = plt.subplots(figsize=(20,20))
+    ax=sns.heatmap(seq_number_df, annot=True, fmt='d')
+    plt.savefig('heatmap.png', dpi=800)
+
 def main():
+    align_PF08241_PF01795_domain()
     #count number of sequences for most frequennt domains
     #domains=hmmsearch_for_all_domains()
     # for domain in domains:
@@ -212,20 +234,21 @@ def main():
     # print(domains)
     #use hmmsearch for closest pdb structure
     #hmmsearch_for_no_overlap_sequence(domains.copy())
-    domains=["PF08241.15","PF03602.18"]
-    bit_score=[5,7,9,11,13,15,17,19,21]
-    number_of_not_aligned_AA=list(range(0,65,5))
-    seq_number_df = pd.DataFrame(index=bit_score,columns=number_of_not_aligned_AA)
-    for score in bit_score:
-        for j in number_of_not_aligned_AA:
-            print("####bit_score = {}#####".format(score))
-            seq_number,combined_domains=hhalign(domains.copy(),score,not_aligned_length=j)
-            seq_number_df.loc[score,j]=seq_number
-            print(seq_number_df)
-    seq_number_df=seq_number_df.astype(int)
-    f, ax = plt.subplots(figsize=(20,20))
-    ax=sns.heatmap(seq_number_df, annot=True, fmt='d')
-    plt.savefig('heatmap.png', dpi=800)
+    # domains=["PF08241.15"," PF01795.22"]
+    # bit_score=[5,7,9,11,13,15,17,19,21]
+    # coverage=[round(x*0.1,2) for x in list(range(1,11,1))]
+    # seq_number_df = pd.DataFrame(index=bit_score,columns=coverage)
+    # for score in bit_score:
+    #     for j in coverage:
+    #         print("####bit_score = {}#####".format(score))
+    #         seq_number,combined_domains=hhalign(domains.copy(), score,
+    #                                             coverage=j)
+    #         seq_number_df.loc[score,j]=seq_number
+    #         print(seq_number_df)
+    # seq_number_df=seq_number_df.astype(int)
+    # f, ax = plt.subplots(figsize=(20,20))
+    # ax=sns.heatmap(seq_number_df, annot=True, fmt='d')
+    # plt.savefig('heatmap.png', dpi=800)
 
 if __name__ == "__main__":
     main()
