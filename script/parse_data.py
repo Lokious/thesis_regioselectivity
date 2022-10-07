@@ -148,7 +148,7 @@ def remove_not_fully_aligned_domain(hmmsearch_df:pd.DataFrame=None, hmmsearch_fi
         hmmsearch_df.drop(index=remove_row_index,inplace=True)
         left_sequences_number = len(hmmsearch_df.index)
         #print(left_sequences_number)
-        get_fasta_file_from_hmmsearch_hit(hmmsearch_df, domain="{}_not_align_length{}_bit_score{}".format(domain, coverage, bit_score))
+        get_fasta_file_from_hmmsearch_hit(hmmsearch_df, domain="{}_coverage{}_bit_score{}".format(domain, coverage, bit_score))
     return left_sequences_number,hmmsearch_df
 
 def upsetplot(seq_domain_df,version):
@@ -814,36 +814,66 @@ def try_different_coverage():
             length,hmmdf=remove_not_fully_aligned_domain(hmmsearch_file="../autodata/align/different_version_pfam/Pfam35.0/Bit_Score_{}/uniprot_2_1_1_domout.tsv".format(j),
                                                          coverage=i, bit_score=j)
             print(length)
-            domains,seq_df=sepreate_sequence_based_on_domain_without_overlap(hmmdf)
-            domain_counts=seq_df["domain"].value_counts()[:6]
-            print(domain_counts)
-            print(domain_counts.tolist())
-            axs[row,column].bar(x=domain_counts.index,height=domain_counts.tolist())
-            axs[row, column].set_title("bitscore:{},coverage:{}".format(j,i),fontsize=8)
-            # axs[row, column].set_xticks(fontsize=6)
-            # axs[row, column].set_yticks(fontsize=6)
 
-            #color different domain in different color
-            if "PF08241.15" in domain_counts.index:
-                pos1 = domain_counts.index.get_loc("PF08241.15")
-                axs[row, column].patches[pos1].set_facecolor('salmon')
-            if "PF03602.18" in domain_counts.index:
-                pos2 = domain_counts.index.get_loc("PF03602.18")
-                axs[row, column].patches[pos2].set_facecolor('olivedrab')
-            plt.rc('xtick',labelsize=3)
-            # plt.rc('ytick', labelsize=6)
-            #plt.rc('font',size=3)
-            print(dir(axs[row, column]))
-            seq_number_df.loc[i,j] = int(length)
+            seq = Sequences()
+            coverage = i
+            bit_score = j
+            out_align = "uniprot_ec_2_1_1"
+            # # remove high similarity sequences
+            # ##run mmseqs
+            # mmseqs_build_database = "mmseqs createdb ../autodata/sequences/{0}_coverage{1}_bit_score{2}.fasta ../autodata/sequences/{0}_coverage{1}_bit_score{2}_db --createdb-mode 1".format(
+            #     out_align, coverage, bit_score)
+            # mmseqs_map = "mmseqs map ../autodata/sequences/{0}_coverage{1}_bit_score{2}_db ../autodata/sequences/{0}_coverage{1}_bit_score{2}_db ../autodata/sequences/{0}_coverage{1}_bit_score{2}_map_result tmp".format(
+            #     out_align, coverage, bit_score)
+            # mmseqs_covert_to_tab = "mmseqs convertalis ../autodata/sequences/{0}_coverage{1}_bit_score{2}_db ../autodata/sequences/{0}_coverage{1}_bit_score{2}_db ../autodata/sequences/{0}_coverage{1}_bit_score{2}_map_result ../autodata/sequences/{0}_coverage{1}_bit_score{2}.tab".format(
+            #     out_align, coverage, bit_score)
+            # os.system(mmseqs_build_database)
+            # os.system("wait")
+            # os.system(mmseqs_map)
+            # os.system("wait")
+            # os.system(mmseqs_covert_to_tab)
+            # os.system("wait")
+            # ## remove sequences
+            # seq.remove_sequences_from_result_of_mmseqs(
+            #     tab_file="../autodata/sequences/{0}_coverage{1}_bit_score{2}.tab".format(
+            #         out_align, coverage, bit_score),
+            #     seq_file="../autodata/sequences/{0}_coverage{1}_bit_score{2}.fasta".format(
+            #         out_align, coverage, bit_score))
+            #
+            # # drop too long and too short sequences
+            # seq_dictionary = seq.drop_sequences(
+            #     sequences_file="../autodata/sequences/{0}_coverage{1}_bit_score{2}.fasta".format(
+            #         out_align, coverage, bit_score))
+            # print("seq number: {}".format(len(seq_dictionary.keys())))
+            #
+            # domains,seq_df=sepreate_sequence_based_on_domain_without_overlap(hmmdf)
+            # domain_counts=seq_df["domain"].value_counts()[:6]
+            # print(domain_counts)
+            # print(domain_counts.tolist())
+            # axs[row,column].bar(x=domain_counts.index,height=domain_counts.tolist())
+            # axs[row, column].set_title("bitscore:{},coverage:{}".format(j,i),fontsize=8)
+            #
+            # #color different domain in different color
+            # if "PF08241.15" in domain_counts.index:
+            #     pos1 = domain_counts.index.get_loc("PF08241.15")
+            #     axs[row, column].patches[pos1].set_facecolor('salmon')
+            # if "PF03602.18" in domain_counts.index:
+            #     pos2 = domain_counts.index.get_loc("PF03602.18")
+            #     axs[row, column].patches[pos2].set_facecolor('olivedrab')
+            # plt.rc('xtick',labelsize=3)
+            #
+            # print(dir(axs[row, column]))
+            # seq_number_df.loc[i,j] = int(len(seq_dictionary.keys()))
             #print(seq_number_df)
-    plt.savefig("barplot.pdf", dpi=10000)
-    plt.close()
+            seq_number_df.loc[i, j] = int(length)
+    # plt.savefig("barplot.pdf", dpi=10000)
+    # plt.close()
     seq_number_df=seq_number_df.astype(int)
     f, ax = plt.subplots(figsize=(20,20))
 
     ax=sns.heatmap(seq_number_df, annot=True, fmt='d')
     ax.set(xlabel='Bit score', ylabel='coverage')
-    plt.savefig('heatmap_uniprot.png', dpi=800)
+    plt.savefig('heatmap_uniprot_removeredundant.png', dpi=800)
 # def merge_uniprot_emebeding():
 #     file_list = ["PF08241","PF05175",  "PF08242", "PF13489", "PF13649",
 #                  "PF13847"]
