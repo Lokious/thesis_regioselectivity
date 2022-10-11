@@ -323,11 +323,11 @@ class Model_class():
                     print("somethingwrong with this index{}".format(index))
                     continue
         if drop_atoms:
-            input_dataframe.to_csv("../autodata/fingerprint_bit{}_radius{}_{}.csv".format(num_bits,radius,file_name))
+            input_dataframe.to_csv("../autodata/fingerprint/fingerprint_bit{}_radius{}_{}.csv".format(num_bits,radius,file_name))
             with open("../autodata/fingerprint_bit{}_radius{}_{}".format(num_bits,radius,file_name), "wb") as dill_file:
                 dill.dump(input_dataframe, dill_file)
         else:
-            input_dataframe.to_csv("../autodata/fingerprint_bit{}_radius{}_{}.csv".format(num_bits,radius,file_name))
+            input_dataframe.to_csv("../autodata/fingerprint/fingerprint_bit{}_radius{}_{}.csv".format(num_bits,radius,file_name))
             with open("../autodata/fingerprint_bit{}_radius{}_{}".format(num_bits,radius,file_name), "wb") as dill_file:
                 dill.dump(input_dataframe, dill_file)
         return input_dataframe
@@ -599,7 +599,7 @@ class Model_class():
         :return: randomforest model
         """
 
-        hyperparameters = {'n_estimators': [500,1000,1500],
+        hyperparameters = {'n_estimators': [500,1000,2000],
                            'max_features': [0.3,0.5,0.7],
                            }
 
@@ -623,14 +623,15 @@ class Model_class():
         threshold_train = self.show_roc(rf_cv.best_estimator_, X_train, y_train, (file_name+"train"))
         #roc for test data
         threshold_test = self.show_roc(rf_cv.best_estimator_, X_test, y_test, (file_name + "test"))
+
+        #confusion matrix for train
         self.cm_threshold(threshold_train, X_train, y_train, rf_cv.best_estimator_, (file_name+"train"))
         # self.cm_threshold(0.5, X_train, y_train, rf_cv.best_estimator_,
         #              (file_name + "train"))
-        cm_matrix=self.cm_threshold(threshold_test, X_test, y_test, rf_cv.best_estimator_, (file_name+"test"))
-        # self.cm_threshold(0.5, X_test, y_test, rf_cv.best_estimator_,
-        #              (file_name + "test (use train threshold)"))
+        #self.cm_threshold(threshold_test, X_test, y_test, rf_cv.best_estimator_, (file_name+"test"))
+        cm_matrix=self.cm_threshold(threshold_train, X_test, y_test, rf_cv.best_estimator_,
+                     (file_name + "test (same as train threshold)"))
 
-        #lineplot the roc score with differnt hyparameters
 
         print(rf_cv.cv_results_)
         sns.lineplot(y=rf_cv.cv_results_["mean_test_score"],
@@ -643,14 +644,17 @@ class Model_class():
         plt.savefig("../autodata/separate_seed_result/Accuracy with different estimators and features for RF model_{}".format(file_name))
         plt.close()
         #plt.show()
+
+        #feature importance
         fi = pd.DataFrame(data=rf_cv.best_estimator_.feature_importances_, index=X_train.columns,
                           columns=['Importance']) \
             .sort_values(by=['Importance'], ascending=False)
 
         #And visualize
-        sns.barplot(data=fi.head(20), x="Importance", y=(fi.head(20)).index).set_title(
+        sns.barplot(data=fi.head(30), x="Importance", y=(fi.head(30)).index).set_title(
             "feature importance for RF model")
-        sns.set(rc={'figure.figsize': (16, 16)})
+        sns.set(font_scale=2)
+        sns.set(rc={'figure.figsize': (20,20)})
         #fig = ax.get_figure()
         plt.savefig('../autodata/separate_seed_result/trainmodel_output_figure/feature_importance{}.png'.format(file_name))
         plt.close()
@@ -774,12 +778,6 @@ class Model_class():
             "Accuracy with different estimators and features for SVC model")
         #plt.savefig("../Accuracy with different estimators and features for SVC model_{}".format(file_name))
 
-    def svc_linear(self):
-        from sklearn.svm import LinearSVC
-        from sklearn.pipeline import make_pipeline
-        from sklearn.preprocessing import StandardScaler
-        from sklearn.datasets import make_classification
-
     def save_result_tofile(self,rf,X_test, y_test,cm_matrix,file_name=""):
         """
 
@@ -794,13 +792,16 @@ class Model_class():
         y_probs = rf.predict_proba(X_test)
         # keep probabilities for the positive outcome only
         yhat = y_probs[:, 1]
-        accuracy = accuracy_score(y_test, y_pred)
+        accuracy_score_function = accuracy_score(y_test, y_pred)
         mcc_score = matthews_corrcoef(y_test, y_pred)
-        roc_score=roc_auc_score(y_true=y_test,y_score=yhat)
+        roc_score = roc_auc_score(y_true=y_test,y_score=yhat)
+
         TN = cm_matrix[0][0]
         FP = cm_matrix[0][1]
         FN = cm_matrix[1][0]
         TP = cm_matrix[1][1]
+
+        accuracy = ((TP + TN) / (TP + TN + FP + FN))
         print("TP:{}".format(TP))
         print("FP:{}".format(FP))
         print("FN:{}".format(FN))
@@ -813,7 +814,8 @@ class Model_class():
             "../autodata/separate_seed_result/{}prediction_summary.txt".format(
                 file_name), "a")
         file1.write("The following is the result for {}:".format(file_name))
-        file1.write("best parameters:{}".format(rf.best_params_))
+        file1.write("best parameters:{}\n".format(rf.best_params_))
+        file1.write("accuracy_score: {}\n".format(accuracy_score_function))
         file1.write("accuracy: {}\n".format(accuracy))
         file1.write("sensitivity : {}\n".format(sensitivity))
         file1.write("specificity : {}\n".format(specificity))
@@ -843,7 +845,7 @@ class Model_class():
         display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr,
                                           roc_auc=roc_auc).plot()
         plt.title('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
-        display.figure_.savefig("../autodata/separate_seed_result/RF ROC_curve_{}_data".format(file_name))
+        display.figure_.savefig("../autodata/separate_seed_result/RF_ROC_curve_{}_data".format(file_name))
         #plt.show()
         plt.close()
 
@@ -855,7 +857,7 @@ class Model_class():
         )
         precision_recall_figure = display.ax_.set_title("Precision-Recall curve")
         display.figure_.savefig(
-            "../autodata/separate_seed_result/RF precision_recall_figure _{}_data".format(
+            "../autodata/separate_seed_result/RF_precision_recall_figure_{}_data".format(
                 file_name))
         #plt.show()
         plt.close()
@@ -871,14 +873,15 @@ class Model_class():
         else:
             cm = confusion_matrix(y, y_pre_threshold)
             cm_display = ConfusionMatrixDisplay(cm).plot()
-            cm_display.figure_.savefig(
-                'cm_{}_{}.png'.format(threshold, file_name),dpi=300)
+            plt.rc('font', labelsize=10)
+            # cm_display.figure_.savefig(
+            #     'cm_{}_{}.png'.format(threshold, file_name),dpi=300)
             plt.title(
                 "RF confusion matrix threshold:{}".format(
                     threshold))
             cm_display.figure_.savefig(
                 '../autodata/separate_seed_result/cm_threshold{}_{}.png'.format(
-                    threshold, file_name), dpi=300)
+                    threshold, file_name), dpi=400)
             # plt.show()
             plt.close()
         return cm
@@ -1080,7 +1083,7 @@ class Model_class():
 
         return train
 
-    def create_similarity_dictionary(self,file="../autodata\sequences\S_result_db.m8"):
+    def create_similarity_dictionary(self,file="../autodata/sequences/all_seq_smilarity_result.tab"):
         """
         This is the function to get the similarity dictionary
 
@@ -1103,7 +1106,7 @@ class Model_class():
 
         print(pd_result_mmseqs)
         print(len(pd_result_mmseqs.index))
-        count = (pd_result_mmseqs['identity'] > 0.5).sum()
+        count = (pd_result_mmseqs['identity'] > 0.8).sum()
         print(count)
         similarity_dictionary = {}
         for i in pd_result_mmseqs.index:
@@ -1111,7 +1114,7 @@ class Model_class():
             entry2 = pd_result_mmseqs.loc[i,"Entry2"]
             identity = pd_result_mmseqs.loc[i,"identity"]
             # save in the dictionary idf identity larger than 0.5
-            if identity >= 0.5:
+            if identity >= 0.8:
                 if entry1 not in similarity_dictionary.keys():
                     similarity_dictionary[entry1]=[entry2,identity]
                 else:
@@ -1125,14 +1128,13 @@ class Model_class():
 
 
 def main():
-    # unittest.main()
     model=Model_class()
-    model.check_file_exist("../autodata/seq_smiles_all_script.csv","../autodata/diction_atom_all")
+    model.check_file_exist("../autodata/seq_smiles_all.csv","../autodata/diction_atom_all")
     data_with_site = pd.read_csv("../autodata/seq_smiles_all.csv",
                                  header=0, index_col=0)
     with open('../autodata/diction_atom_all', 'rb') as file1:
         diction_atom = dill.load(file1)
-    model.save_fingerprints_to_dataframe(data_with_site, diction_atom,128,3, drop_atoms=True,file_name="all_data_drop_atom_19_09")
+    model.save_fingerprints_to_dataframe(data_with_site, diction_atom,1024,3, drop_atoms=True,file_name="all_data")
 
 if __name__ == "__main__":
     main()

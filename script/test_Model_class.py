@@ -40,12 +40,17 @@ class TestModel_class(unittest.TestCase):
     #     self.model.create_similarity_matrix()
 
     def test6_use_less_similar_data_for_test(self):
+        """
+        This test take around 5 to 10 min 
+        :return:
+        """
         input = pd.read_csv(
             "../autodata/input_data/input128fg_bond3_S_k_mer.csv", header=0,
             index_col=0)
 
         X_train, X_test, Y_train, Y_test=self.model.use_less_similar_data_for_test(input,num_bit=128)
-
+        print(X_test)
+        print(Y_test)
 def main():
     unittest.main()
     print(0)

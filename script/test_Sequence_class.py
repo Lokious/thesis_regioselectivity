@@ -31,6 +31,10 @@ class TestModelClass(unittest.TestCase):
         self.assertEqual(properties["hydrophobicity"] - 2.91, 0)
         self.assertEqual(properties["similarity_score"] - 7.0, 0)
 
+    def test2_remove_sequences_from_result_of_mmseqs(self):
+        self.seq.remove_sequences_from_result_of_mmseqs(
+            "../autodata/sequences/alnRes.tab",
+            seq_file="../autodata/sequences/PF08241.15PF03602.18.fasta")
 
 def main():
     unittest.main()

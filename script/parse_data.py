@@ -117,7 +117,11 @@ def read_hmmsearch_out(file):
             #print(entry.split("|")[1])
             domain = line.split()[4]
             domain_length = line.split()[5]
-            hmmsearch_df["entry"].append(entry.split("|")[1])
+            if "|" in entry:
+                #if use filtered uniprot fasta file, there will be no descriptions
+                hmmsearch_df["entry"].append(entry.split("|")[1])
+            else:
+                hmmsearch_df["entry"].append(entry)
             hmmsearch_df["domain"].append(domain)
             hmmsearch_df["domain_start_align"].append(line.split()[15])
             hmmsearch_df["domain_end_align"].append(line.split()[16])
@@ -811,7 +815,7 @@ def try_different_coverage():
     fig,axs=plt.subplots(10,9,figsize=(80,80))
     for row,i in enumerate(coverages):
         for column,j in enumerate([5,7,9,11,13,15,17,19,21]):
-            length,hmmdf=remove_not_fully_aligned_domain(hmmsearch_file="../autodata/align/different_version_pfam/Pfam35.0/Bit_Score_{}/uniprot_2_1_1_domout.tsv".format(j),
+            length,hmmdf=remove_not_fully_aligned_domain(hmmsearch_file="../autodata/align/separate_by_domain/no_overlap_sequences/hhalign/PF08241PF01795_hmmalign_out_trim_domtblout_{}.tsv".format(j),
                                                          coverage=i, bit_score=j)
             print(length)
 
@@ -873,7 +877,7 @@ def try_different_coverage():
 
     ax=sns.heatmap(seq_number_df, annot=True, fmt='d')
     ax.set(xlabel='Bit score', ylabel='coverage')
-    plt.savefig('heatmap_uniprot_removeredundant.png', dpi=800)
+    plt.savefig('heatmap_PF08241PF01795_removeredundant.png', dpi=800)
 # def merge_uniprot_emebeding():
 #     file_list = ["PF08241","PF05175",  "PF08242", "PF13489", "PF13649",
 #                  "PF13847"]

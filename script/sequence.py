@@ -122,7 +122,8 @@ class Sequences():
         try:
             acs_dataframe = pd.read_table(file, header=0, comment="#",
                                           index_col="auth")
-            print(acs_dataframe)
+            print("acs_dataframe")
+            print(acs_dataframe.columns)
         except EOFError:
             print("please check file exist and in correct format")
         # for given index_col, either given as string name or column index.
@@ -156,7 +157,7 @@ class Sequences():
             print("use input residue dictionary")
         else:
             try:
-                print("../autodata/structure/{}_active_site_{}.txt can not found".format(pdb_name.split(".")[0],group))
+                print("get residue_dictionary from ../autodata/structure/{}_active_site_{}.txt ".format(pdb_name.split(".")[0],group))
                 residue_dictionary=self.get_active_site_dictionary_from_file("../autodata/structure/{}_active_site_{}.txt".format(pdb_name.split(".")[0],group))
             except:
                 # try:
@@ -175,7 +176,7 @@ class Sequences():
         active_sites = []
 
         for id in residue_dictionary.keys():
-            #print(id)
+            print(id)
             amino_acid = residue_dictionary[id]
             # check the id from the dictionary and id from pdb structure refers
             # to the same amino acid
@@ -233,11 +234,14 @@ class Sequences():
         """
         if active_site_dictionary=={}:
             print("Need active_site_dictionary, creating....")
-            active_site_dictionary,sequence_length =self.get_AA_within_distance_from_structure_file(pdb_name=pdb_name,group=group)
+            #split and remove the bit score and coverage
+            group_1=group.split("_")[0]
+            active_site_dictionary,sequence_length =self.get_AA_within_distance_from_structure_file(pdb_name=pdb_name,group=group_1)
             print(active_site_dictionary)
 
 
         #read the alignment and save to dataframe
+        print("read alignment from: {}".format(file))
         align = AlignIO.read(file, fileformat)
         #print(align.get_alignment_length())
         align_array = np.array([list(rec) for rec in align])
@@ -270,6 +274,7 @@ class Sequences():
         align_pd=align_pd.T
         align_pd.replace( np.nan,"-", inplace=True)
         print("length columns:{}".format(len(align_pd.columns)))
+        print(len(align_pd.columns)+start_pos-1)
         print(sequence_length)
         #print('Q9KUA0' in align_pd.index)
         #  double check the sequences length are the same with the structure chain sequences
@@ -280,10 +285,13 @@ class Sequences():
         #create dataframe for saving the site close to active sites
         active_site_pd=pd.DataFrame(index=ids)
         #print(active_site_pd)
+
+        print("only keep site close to active site")
         for key_acs in active_site_dictionary.keys():
             for item_tuple in active_site_dictionary[key_acs]:
                 #activesite_closeAA
                 columnname=item_tuple[0]
+
                 active_site_pd[columnname]=["NA"]*len(ids)
 
         for id in ids:
@@ -297,9 +305,11 @@ class Sequences():
         #drop sites with over 80% gap
         for column in active_site_pd.columns:
             value_count=active_site_pd[column].value_counts()
-            if (value_count["-"]/len(active_site_pd.index)) > 0.5:
-                print("drop:{}".format(column))
-                active_site_pd.drop(columns=column,inplace=True)
+            if "-" in value_count:
+                print("drop position which has over 50% gaps")
+                if (value_count["-"]/len(active_site_pd.index)) > 0.5:
+                    print("drop:{}".format(column))
+                    active_site_pd.drop(columns=column,inplace=True)
         print(active_site_pd)
 
         count=0
@@ -467,17 +477,14 @@ class Sequences():
                     #both in remove, continue
                     continue
 
-        # for entry in keep_list:
-        #     if entry in remove_list:
-        #         remove_list.remove(entry)
+
         keep_list = list(set(keep_list))
         remove_list=list(set(remove_list))
-        print(remove_list)
-        print(keep_list)
+
         for entry in remove_list:
             if entry in keep_list:
                 print(entry)
-                print("!!!!!!!!!!!!error!!!!!!!!!!!")
+                raise ValueError("OVERLAP BETWEEN KEEP AND REMOVE LIST!!")
             #del record_dict[entry]
         print(len(record_dict))
         #write left sequences to file
