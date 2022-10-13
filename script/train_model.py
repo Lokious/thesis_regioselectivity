@@ -46,22 +46,24 @@ def main():
         # for file in filename_list:
         #     input_dataframe = pd.read_csv("../autodata/input_data/bit_info/input128fg_dpna_bond3_{}_seed_onehot_encoding.csv.csv".format(file), header=0, index_col=0)
         #     #input_dataframe.dropna(inplace=True)
-        for group in ["PF08241.15PF03602.18_ACS"]:
-                input_dataframe=pd.read_csv("../autodata/input_data/active_site/{}_bit128_3.csv".format(group),header=0,index_col=0)
-                print(input_dataframe)
-                X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(input_dataframe)
-                #
-                #     # mo_del.three_D_pca(X_train, y_train, "{}_128_2".format(file))
-                #mo_del.run_PCA(sequence_data, group_label, "{}".format("k_mer_sequences"))
 
-                X_train = X_train.drop(columns=["methyl_type"])
-                X_test = X_test.drop(columns=["methyl_type"])
-                y_train = y_train.drop(columns=["methyl_type"])
-                y_test = y_test.drop(columns=["methyl_type"])
-                # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
-                #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
-                model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                                        "active_site_128fg_bi_type_bond3_rf{}_{}".format(d1,"PF08241_PF03602_ACS"),i=0)
+        input_dataframe=pd.read_csv("../autodata/input_data/active_site/PF08241PF01795_bit_score15_coverage0.8_ACS_bit128_3_remove_redundant.csv",header=0,index_col=0)
+        #input_dataframe=mo_del.duplicate_1_class(input_dataframe, 12)
+        #input_dataframe.drop(columns="226",inplace=True)
+        print(input_dataframe)
+        X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(input_dataframe)
+        #
+        #     # mo_del.three_D_pca(X_train, y_train, "{}_128_2".format(file))
+        #mo_del.run_PCA(sequence_data, group_label, "{}".format("k_mer_sequences"))
+
+        X_train = X_train.drop(columns=["methyl_type"])
+        X_test = X_test.drop(columns=["methyl_type"])
+        y_train = y_train.drop(columns=["methyl_type"])
+        y_test = y_test.drop(columns=["methyl_type"])
+        # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
+        #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
+        model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
+                                "active_site_128fg_bi_type_bond3_rf{}_{}".format(d1,"PF08241PF01795_bit_score15_coverage80"),i=0)
 
 if __name__ == "__main__":
     main()

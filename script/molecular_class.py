@@ -271,10 +271,9 @@ class Reaction:
                                             atom.SetNumExplicitHs(num_H)
                                             #print("num_H:{}".format(atom.GetNumExplicitHs()))
                                             print("Kekulize error after add H, won't add H to the atom")
-                                # Draw.ShowMol(mol_remove_methylation,
-                                #              (600, 600))
-                                # Draw.ShowMol(mol_remove_methylation, (800, 800))
-                                # Draw.ShowMol(substrate_mol)
+                                Draw.ShowMol(product_mol)
+                                Draw.ShowMol(mol_remove_methylation, (800, 800))
+                                #Draw.ShowMol(substrate_mol)
                                 print("check")
                                 return product_mol,Chem.MolToSmiles(mol_remove_methylation),atom_index_list,"Pass_Check"
                             else:
@@ -520,6 +519,16 @@ class Testreaction_class(unittest.TestCase):
         self.assertEqual(list_methylsite[0],'C:1')
         self.assertEqual(check,"Pass_Check")
         print(remove_methyl_smile)
+    def test5_get_reaction_sites(self):
+        print("TEST5")
+        reaction = Reaction()
+        substrates = r"c1[1cH:1][3c:5]([2NH2:18])[1n:4][2c:3](=[1O:10])[n:2]1[4C@@H:6]1[O:7][5C@H:8]([7CH2:15][4O:14][P:13](=[2O:11])([3O-:12])[1*:21])[6C@@H:9]([6O:19][*:20])[8C@H:16]1[5OH:17].C[S+:1]([1CH2:2][2CH2:3][3C@H:4]([NH3+:5])[4C:6]([O-:7])=[1O:8])[5CH2:9][6C@H:10]1[2O:11][7C@@H:12]([1n:17]2[10cH:18][2n:19][11c:20]3[12c:21]2[3n:22][13cH:23][4n:24][14c:25]3[5NH2:26])[8C@H:13]([3OH:14])[9C@@H:15]1[4OH:16]"
+        products = r"c1[1cH:1][3c:5]([2NH:16][9CH3:22])[1n:4][2c:3](=[1O:10])[n:2]1[4C@@H:6]1[O:7][5C@H:8]([7CH2:15][4O:14][P:13](=[2O:11])([3O-:12])[*:20])[6C@@H:9]([6O:19][1*:21])[8C@H:17]1[5OH:18].[C@H]1([2OH:6])[1C@@H:1]([1OH:5])[2C@H:2]([n:7]2[4c:8]3[6c:10]([2n:12][5cH:9]2)[7c:13]([4NH2:16])[3n:15][8cH:14][1n:11]3)[O:3][3C@@H:4]1[9CH2:17][S:18][10CH2:19][11CH2:20][12C@@H:21]([13C:24]([3O-:22])=[4O:23])[5NH3+:25]"
+        pro_mol,remove_methyl_smile,list_methylsite,check = reaction.get_reaction_sites(products,substrates)
+        print(remove_methyl_smile)
+        mol1=Chem.MolFromSmiles(remove_methyl_smile)
+        Draw.ShowMol(mol1,(800,800))
+        print(list_methylsite)
 def main():
     unittest.main()
     """

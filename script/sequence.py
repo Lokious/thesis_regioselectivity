@@ -395,7 +395,7 @@ class Sequences():
             average=(sum([x[0] for x in sorted_length_dict[:20]])/20)
             print("average length of top 20 length{}".format(average))
         else:
-            print("drop sequences whose length are 50 AA longer or shorter than structure sequences")
+            print("drop sequences whose length are 100 AA longer or shorter than structure sequences")
             average = length
         #remove too long and too short sequences
         remove_list = []

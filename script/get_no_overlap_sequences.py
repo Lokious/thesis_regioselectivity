@@ -165,10 +165,12 @@ def hmmsearch_for_no_overlap_sequence(domains,coverage,bit_score):
     domian_dict={}
     for domain in domains:
         print(domain)
+        domain_full=domain
+        domain = domain.split(".")[0]
         #hmmfetch for domain's hmm
         os.system(
-            "hmmfetch ../autodata/align/separate_by_domain/Pfam35.0/Pfam-A.hmm {0} > ../autodata/align/{0}.hmm".format(
-                domain))
+            "hmmfetch ../autodata/align/different_version_pfam/Pfam35.0/Pfam-A.hmm {0} > ../autodata/align/{1}.hmm".format(
+                domain_full,domain))
         os.system("wait")
 
         #hmmsearch for separate domain
@@ -186,7 +188,7 @@ def hmmsearch_for_no_overlap_sequence(domains,coverage,bit_score):
         ### run mmseqs
         mmseqs_build_database="mmseqs createdb ../autodata/sequences/{0}_coverage{1}_bit_score{2}.fasta ../autodata/sequences/{0}_coverage{1}_bit_score{2}_db --createdb-mode 1".format(domain, coverage, bit_score)
         mmseqs_map = "mmseqs map ../autodata/sequences/{0}_coverage{1}_bit_score{2}_db ../autodata/sequences/{0}_coverage{1}_bit_score{2}_db ../autodata/sequences/{0}_coverage{1}_bit_score{2}_map_result tmp".format(domain, coverage, bit_score)
-        mmseqs_covert_to_tab = " ../autodata/sequences/{0}_coverage{1}_bit_score{2}_db ../autodata/sequences/{0}_coverage{1}_bit_score{2}_db ../autodata/sequences/{0}_coverage{1}_bit_score{2}_map_result ../autodata/sequences/{0}_coverage{1}_bit_score{2}.tab".format(domain, coverage, bit_score)
+        mmseqs_covert_to_tab = "mmseqs convertalis ../autodata/sequences/{0}_coverage{1}_bit_score{2}_db ../autodata/sequences/{0}_coverage{1}_bit_score{2}_db ../autodata/sequences/{0}_coverage{1}_bit_score{2}_map_result ../autodata/sequences/{0}_coverage{1}_bit_score{2}.tab".format(domain, coverage, bit_score)
         os.system(mmseqs_build_database)
         os.system("wait")
         os.system(mmseqs_map)
@@ -203,13 +205,13 @@ def hmmsearch_for_no_overlap_sequence(domains,coverage,bit_score):
         print("{} seq number: {}".format(domain,len(seq_dictionary.keys())))
         domian_dict[domain]=len(seq_dictionary.keys())
 
-        hmmalign_sequence_tohmm = 'hmmalign --amino  --outformat clustal ../autodata/align/{0}.hmm ../autodata/sequences/{0}_coverage{1}_bit_score{2}.fasta > ../autodata/align/separate_by_domain/{0}_hmmalign_out.aln'.format(
+        hmmalign_sequence_tohmm = 'hmmalign --amino  --outformat clustal ../autodata/align/{0}.hmm ../autodata/sequences/{0}_coverage{1}_bit_score{2}.fasta > ../autodata/align/separate_by_domain/{0}_hmmalign_out_bitscore{2}_coverage{1}.aln'.format(
             domain, coverage, bit_score)
-        hmmbuild_with_sequences_from_MSA = "hmmbuild ../autodata/align/separate_by_domain/{0}_hmmalign_out_trim.hmm ../autodata/align/separate_by_domain/{0}_hmmalign_out_trim.a2m".format(
-            domain)
+        hmmbuild_with_sequences_from_MSA = "hmmbuild ../autodata/align/separate_by_domain/{0}_hmmalign_out_trim_bit_score{2}_coverage{1}.hmm ../autodata/align/separate_by_domain/{0}_hmmalign_out_bitscore{2}_coverage{1}.aln".format(
+            domain, coverage, bit_score)
 
-        use_built_hmm_searching_for_pdb_structure = "hmmsearch --noali ../autodata/align/separate_by_domain/{0}_hmmalign_out_trim.hmm pdbaa > ../autodata/align/separate_by_domain/pdb_{0}_trim.tsv".format(
-            domain)
+        use_built_hmm_searching_for_pdb_structure = "hmmsearch --noali ../autodata/align/separate_by_domain/{0}_hmmalign_out_trim_bit_score{2}_coverage{1}.hmm pdbaa > ../autodata/align/separate_by_domain/pdb_{0}_trim_bitscore{2}_coverage{1}.tsv".format(
+            domain, coverage, bit_score)
 
         print("runing: {}".format(hmmalign_sequence_tohmm))
         os.system(hmmalign_sequence_tohmm)
@@ -262,6 +264,7 @@ def separate_model_for_different_domain():
     print(seq_num_dict)
 
     for domain in domains:
+        domain=domain.split(".")[0]
         seq_number_df = pd.DataFrame(index=coverage,columns=bit_score)
         for score in bit_score:
             for j in coverage:
@@ -273,11 +276,11 @@ def separate_model_for_different_domain():
                 seq_number_df.loc[j,score] = length
                 print(domain)
                 print(seq_number_df)
-                seq_number_df=seq_number_df.astype(int)
+        seq_number_df=seq_number_df.astype(int)
         f, ax = plt.subplots(figsize=(20,20))
         ax=sns.heatmap(seq_number_df, annot=True, fmt='d')
         ax.set(xlabel='Bit score', ylabel='coverage')
-        plt.savefig('heatmap_{}_on_filtered_uniprot.pdf'.format(domain), dpi=800)
+        plt.savefig('heatmap_{}_.pdf'.format(domain), dpi=800)
 
 
 def align_PF08241_PF01795_domain():
@@ -289,19 +292,38 @@ def align_PF08241_PF01795_domain():
     for score in bit_score:
         for j in coverage:
             # print("####bit_score = {}#####".format(score))
-            seq_number, combined_domains = hhalign(domains.copy(),
-                                                   bit_score=score, coverage=j)
-            print(seq_number)
-            hmmalign_for_combination_of_domains("PF08241PF01795", bit_score=score,
-                                                coverage=j,
-                                                sturcture="pdb_3TKA")
-            protein_encoding_and_trainning("PF08241PF01795",
-                                           sturcture="pdb_3TKA",
-                                           structure_chain="3TKA_1|Chain",
-                                           pdb_name="3tka.pdb",
-                                           start_point=-33, bit_score=score,
-                                           coverage=j)
+            # seq_number, combined_domains = hhalign(domains.copy(),
+            #                                        bit_score=score, coverage=j)
+            # print(seq_number)
+            # hmmalign_for_combination_of_domains("PF08241PF01795", bit_score=score,
+            #                                     coverage=j,
+            #                                     sturcture="pdb_3TKA")
+            # protein_encoding_and_trainning("PF08241PF01795",
+            #                                sturcture="pdb_3TKA",
+            #                                structure_chain="3TKA_1|Chain",
+            #                                pdb_name="3tka.pdb",
+            #                                start_point=-33, bit_score=score,
+            #                                coverage=j)
+            input_dataframe=pd.read_csv(
+                "../autodata/input_data/active_site/{}_ACS_bit128_3_remove_redundant.csv".format(
+                    "{}_bit_score{}_coverage{}".format('PF08241PF01795', score,
+                                                       j)),header=0,index_col=0)
+            # train model
+            mo_del = Model_class()
+            print(input_dataframe)
+            X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
+                input_dataframe)
 
+            X_train = X_train.drop(columns=["methyl_type"])
+            X_test = X_test.drop(columns=["methyl_type"])
+            y_train = y_train.drop(columns=["methyl_type"])
+            y_test = y_test.drop(columns=["methyl_type"])
+            # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
+            #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
+            model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
+                                     "active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}".format(
+                                         'PF08241_PF01795', score,
+                                         str(int(j * 100)), i=0))
             # seq_number_df.loc[j,score]=seq_number
             # print(seq_number_df)
     # seq_number_df=seq_number_df.astype(int)
@@ -313,6 +335,7 @@ def align_PF08241_PF01795_domain():
 
 def main():
     align_PF08241_PF01795_domain()
+    #separate_model_for_different_domain()
     #count number of sequences for most frequennt domains
     #domains=hmmsearch_for_all_domains()
     # for domain in domains:

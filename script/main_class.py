@@ -235,8 +235,10 @@ def cluster_with_initial_centroids(X):
     kmeans.fit(X)
     kmeans.labels_
 
-def visilize_bit_info_of_created_fingerprint(smile,radius,numbit,atom_index):
-    substrate_molecular=Chem.MolFromSmiles(smile)
+def visilize_bit_info_of_created_fingerprint(sub_smile,radius,numbit,atom_index,product_smile,mol_id):
+
+    substrate_molecular=Chem.MolFromSmiles(sub_smile)
+    #product_molecular = Chem.MolFromSmiles(product_smile)
     atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(
         substrate_molecular,
         radius,
@@ -255,14 +257,43 @@ def visilize_bit_info_of_created_fingerprint(smile,radius,numbit,atom_index):
         )
     print(fp)
     print(list(fp.GetOnBits()))
-    Draw.ShowMol(submol,(600,600))
+
     #226 is the No.1 feature importance
-    im=Draw.DrawMorganBit(submol, (226-numbit), bi)
-    im.show()
+    try:
+        im=Draw.DrawMorganBit(submol, (226-numbit), bi)
+        #im.show()
+        im.save("fig/{}_morganBit.png".format(str(mol_id)+"atom"+str(atom_index)))
+        #Draw.ShowMol(substrate_molecular, (600, 600))
+        Draw.MolToFile(substrate_molecular,"fig/{}_substarte.png".format(str(mol_id)+"atom"+str(atom_index)),(600,600))
+        print(product_smile)
+        # Draw.ShowMol(product_molecular, (600, 600))
+        #Draw.ShowMol(submol, (600, 600))
+        Draw.MolToFile(submol,
+                       "fig/{}_atom_environment.png".format(str(mol_id)+"atom"+str(atom_index)), (600, 600))
+    except:
+        print("this bit is not in atom fingerprint")
+
+def show_bitinfo_for_input_data(file="",smile_file=""):
+    input_datafrme= pd.read_csv(file,index_col=0,header=0)
+    smile_df=pd.read_csv(smile_file,index_col=0,header=0)
+    entry_list= input_datafrme["Entry"].unique()
+    for id in smile_df.index:
+        if smile_df.loc[id,"Entry"] in entry_list:
+            sub_smile=smile_df.loc[id,"main_sub"]
+            reactant_site = smile_df.loc[id, "reactant_site"]
+            mol=Chem.MolFromSmiles(sub_smile)
+            mol_id = id
+            for atom in mol.GetAtoms():
+
+                atom_index= atom.GetIdx()
+                visilize_bit_info_of_created_fingerprint(sub_smile, radius=3, numbit=128,
+                                                     atom_index=atom_index,product_smile=reactant_site,mol_id=mol_id)
+
 def main():
     today = date.today()
     # dd/mm/YY
     d1 = today.strftime("%d_%m_%Y")
+    show_bitinfo_for_input_data(file="../autodata/input_data/active_site/PF08241PF01795_bit_score11_coverage0.7_ACS_bit128_3_remove_redundant.csv", smile_file="../autodata/seq_smiles_all.csv")
     #build_different_input(auto="auto", x="../autodata/group/['N']_128_3_with_bitinfo.csv",num_bit = 128, radius:int = 3, seqfile= "6_seed_onehot_encoding.csv", group = "N")
     #visilize_bit_info_of_created_fingerprint(smile, 3,128,18)
     # mo_del = Model_class()
@@ -406,7 +437,7 @@ def main():
     #
     # #
     #sepreate_input("auto","../autodata/fingerprint/fingerprint_bit128_radius3_all_data_drop_atom_19_09.csv",128,3)
-
+    """
     #for active site encoding
     X=pd.read_csv("../autodata/fingerprint/fingerprint_bit128_radius3_all_data_drop_atom_19_09.csv",header=0,index_col=0)
     add_dataframe=pd.read_csv("../autodata/protein_encoding/active_site/PF08241.15PF03602.18_AA_properties_encoding.csv",header=0,index_col=0)
@@ -419,7 +450,7 @@ def main():
     print(input_dataframe)
     input_dataframe.to_csv("../autodata/input_data/active_site/PF08241.15PF03602.18_ACS_bit128_3.csv")
 
-
+    """
     #
     # #
     # input_dataframe.to_csv("data/input_data/input2048fg_dpna_manual.csv")

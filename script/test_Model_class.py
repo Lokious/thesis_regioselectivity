@@ -41,7 +41,7 @@ class TestModel_class(unittest.TestCase):
 
     def test6_use_less_similar_data_for_test(self):
         """
-        This test take around 5 to 10 min 
+        This test take around 5 to 10 min
         :return:
         """
         input = pd.read_csv(

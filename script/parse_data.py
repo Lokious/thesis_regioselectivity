@@ -904,11 +904,32 @@ def try_different_coverage():
 #     umiprot_df.to_csv("data/protein_encoding/protein_seq_simple_encoding_bi.csv")
 #     return umiprot_df
 
+def check_overlap(file1:str="",file2:str=""):
+    # df1 = pd.read_csv(file1,header=0,index_col=0)
+    # df2 = pd.read_csv(file2, header=0, index_col=0)
 
-
+    dict2=read_fasta_file(file_name="../autodata/sequences/PF08241_coverage0.3_bit_score11.fasta")
+    print("PF08241_coverage0.3_bit_score11")
+    print(len(dict2.keys()))
+    dict3=read_fasta_file(file_name="../autodata/sequences/PF01795_coverage0.3_bit_score11.fasta")
+    print("PF01795_coverage0.3_bit_score11")
+    print(len(dict3.keys()))
+    #print(df2.T)
+    dict1=read_fasta_file(file_name="../autodata/sequences/PF08241PF01795_coverage0.3_bit_score11.fasta")
+    # df1=pd.DataFrame(dict1)
+    print("PF08241PF01795_coverage0.3_bit_score11")
+    print(len(dict1.keys()))
+    print("overlap with PF08241:")
+    print(len(dict2.keys() & dict1.keys())/len(dict1.keys()))
+    print("overlap with PF01795:")
+    print(len(dict3.keys() & dict1.keys())/len(dict1.keys()))
+    # print(len(df1["Entry"] & df2["Entry"]))
+    # print(len(df1["Entry"]))
+    # print(len(df2["Entry"]))
 def main():
+    check_overlap(file1="PF08241PF01795_bit_score5_coverage0.6_ACS_bit128_3_remove_redundant.csv")
     #seq_number_df=pd.DataFrame(index=list(range(10)),columns=[("bit_score" + str(x)) for x in [5,7,9,11,13,15,17,19,21]])
-    try_different_coverage()
+    #try_different_coverage()
     #use_atom_properties_for_sequences_encoding(file_name="../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/PF08241.15PF03602.18/PF08241.15PF03602.18_hmmalign_out_pdb_5WP4.aln",group="PF08241.15PF03602.18",file_format="clustal",start=0, structure_chain="5WP4_1|Chain",pdb_name="5wp4.pdb")
     #unittest.main()
     #, min_subset_size = 100, max_degree = 4

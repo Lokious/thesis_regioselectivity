@@ -599,13 +599,14 @@ class Model_class():
         :return: randomforest model
         """
 
-        hyperparameters = {'n_estimators': [500,1000,2000],
-                           'max_features': [0.3,0.5,0.7],
+        hyperparameters = {'n_estimators': [50,100,500],
+                           'max_features': [0.5],
+                           'max_depth' : [3,4,5,6,7,8,9,10]
                            }
 
         #n_jobs number of cores used for it
         #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
-        rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
+        rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced",),
                              hyperparameters, scoring='roc_auc',
                              cv=3,
                              verbose=3,
@@ -628,19 +629,19 @@ class Model_class():
         self.cm_threshold(threshold_train, X_train, y_train, rf_cv.best_estimator_, (file_name+"train"))
         # self.cm_threshold(0.5, X_train, y_train, rf_cv.best_estimator_,
         #              (file_name + "train"))
-        #self.cm_threshold(threshold_test, X_test, y_test, rf_cv.best_estimator_, (file_name+"test"))
+        self.cm_threshold(threshold_test, X_test, y_test, rf_cv.best_estimator_, (file_name+"test"))
         cm_matrix=self.cm_threshold(threshold_train, X_test, y_test, rf_cv.best_estimator_,
                      (file_name + "test (same as train threshold)"))
 
 
         print(rf_cv.cv_results_)
         sns.lineplot(y=rf_cv.cv_results_["mean_test_score"],
-                     x=rf_cv.cv_results_['param_max_features'].data,
+                     x=rf_cv.cv_results_['param_max_depth'].data,
                      hue=rf_cv.cv_results_['param_n_estimators'])
-        plt.xlabel("max features")
+        plt.xlabel("max_depth")
         plt.ylabel("roc_auc (mean 3-fold CV)")
         plt.title(
-            "roc_auc score with different estimators and features for RF model")
+            "roc_auc score with different max_depth and features for RF model")
         plt.savefig("../autodata/separate_seed_result/Accuracy with different estimators and features for RF model_{}".format(file_name))
         plt.close()
         #plt.show()
@@ -651,12 +652,15 @@ class Model_class():
             .sort_values(by=['Importance'], ascending=False)
 
         #And visualize
-        sns.barplot(data=fi.head(30), x="Importance", y=(fi.head(30)).index).set_title(
+        ### size and font size should be set before the sns plot###
+        sns.set(rc={'figure.figsize': (40,20)})
+        sns.set(font_scale=3)
+        ax1=sns.barplot(data=fi.head(30), x="Importance", y=(fi.head(30)).index)
+        ax1.set_title(
             "feature importance for RF model")
-        sns.set(font_scale=2)
-        sns.set(rc={'figure.figsize': (20,20)})
+
         #fig = ax.get_figure()
-        plt.savefig('../autodata/separate_seed_result/trainmodel_output_figure/feature_importance{}.png'.format(file_name))
+        plt.savefig('../autodata/separate_seed_result/feature_importance{}.png'.format(file_name),)
         plt.close()
 
         ##save result to file
@@ -746,9 +750,9 @@ class Model_class():
 
         """
         # #save model
-        # filename = '../data/model/rf_test_model_cv{}'.format(file_name)
-        # joblib.dump(rf_cv, filename)
-        # return rf_cv
+        filename = '../autodata/model/rf_test_model_cv{}'.format(file_name)
+        joblib.dump(rf_cv, filename)
+        return rf_cv
 
     def SVM(self,X_train, X_test, y_train, y_test,file_name="",i:int=0):
         # pars = [{'C': [ 0.1]},
@@ -773,7 +777,7 @@ class Model_class():
                      x=svc.cv_results_['param_C'].data,
                      hue=svc.cv_results_['param_kernel'])
         plt.xlabel("max features")
-        plt.ylabel("Accuracy (mean 5-fold CV)")
+        plt.ylabel("Accuracy (mean 3-fold CV)")
         plt.title(
             "Accuracy with different estimators and features for SVC model")
         #plt.savefig("../Accuracy with different estimators and features for SVC model_{}".format(file_name))
@@ -800,7 +804,7 @@ class Model_class():
         FP = cm_matrix[0][1]
         FN = cm_matrix[1][0]
         TP = cm_matrix[1][1]
-
+        print(rf.best_score_)
         accuracy = ((TP + TN) / (TP + TN + FP + FN))
         print("TP:{}".format(TP))
         print("FP:{}".format(FP))
@@ -822,6 +826,7 @@ class Model_class():
         file1.write("precision : {}\n".format(precision))
         file1.write("mcc_score: {}\n".format(mcc_score))
         file1.write("roc_score: {}\n".format(roc_score))
+        file1.write("best_score: {}\n".format(rf.best_score_))
         file1.write("###############################################")
         file1.close()
 
@@ -864,6 +869,10 @@ class Model_class():
         return thresholds[ix]
 
     def cm_threshold(self,threshold,x,y,rf,file_name):
+        """
+        The function is to plot confusion matrix with set threshold
+
+        """
         y_pre_threshold = []
         for point in rf.predict_proba(x):
             if point[1] >= threshold:
@@ -873,7 +882,7 @@ class Model_class():
         else:
             cm = confusion_matrix(y, y_pre_threshold)
             cm_display = ConfusionMatrixDisplay(cm).plot()
-            plt.rc('font', labelsize=10)
+            plt.rc('font', size=15)
             # cm_display.figure_.savefig(
             #     'cm_{}_{}.png'.format(threshold, file_name),dpi=300)
             plt.title(
@@ -881,12 +890,13 @@ class Model_class():
                     threshold))
             cm_display.figure_.savefig(
                 '../autodata/separate_seed_result/cm_threshold{}_{}.png'.format(
-                    threshold, file_name), dpi=400)
+                    threshold, file_name), dpi=300)
             # plt.show()
             plt.close()
         return cm
 
     def hierarchical_clustering(self,sequence_data,label):
+
         from sklearn.cluster import AgglomerativeClustering
         from scipy.cluster.hierarchy import fcluster, cut_tree, linkage, \
             dendrogram
@@ -1126,7 +1136,16 @@ class Model_class():
         print(similarity_dictionary)
         return similarity_dictionary
 
+    def evaluate_model_performance_based_on_molecule(self,input_file):
+        #load model
+        model = joblib.load('../data/model/rf_test_model')
+        #load test data
 
+        input_dataframe = pd.read_csv(input_file,header=0, index_col=0)
+        print(input_dataframe)
+        X_train, X_test, y_train, y_test = self.prepare_train_teat_data(
+            input_dataframe)
+        y_predict=model.predict(X_test)
 def main():
     model=Model_class()
     model.check_file_exist("../autodata/seq_smiles_all.csv","../autodata/diction_atom_all")
