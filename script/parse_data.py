@@ -878,31 +878,7 @@ def try_different_coverage():
     ax=sns.heatmap(seq_number_df, annot=True, fmt='d')
     ax.set(xlabel='Bit score', ylabel='coverage')
     plt.savefig('heatmap_PF08241PF01795_removeredundant.png', dpi=800)
-# def merge_uniprot_emebeding():
-#     file_list = ["PF08241","PF05175",  "PF08242", "PF13489", "PF13649",
-#                  "PF13847"]
-#     umiprot_df = pd.DataFrame()
-#     for file in file_list:
-#         try:
-#             with open("data/protein_encoding/{}_onehot_encoding".format(file), 'rb') as file1:
-#                 df = dill.load(file1)
-#             # df = pd.read_csv("data/protein_encoding/{}_simple_encoding.csv".format(file),header=0,index_col=0)
-#             # print(df)
-#         except:
-#             df = read_msa_and_encoding("{}".format(file))
-#         umiprot_df = pd.concat([umiprot_df,df],axis=0,join='outer')
-#         #umiprot_df.index=umiprot_df["Entry"]
-#
-#
-#     "replace the NA with 0, cause the difference in aeq length"
-#     umiprot_df=(umiprot_df.fillna(int(0)))
-#
-#     #umiprot_df=umiprot_df.reset_index()
-#     #some sequences aligned to different hmm,only keep one
-#     print(umiprot_df.drop_duplicates(subset="Entry",keep="first"))
-#     umiprot_df=(umiprot_df.drop_duplicates(subset="Entry",keep="first")).reset_index(drop=True)
-#     umiprot_df.to_csv("data/protein_encoding/protein_seq_simple_encoding_bi.csv")
-#     return umiprot_df
+
 
 def check_overlap(file1:str="",file2:str=""):
     # df1 = pd.read_csv(file1,header=0,index_col=0)
@@ -926,8 +902,12 @@ def check_overlap(file1:str="",file2:str=""):
     # print(len(df1["Entry"] & df2["Entry"]))
     # print(len(df1["Entry"]))
     # print(len(df2["Entry"]))
+
+
 def main():
     check_overlap(file1="PF08241PF01795_bit_score5_coverage0.6_ACS_bit128_3_remove_redundant.csv")
+
+
     #seq_number_df=pd.DataFrame(index=list(range(10)),columns=[("bit_score" + str(x)) for x in [5,7,9,11,13,15,17,19,21]])
     #try_different_coverage()
     #use_atom_properties_for_sequences_encoding(file_name="../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/PF08241.15PF03602.18/PF08241.15PF03602.18_hmmalign_out_pdb_5WP4.aln",group="PF08241.15PF03602.18",file_format="clustal",start=0, structure_chain="5WP4_1|Chain",pdb_name="5wp4.pdb")

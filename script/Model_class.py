@@ -599,9 +599,9 @@ class Model_class():
         :return: randomforest model
         """
 
-        hyperparameters = {'n_estimators': [50,100,500],
-                           'max_features': [0.5],
-                           'max_depth' : [3,4,5,6,7,8,9,10]
+        hyperparameters = {'n_estimators': [500,1000,1500],
+                           'max_features': [0.3,0.5,0.7],
+                           'max_depth' : [3,5,7,9]
                            }
 
         #n_jobs number of cores used for it
@@ -796,6 +796,18 @@ class Model_class():
         y_probs = rf.predict_proba(X_test)
         # keep probabilities for the positive outcome only
         yhat = y_probs[:, 1]
+        ##distribution for the probability of prediction
+        label_1_pre=[]
+        label_0_pre=[]
+        for i,index in enumerate(y_test.index):
+            if y_test.loc[index]==1:
+                label_1_pre.append(i)
+            else:
+                label_0_pre.append(i)
+
+        self.distribution_plot(yhat[label_1_pre],yhat[label_0_pre],file_name,"prediction")
+
+
         accuracy_score_function = accuracy_score(y_test, y_pred)
         mcc_score = matthews_corrcoef(y_test, y_pred)
         roc_score = roc_auc_score(y_true=y_test,y_score=yhat)
@@ -894,6 +906,28 @@ class Model_class():
             # plt.show()
             plt.close()
         return cm
+
+    def distribution_plot(self,label_1:list,label_0:list,file_name="",titile=""):
+        """
+        This is the function for probability distribution
+
+        """
+        # Draw the density plot
+        fig, ax = plt.subplots()
+        sns.histplot(label_1, kde=True,
+                     color="orange",
+                     label="label1",ax=ax)
+        sns.histplot(label_0, kde=True,
+                     color="blue",
+                     label="label0",ax=ax)
+        # Plot formatting
+
+        plt.legend(prop={'size': 8}, title='Label')
+        plt.title('../autodata/separate_seed_result/{} probability distribution'.format(titile))
+        plt.xlabel('probability')
+        plt.savefig("../autodata/separate_seed_result/{} probability distribution.png".format(file_name))
+        # plt.ylabel('Density')
+        #plt.show()
 
     def hierarchical_clustering(self,sequence_data,label):
 
@@ -1085,6 +1119,8 @@ class Model_class():
                     #train_seq=seq_dictionary[train_entry]
                     #if train seq is similar to test seq, remove this row in train
                     if train_entry in similarity_dictionary[test_entry]:
+                        #check the similarity
+
                         remove_index.append(index_train)
 
         train.drop(index=remove_index,inplace=True)
@@ -1134,6 +1170,10 @@ class Model_class():
                 break
 
         print(similarity_dictionary)
+        #save similarity dictionary for later use
+        with open("autodata/similarity_dictionary", "wb") as dill_file:
+            dill.dump(similarity_dictionary, dill_file)
+
         return similarity_dictionary
 
     def evaluate_model_performance_based_on_molecule(self,input_file):
@@ -1146,6 +1186,32 @@ class Model_class():
         X_train, X_test, y_train, y_test = self.prepare_train_teat_data(
             input_dataframe)
         y_predict=model.predict(X_test)
+
+    def comapre_result_for_different_similarity_test(self,input_file):
+
+        #load similarity dictionary
+        try:
+            with open("autodata/similarity_dictionary", 'rb') as file1:
+                similarity_dictionary = dill.load(file1)
+        except:
+            similarity_dictionary = self.create_similarity_dictionary()
+
+        #split test data bsed on different sequences similarity
+        input_df=pd.read_csv(input_file,header=0,index_col=0)
+        splitter = GroupShuffleSplit(test_size=0.4, n_splits=1, random_state=0)
+        split = splitter.split(input_df, groups=input_df["molecular_id"])
+        train_inds, test_inds = next(split)
+        train = input_df.iloc[train_inds]
+        test = input_df.iloc[test_inds]
+
+
+        # X_train = (copy.deepcopy(train)).drop(columns=["Entry","molecular_id","label"])
+        # Y_train = train["label"]
+        #
+        # X_test = (copy.deepcopy(test)).drop(columns=["Entry", "molecular_id", "label"])
+        # Y_test = test["label"]
+
+
 def main():
     model=Model_class()
     model.check_file_exist("../autodata/seq_smiles_all.csv","../autodata/diction_atom_all")
