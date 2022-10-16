@@ -9,6 +9,7 @@ from rdkit.Chem.Draw import IPythonConsole
 from IPython.display import SVG, display, Image
 from rdkit.Chem import Draw,DataStructs
 from rdkit import Chem
+from rdkit.Chem import MACCSkeys
 from PIL import Image
 import numpy as np
 import dill
@@ -152,7 +153,67 @@ class Molecule:  # classes are written in CamelCase
 
         return bit_fingerprint_atom
 
-    
+    def create_MACCSkey_mol(self, substrate_molecular: Chem.Mol) -> np.array:
+
+        """
+        This function is to get MACCSkeys for substrate molecule
+
+        https://github.com/rdkit/rdkit/blob/master/rdkit/Chem/MACCSkeys.py
+        :param substrate_molecular:  mol, substrate of the methylation reaction
+        :return:
+        """
+        # sanitize molecular
+        Chem.SanitizeMol(
+            substrate_molecular,
+            sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE
+        )
+        rdmolops.SanitizeFlags.SANITIZE_NONE
+        # initialize a numpy array for molecular fingerprint
+
+        bit_fingerprint_mol = np.zeros(
+            (0,),
+            dtype=int  # (one dimention, 0 is number of rows)
+        )
+
+        MACCSkey_bit_vector = MACCSkeys.GenMACCSKeys(substrate_molecular)
+
+        DataStructs.ConvertToNumpyArray(MACCSkey_bit_vector,
+                                        bit_fingerprint_mol)
+        print(bit_fingerprint_mol)
+
+        return bit_fingerprint_mol
+
+    def create_MACCSkey_atom(self, substrate_molecular: Chem.Mol,
+                             atom_object: Chem.Atom,
+                             radius: int = 3) -> np.array:
+        atom_index = atom_object.GetIdx()
+        atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(
+            substrate_molecular,
+            radius,
+            atom_index
+        )
+        atom_map = {}
+        submol = Chem.PathToSubmol(substrate_molecular, atom_environment,
+                                   atomMap=atom_map)
+        # sanitize molecule
+        Chem.SanitizeMol(submol,
+                         sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+        rdmolops.SanitizeFlags.SANITIZE_NONE
+        # inisilize a numpy array for molecular fingerprint
+        bit_fingerprint_atom = np.zeros(
+            (0,),
+            dtype=int  # (one dimention, 0 is number of rows)
+        )
+        # returns an RDKit vector object(MACCSKey).
+        MACCSkey_bit_vector = MACCSkeys.GenMACCSKeys(submol)
+
+        # We convert the RDKit vetor object to a numpy array.
+        DataStructs.ConvertToNumpyArray(MACCSkey_bit_vector,
+                                        bit_fingerprint_atom)
+        print(bit_fingerprint_atom)
+        return bit_fingerprint_atom
+
+
 class Reaction:
     def __init__(self, substrates="", products="", rxn_object=None):
         self.substrates = substrates
@@ -529,6 +590,21 @@ class Testreaction_class(unittest.TestCase):
         mol1=Chem.MolFromSmiles(remove_methyl_smile)
         Draw.ShowMol(mol1,(800,800))
         print(list_methylsite)
+    def test_6_create_MACCSkey_mol(self):
+        molecule=Molecule()
+        substrates = r"O[C@H]1C[C@@H](O[C@@H]1COP([O-])([O-])=O)n1ccc(=O)[nH]c1=O"
+        mol = Chem.MolFromSmiles(substrates)
+        mol_fp=molecule.create_MACCSkey_mol(mol)
+        print(len(mol_fp))
+        self.assertEqual(mol_fp, 167)
+    def test_7_create_MACCSkey_atom(self):
+        molecule=Molecule()
+        substrates = r"O[C@H]1C[C@@H](O[C@@H]1COP([O-])([O-])=O)n1ccc(=O)[nH]c1=O"
+        mol = Chem.MolFromSmiles(substrates)
+        for atom in mol.GetAtoms():
+            atom_fp=molecule.create_MACCSkey_atom(mol,atom,3)
+            #print(len(mol_fp))
+            self.assertEqual(atom_fp,167)
 def main():
     unittest.main()
     """

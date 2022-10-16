@@ -154,7 +154,7 @@ def protein_encoding_and_trainning(out_align,sturcture,structure_chain="5WP4_1|C
                                  out_align,bit_score, str(int(coverage*100)),i=0))
 
 
-def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,structure_chain="5WP4_1|Chain",pdb_name="5wp4.pdb",start_point:int=1):
+def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,structure_chain="5WP4_1|Chain",pdb_name="5wp4.pdb",start_point:int=1,num_bit=128):
     """
     This function is to use hmmsearch to search pdb structure against hmm model
     built by align sequences from the domain to hmm

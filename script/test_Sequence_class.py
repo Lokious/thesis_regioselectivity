@@ -28,7 +28,6 @@ class TestModelClass(unittest.TestCase):
         properties = self.seq.amino_acid_properties(amino_acid, "Y")
         self.assertEqual(properties["charge"],0)
         self.assertEqual(properties["volume"]-6.47, 0)
-        self.assertEqual(properties["hydrophobicity"] - 2.91, 0)
         self.assertEqual(properties["similarity_score"] - 7.0, 0)
 
     def test2_remove_sequences_from_result_of_mmseqs(self):

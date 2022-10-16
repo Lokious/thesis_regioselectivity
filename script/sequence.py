@@ -359,13 +359,13 @@ class Sequences():
             print(similarity_score)
             properties_dictionary = {"charge": charge, "volume": volume,
                                      "hydropathy": hydropathy,
-                                     "hydrophobicity": hydrophobicity,
+
                                      "similarity_score": similarity_score}
         except:
             print("please check input {} in the amino acids list".format(amino_acid))
             properties_dictionary = {"charge": -1000, "volume": -1000,
                                      "hydropathy": -1000,
-                                     "hydrophobicity": -1000,
+
                                      "similarity_score":-4}
         return properties_dictionary
 

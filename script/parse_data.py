@@ -640,7 +640,7 @@ def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_n
             print(input_df)
 
 
-    properties=['charge', 'volume', 'hydropathy', 'hydrophobicity','similarity_score']
+    properties=['charge', 'volume', 'hydropathy','similarity_score']
     # create empty dataframe
     property_df=pd.DataFrame(index=input_df.index)
     for col in input_df.columns:

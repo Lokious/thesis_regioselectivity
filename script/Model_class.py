@@ -332,6 +332,111 @@ class Model_class():
                 dill.dump(input_dataframe, dill_file)
         return input_dataframe
 
+    def save_MACCSkeys_fingerprints_to_dataframe(self,sauce_data,atom_object_dictionary,radius: int = 3,drop_atoms=False,file_name=""):
+        """
+        this function is to build inputdata with fingerprints and labels
+
+        :param sauce_data: pd.dataframe with substrate and metylation site information
+        :param atom_object_dictionary: key: index of sauce_data value: mathylation site
+        :param num_bits: num_bits for morgen fingerprint
+        :param radius:
+        :return:
+        """
+
+        self_defined_mol_object = Molecule()
+        input_dataframe = pd.DataFrame()
+        current_index = 0
+
+        for index in sauce_data.index:
+
+            print(index)
+            try:
+                sub_mol = Chem.MolFromSmiles(sauce_data.loc[index,"main_sub"])
+                # print(sub_mol)
+                #Draw.ShowMol(sub_mol, size=(600, 600))
+                sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(copy.deepcopy(sub_mol))
+                fingerprint_mol = self_defined_mol_object.create_MACCSkey_mol(
+                    sub_rest_mol)
+                for atom in sub_mol.GetAtoms():
+                    #set label
+                    #isotope is what we saved before in the list of methylaion site
+                    sy_index =(atom.GetSymbol() + ":" + str(atom.GetIsotope()))
+                    # print(sy_index)
+                    # print(atom_object_dictionary[index])
+                    if sy_index in atom_object_dictionary[index]:
+                        print(sy_index)
+                        label = 1
+                    else:
+                        label = 0
+                    #atom_index_sub = atom.GetAtomMapNum()
+                    newrow = {}
+                    #if drop_atoms is True, filter out some Carbon whose degree is already 4
+                    if drop_atoms and (label != 1):
+                        #print(atom.GetTotalDegree(),atom.GetSymbol())
+                        if (atom.GetTotalDegree() == 4) and (atom.GetSymbol()=="C"):
+                            print("drop C")
+                            continue
+                        else:
+                            # resrt atom index and then build fingerprint
+                            fingerprint_atom = self_defined_mol_object.create_MACCSkey_atom(
+                                sub_rest_mol, atom_object=atom,
+                                radius=radius)
+                            # add fingerprint atom index ebedding sequences and label to dataframe
+                            for i, item in enumerate(fingerprint_mol):
+                                newrow[i] = item
+
+                            for j, item in enumerate(fingerprint_atom):
+                                newrow[j + i+1] = item
+
+                            # newrow['atom_index'] = atom_index_sub
+                            add_dataframe = pd.DataFrame(newrow,
+                                                         index=[current_index])
+
+                            input_dataframe = pd.concat(
+                                [input_dataframe, add_dataframe], axis=
+                                0)
+                            input_dataframe.loc[
+                                current_index, "molecular_id"] = "m" + str(index)
+                            input_dataframe.loc[current_index, "label"] = label
+                            input_dataframe.loc[current_index, "Entry"] = \
+                            sauce_data.loc[index, "Entry"]
+                            input_dataframe.loc[current_index, "methyl_type"] = sauce_data.loc[index, "methyl_type"]
+                            current_index += 1
+
+                    else:
+                        #reset atom index and then build fingerprint
+                        fingerprint_atom = self_defined_mol_object.create_MACCSkey_atom(
+                            sub_rest_mol, atom_object=atom,radius=radius)
+                        #add fingerprint atom index ebedding sequences and label to dataframe
+                        for i,item in enumerate(fingerprint_mol):
+                            newrow[i] = item
+
+                        for j,item in enumerate(fingerprint_atom):
+                            newrow[j+i+1] = item
+
+                        #newrow['atom_index'] = atom_index_sub
+                        add_dataframe = pd.DataFrame(newrow,index=[current_index])
+
+                        input_dataframe=pd.concat([input_dataframe,add_dataframe],axis=
+                                                  0)
+                        input_dataframe.loc[current_index, "molecular_id"] = "m"+str(index)
+                        input_dataframe.loc[current_index,"label"] = label
+                        input_dataframe.loc[current_index,"Entry"] = sauce_data.loc[index,"Entry"]
+                        input_dataframe.loc[current_index, "methyl_type"] = sauce_data.loc[index, "methyl_type"]
+                        current_index += 1
+                        print(current_index)
+            except:
+                    print("somethingwrong with this index{}".format(index))
+                    continue
+        if drop_atoms:
+            input_dataframe.to_csv("../autodata/fingerprint/MACCS_fingerprint_bit{}_radius{}_{}.csv".format(167,radius,file_name))
+            with open("../autodata/MACCS_fingerprint_bit{}_radius{}_{}".format(167,radius,file_name), "wb") as dill_file:
+                dill.dump(input_dataframe, dill_file)
+        else:
+            input_dataframe.to_csv("../autodata/fingerprint/MACCS_fingerprint_bit{}_radius{}_{}.csv".format(167,radius,file_name))
+            with open("../autodata/MACCS_fingerprint_bit{}_radius{}_{}".format(167,radius,file_name), "wb") as dill_file:
+                dill.dump(input_dataframe, dill_file)
+        return input_dataframe
 
     def fingerprint_df_preapare(self,substrate_mol_df,num_bits: int = 2048,radius: int = 3):
         """
@@ -356,6 +461,49 @@ class Model_class():
                 for atom in substrate_mol.GetAtoms():
                     fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
                         substrate_mol, atom_object=atom, num_bits=num_bits, radius=radius)
+                    atom_index_sub = atom.GetIdx()
+                    newrow = {}
+                    # add fingerprint atom index ebedding sequences and label to dataframe
+                    for i, item in enumerate(fingerprint_mol):
+                        newrow[i] = item
+                    for j, item in enumerate(fingerprint_atom):
+                        newrow[j + i] = item
+
+                    add_dataframe = pd.DataFrame(newrow, index=[current_index])
+                    fingerprint_dataframe = pd.concat([fingerprint_dataframe, add_dataframe], axis=
+                    0)
+                    fingerprint_dataframe.loc[current_index, "molecular_id"] = "m"+str(mol_id)
+                    fingerprint_dataframe.loc[current_index, 'atom_index'] = atom_index_sub
+                    current_index += 1
+            except:
+                print("skip in mol{}".format(mol_id))
+            mol_id +=1
+        print(fingerprint_dataframe)
+        return fingerprint_dataframe
+
+    def MACCSkey_fingerprint_df_preapare(self,substrate_mol_df,radius: int = 3):
+        """
+
+        :param substrate_mol:
+        :param num_bits:
+        :param radius:
+        :return:
+        """
+        current_index = 0
+        mol_id:int = 0
+        fingerprint_dataframe = pd.DataFrame()
+        self_defined_mol_object = Molecule()
+        print(substrate_mol_df)
+        for index in substrate_mol_df.index:
+            substrate_mol = substrate_mol_df.loc[index,'substrate_mol']
+            try:
+
+                #Draw.ShowMol(substrate_mol, size=(600, 600))
+                fingerprint_mol = self_defined_mol_object.create_MACCSkey_mol(
+                    substrate_mol)
+                for atom in substrate_mol.GetAtoms():
+                    fingerprint_atom = self_defined_mol_object.create_MACCSkey_atom(
+                        substrate_mol, atom_object=atom, radius=radius)
                     atom_index_sub = atom.GetIdx()
                     newrow = {}
                     # add fingerprint atom index ebedding sequences and label to dataframe
@@ -601,7 +749,7 @@ class Model_class():
 
         hyperparameters = {'n_estimators': [500,1000,1500],
                            'max_features': [0.3,0.5,0.7],
-                           'max_depth' : [3,5,7,9]
+                           'max_depth' : [5,10,15]
                            }
 
         #n_jobs number of cores used for it
@@ -926,6 +1074,7 @@ class Model_class():
         plt.title('../autodata/separate_seed_result/{} probability distribution'.format(titile))
         plt.xlabel('probability')
         plt.savefig("../autodata/separate_seed_result/{} probability distribution.png".format(file_name))
+        plt.close()
         # plt.ylabel('Density')
         #plt.show()
 
@@ -1219,7 +1368,7 @@ def main():
                                  header=0, index_col=0)
     with open('../autodata/diction_atom_all', 'rb') as file1:
         diction_atom = dill.load(file1)
-    model.save_fingerprints_to_dataframe(data_with_site, diction_atom,1024,3, drop_atoms=True,file_name="all_data")
+    model.save_MACCSkeys_fingerprints_to_dataframe(data_with_site, diction_atom,3, drop_atoms=True,file_name="all_data")
 
 if __name__ == "__main__":
     main()
