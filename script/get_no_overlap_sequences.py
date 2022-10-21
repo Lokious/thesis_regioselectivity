@@ -264,9 +264,13 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
             file_format="clustal", start=start_point,
             structure_chain=structure_chain, pdb_name=pdb_name)
         # create input dataframe
+        # X = pd.read_csv(
+        #     "../autodata/fingerprint/fingerprint_bit128_radius3_all_data_drop_atom_19_09.csv",
+        #     header=0, index_col=0)
         X = pd.read_csv(
-            "../autodata/fingerprint/fingerprint_bit128_radius3_all_data_drop_atom_19_09.csv",
+            "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv",
             header=0, index_col=0)
+
 
         add_dataframe["Entry"] = add_dataframe.index
         add_dataframe.reset_index(drop=True, inplace=True)
@@ -277,7 +281,7 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
         input_dataframe = input_dataframe.dropna(axis=0, how="any")
         print(input_dataframe)
         input_dataframe.to_csv(
-            "../autodata/input_data/active_site/{}_ACS_bit128_3_remove_redundant.csv".format(
+            "../autodata/input_data/active_site/{}_ACS_bit167_3_remove_redundant_MACCS.csv".format(
                 "{}_bit_score{}_coverage{}".format(domain, bit_score,
                                                    coverage)))
         # train model
@@ -293,7 +297,7 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
         # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
         #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
         model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                                 "active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}".format(
+                                 "active_site_167fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS".format(
                                      domain, bit_score,
                                      str(int(coverage * 100)), i=0))
 

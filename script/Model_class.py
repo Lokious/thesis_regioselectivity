@@ -377,7 +377,7 @@ class Model_class():
                             print("drop C")
                             continue
                         else:
-                            # resrt atom index and then build fingerprint
+                            # reset atom index and then build fingerprint
                             fingerprint_atom = self_defined_mol_object.create_MACCSkey_atom(
                                 sub_rest_mol, atom_object=atom,
                                 radius=radius)
@@ -401,6 +401,8 @@ class Model_class():
                             input_dataframe.loc[current_index, "Entry"] = \
                             sauce_data.loc[index, "Entry"]
                             input_dataframe.loc[current_index, "methyl_type"] = sauce_data.loc[index, "methyl_type"]
+                            input_dataframe.loc[
+                                current_index, 'atom_index'] = sy_index
                             current_index += 1
 
                     else:
@@ -423,6 +425,8 @@ class Model_class():
                         input_dataframe.loc[current_index,"label"] = label
                         input_dataframe.loc[current_index,"Entry"] = sauce_data.loc[index,"Entry"]
                         input_dataframe.loc[current_index, "methyl_type"] = sauce_data.loc[index, "methyl_type"]
+                        input_dataframe.loc[
+                            current_index, 'atom_index'] = sy_index
                         current_index += 1
                         print(current_index)
             except:
@@ -747,7 +751,7 @@ class Model_class():
         :return: randomforest model
         """
 
-        hyperparameters = {'n_estimators': [500,1000,1500],
+        hyperparameters = {'n_estimators': [10,50],
                            'max_features': [0.3,0.5,0.7],
                            'max_depth' : [5,10,15]
                            }
@@ -792,6 +796,7 @@ class Model_class():
             "roc_auc score with different max_depth and features for RF model")
         plt.savefig("../autodata/separate_seed_result/Accuracy with different estimators and features for RF model_{}".format(file_name))
         plt.close()
+
         #plt.show()
 
         #feature importance
@@ -810,7 +815,8 @@ class Model_class():
         #fig = ax.get_figure()
         plt.savefig('../autodata/separate_seed_result/feature_importance{}.png'.format(file_name),)
         plt.close()
-
+        #reset parameters
+        sns.set()
         ##save result to file
         self.save_result_tofile(rf_cv, X_test, y_test, cm_matrix, file_name=file_name)
 
@@ -1062,16 +1068,18 @@ class Model_class():
         """
         # Draw the density plot
         fig, ax = plt.subplots()
+        #se the same bin
+        bin=[x*0.01 for x in list(range(1,101,1))]
         sns.histplot(label_1, kde=True,
                      color="orange",
-                     label="label1",ax=ax)
+                     label="label1",ax=ax,bins=bin)
         sns.histplot(label_0, kde=True,
                      color="blue",
-                     label="label0",ax=ax)
+                     label="label0",ax=ax,bins=bin)
         # Plot formatting
 
         plt.legend(prop={'size': 8}, title='Label')
-        plt.title('../autodata/separate_seed_result/{} probability distribution'.format(titile))
+        plt.title('{}_{} probability distribution'.format(file_name,titile))
         plt.xlabel('probability')
         plt.savefig("../autodata/separate_seed_result/{} probability distribution.png".format(file_name))
         plt.close()
