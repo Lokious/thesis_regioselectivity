@@ -290,10 +290,16 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
         X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
             input_dataframe)
 
-        X_train = X_train.drop(columns=["methyl_type"])
-        X_test = X_test.drop(columns=["methyl_type"])
-        y_train = y_train.drop(columns=["methyl_type"])
-        y_test = y_test.drop(columns=["methyl_type"])
+        X_train = X_train.drop(columns=["methyl_type","molecular_id"])
+
+        #save x test for further analysis result
+        y_test.to_csv(
+            "../autodata/model/active_site_167fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_y_test.csv".format(
+                domain, bit_score,
+                str(int(coverage * 100)), i=0))
+        X_test.to_csv("../autodata/model/active_site_167fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_X_test.csv".format(domain, bit_score,
+                                     str(int(coverage * 100)), i=0))
+        X_test = X_test.drop(columns=["methyl_type", "molecular_id"])
         # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
         #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
         model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
@@ -329,8 +335,9 @@ def separate_model_for_different_domain():
     #    "../autodata/align/different_version_pfam/Pfam35.0uniprot_2_1_1_domout.tsv")
     # domains, seq_df = parse_data.sepreate_sequence_based_on_domain_without_overlap(
     #     seq_domain_df)
-    bit_score=[9,11,15]
-    coverage=[round(x*0.1,2) for x in list(range(1,11,2))]
+    bit_score=[11]
+    #coverage=[round(x*0.1,2) for x in list(range(1,11,2))]
+    coverage=[0.5]
     '''
     seq_num_dict={}
     for score in bit_score:

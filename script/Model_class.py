@@ -544,10 +544,10 @@ class Model_class():
         test = df.iloc[test_inds]
 
         #X_train = train[list(train.columns)[:-2]]
-        X_train = (copy.deepcopy(train)).drop(columns=["Entry","molecular_id","label"])
+        X_train = (copy.deepcopy(train)).drop(columns=["Entry","label"])
         Y_train = train["label"]
         #X_test = test[list(test.columns)[:-2]]
-        X_test = (copy.deepcopy(test)).drop(columns=["Entry", "molecular_id", "label"])
+        X_test = (copy.deepcopy(test)).drop(columns=["Entry", "label"])
         Y_test = test["label"]
         #print(X_train, X_test, Y_train, Y_test)
         return X_train, X_test, Y_train, Y_test
@@ -637,8 +637,8 @@ class Model_class():
 
         #plt.scatter(pca_df.PC1, pca_df.PC2,  s=5,c=colour_label)
         print(pca_fit.explained_variance_ratio_)
-        plt.xlabel("pc1({:.2f}%)".format(pca_fit.explained_variance_ratio_[0]*100))
-        plt.ylabel("pc2({:.2f}%)".format(pca_fit.explained_variance_ratio_[1]*100))
+        plt.xlabel("pc1({:.2f}%)".format(round(pca_fit.explained_variance_ratio_[0]*100),2))
+        plt.ylabel("pc2({:.2f}%)".format(round(pca_fit.explained_variance_ratio_[1]*100),2))
         plt.title(" PCA coloured by methylation type")
         plt.savefig(
             "../pca_for encoding sequences and fingerprint_PC1 PC2{}".format(file_name))
@@ -685,8 +685,8 @@ class Model_class():
             handles=handle_list)
 
         # plt.scatter(pca_df.PC1, pca_df.PC2,  s=5,c=colour_label)
-        plt.xlabel("pc1")
-        plt.ylabel("pc2")
+        plt.xlabel("pc1({:.2f}%)".format(round(pca_fit.explained_variance_ratio_[0]*100),2))
+        plt.ylabel("pc2({:.2f}%)".format(round(pca_fit.explained_variance_ratio_[1]*100),2))
         plt.title("First two component of PCA coloured by label type")
         plt.savefig(
             "../pca_for encoding sequences and fingerprint for label_{}".format(file_name))
@@ -751,9 +751,9 @@ class Model_class():
         :return: randomforest model
         """
 
-        hyperparameters = {'n_estimators': [10,50],
+        hyperparameters = {'n_estimators': [500,1000,1500,2000],
                            'max_features': [0.3,0.5,0.7],
-                           'max_depth' : [5,10,15]
+                           'max_depth' : [5,10,15,20]
                            }
 
         #n_jobs number of cores used for it
@@ -806,6 +806,7 @@ class Model_class():
 
         #And visualize
         ### size and font size should be set before the sns plot###
+        sns_default=sns.axes_style()
         sns.set(rc={'figure.figsize': (40,20)})
         sns.set(font_scale=3)
         ax1=sns.barplot(data=fi.head(30), x="Importance", y=(fi.head(30)).index)
@@ -816,7 +817,7 @@ class Model_class():
         plt.savefig('../autodata/separate_seed_result/feature_importance{}.png'.format(file_name),)
         plt.close()
         #reset parameters
-        sns.set()
+        sns.set_style(sns_default)
         ##save result to file
         self.save_result_tofile(rf_cv, X_test, y_test, cm_matrix, file_name=file_name)
 

@@ -904,9 +904,61 @@ def check_overlap(file1:str="",file2:str=""):
     # print(len(df2["Entry"]))
 
 
-def main():
-    check_overlap(file1="PF08241PF01795_bit_score5_coverage0.6_ACS_bit128_3_remove_redundant.csv")
+def output_analysis(predict_df,fingerprint_df):
+    from scipy.stats.stats import pearsonr
+    predict_df=pd.read_csv(predict_df,header=0,index_col=0)
+    predict_df=pd.DataFrame(predict_df,columns=["molecular_id",'predict_label'])
+    fingerprint_df=pd.read_csv(fingerprint_df,header=0,index_col=0)
+    fingerprint_df=pd.DataFrame(fingerprint_df,columns=["molecular_id","atom_index","label","methyl_type"])
+    molecule_id=predict_df["molecular_id"].unique()
+    print(len(molecule_id))
+    remove_index=[]
+    for index in fingerprint_df.index:
+        if fingerprint_df.loc[index,"molecular_id"] not in molecule_id:
+            remove_index.append(index)
+    fingerprint_df.drop(index=remove_index,inplace=True)
+    fingerprint_df['predict_label']=predict_df['predict_label']
+    group_by_methylation_type=fingerprint_df.groupby(by="methyl_type")
+    summary_df = pd.DataFrame(columns=["methyl_type","molecular_id","number_of_possiable_atoms","predict"],index=list(range(len(molecule_id))))
+    df = sns.load_dataset("titanic")
+    i=0
+    for group in group_by_methylation_type.groups:
+        #group by methylation type
+        sub_df = group_by_methylation_type.get_group(group)
+        methyl_type=(sub_df["methyl_type"].unique())[0]
+        sub_group_id=sub_df.groupby(by="molecular_id")
+        for id_group in sub_group_id.groups:
+            id_group_df=sub_group_id.get_group(id_group)
+            molecular_id = id_group_df["molecular_id"].unique()[0]
+            count = 0
+            predict_boolean = True
+            for index in id_group_df.index:
+                if (id_group_df.loc[index,"atom_index"]).split(":")[0] == methyl_type:
+                    count +=1
+                    if int(id_group_df.loc[index,"predict_label"]) == int(id_group_df.loc[index,"label"]):
+                        predict_boolean=True
+                    else:
+                        predict_boolean=False
+                        break
+            summary_df.loc[i,"methyl_type"]=methyl_type
+            summary_df.loc[i,"number_of_possiable_atoms"]=count
+            summary_df.loc[i,"predict"]=predict_boolean
+            summary_df.loc[i, "molecular_id"] = molecular_id
+            i +=1
 
+    summary_df["number_of_possiable_atoms"]=summary_df["number_of_possiable_atoms"].astype("int")
+    summary_df["predict"]=summary_df["predict"].astype("bool")
+    print(summary_df)
+    print(summary_df.dtypes)
+    print(df)
+    print(df.dtypes)
+    ax = sns.violinplot(data=summary_df, x="methyl_type", y="number_of_possiable_atoms", hue="predict", split=True,inner="stick")
+    ax.set_yticks(list(range(20)))
+    print(fingerprint_df)
+    plt.show()
+def main():
+    #check_overlap(file1="PF08241PF01795_bit_score5_coverage0.6_ACS_bit128_3_remove_redundant.csv")
+    output_analysis("prediction_x_test.csv", "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv")
 
     #seq_number_df=pd.DataFrame(index=list(range(10)),columns=[("bit_score" + str(x)) for x in [5,7,9,11,13,15,17,19,21]])
     #try_different_coverage()
