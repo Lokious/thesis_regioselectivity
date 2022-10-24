@@ -1,8 +1,9 @@
 # thesis_regioselectivity
 packages needed to be installed:
 
-python >= 3.8
+python >= 3.7
 pandas1.4.3
+proDy 2.0
 numpy 1.21.2
 openpyxl-3.0.10
 rdkit 2022.03.4
