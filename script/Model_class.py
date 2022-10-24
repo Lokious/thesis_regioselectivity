@@ -1372,13 +1372,14 @@ class Model_class():
             X_train = (copy.deepcopy(train)).drop(columns=["Entry","label"])
             Y_train = train["label"]
             X_test = (copy.deepcopy(test)).drop(columns=["Entry", "label"])
-            X_test.to_csv("167fg_bond3_rf{}_{}X_test".format('MACCS',similarity))
+            X_test.to_csv("167fg_bond3_rf{}_{}X_test.csv".format('MACCS',similarity))
             Y_test = test["label"]
-            Y_test.to_csv("167fg_bond3_rf{}_{}Y_test".format('MACCS',similarity))
-            X_train.drop(columns=["molecular_id","atom_index","methyl_type"])
-            X_test.drop(columns=["molecular_id", "atom_index","methyl_type"])
+            Y_test.to_csv("167fg_bond3_rf{}_{}Y_test.csv".format('MACCS',similarity))
+            X_train=X_train.drop(columns=["molecular_id","methyl_type"])
+            X_test=X_test.drop(columns=["molecular_id","methyl_type"])
+            print(X_test)
             self.RF_model(X_train, X_test, Y_train, Y_test,
-                                "167fg_bond3_rf{}_{}".format('MACCS',similarity),i=0)
+                                "167fg_bond3_rf{}_({}%_{}%)".format('MACCS',str(minmum*100),str(maxmum*100)),i=0)
 
 def create_MACCSkey_fingerprint():
     model=Model_class()
