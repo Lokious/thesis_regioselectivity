@@ -753,7 +753,7 @@ class Model_class():
 
         hyperparameters = {'n_estimators': [500,1000,1500,2000],
                            'max_features': [0.3,0.5,0.7],
-                           'max_depth' : [5,10,15,20]
+                           'max_depth' : [6,8,10,12,14,16,18,20]
                            }
 
         #n_jobs number of cores used for it
@@ -1278,7 +1278,8 @@ class Model_class():
                     #if train seq is similar to test seq, remove this row in train
                     if train_entry in similarity_dictionary[test_entry]:
                         #check the similarity
-
+                        print("similarity is :")
+                        print(similarity_dictionary[test_entry][train_entry])
                         remove_index.append(index_train)
 
         train.drop(index=remove_index,inplace=True)
@@ -1329,7 +1330,7 @@ class Model_class():
 
         print(similarity_dictionary)
         #save similarity dictionary for later use
-        with open("autodata/similarity_dictionary", "wb") as dill_file:
+        with open("../autodata/similarity_dictionary", "wb") as dill_file:
             dill.dump(similarity_dictionary, dill_file)
 
         return similarity_dictionary
@@ -1362,15 +1363,14 @@ class Model_class():
         train = input_df.iloc[train_inds]
         test = input_df.iloc[test_inds]
 
-
+        self.check_test_train_similarity(test, train, 167,similarity_dictionary=similarity_dictionary)
         # X_train = (copy.deepcopy(train)).drop(columns=["Entry","molecular_id","label"])
         # Y_train = train["label"]
         #
         # X_test = (copy.deepcopy(test)).drop(columns=["Entry", "molecular_id", "label"])
         # Y_test = test["label"]
 
-
-def main():
+def create_MACCSkey_fingerprint():
     model=Model_class()
     model.check_file_exist("../autodata/seq_smiles_all.csv","../autodata/diction_atom_all")
     data_with_site = pd.read_csv("../autodata/seq_smiles_all.csv",
@@ -1379,5 +1379,8 @@ def main():
         diction_atom = dill.load(file1)
     model.save_MACCSkeys_fingerprints_to_dataframe(data_with_site, diction_atom,3, drop_atoms=True,file_name="all_data")
 
+def main():
+    model = Model_class()
+    model.comapre_result_for_different_similarity_test("autodata/input_data/input128fg_bond3_N_k_mer.csv")
 if __name__ == "__main__":
     main()

@@ -335,9 +335,9 @@ def separate_model_for_different_domain():
     #    "../autodata/align/different_version_pfam/Pfam35.0uniprot_2_1_1_domout.tsv")
     # domains, seq_df = parse_data.sepreate_sequence_based_on_domain_without_overlap(
     #     seq_domain_df)
-    bit_score=[11]
+    bit_score=[9,11,15]
     #coverage=[round(x*0.1,2) for x in list(range(1,11,2))]
-    coverage=[0.5]
+    coverage=[0.5,0.6,0.7,0.8,0.9]
     '''
     seq_num_dict={}
     for score in bit_score:
