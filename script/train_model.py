@@ -92,11 +92,19 @@ def main():
         #     input_dataframe = pd.read_csv("../autodata/input_data/bit_info/input128fg_dpna_bond3_{}_seed_onehot_encoding.csv.csv".format(file), header=0, index_col=0)
         #     #input_dataframe.dropna(inplace=True)
 
-        input_dataframe=pd.read_csv("../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv",header=0,index_col=0)
+        input_dataframe=pd.read_csv("../autodata/fingerprint/fingerprint_bit128_radius3_all_data_drop_atom_19_09.csv",header=0,index_col=0)
         #predict(input_dataframe)
         #
         # #input_dataframe=mo_del.duplicate_1_class(input_dataframe, 12)
         # #input_dataframe.drop(columns="226",inplace=True)
+        print(input_dataframe)
+        mol_id = input_dataframe["molecular_id"]
+        entry= input_dataframe["Entry"]
+        input_dataframe.drop(columns=["molecular_id","Entry"],inplace=True)
+        print(input_dataframe)
+        input_dataframe.drop_duplicates(inplace=True)
+        input_dataframe["molecular_id"]=mol_id
+        input_dataframe["Entry"] = entry
         print(input_dataframe)
         """
         input_dataframe = pd.read_csv("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_15_70_MACCS_X_test.csv",header=0,index_col=0)
@@ -110,14 +118,14 @@ def main():
         #     # mo_del.three_D_pca(X_train, y_train, "{}_128_2".format(file))
         #mo_del.run_PCA(sequence_data, group_label, "{}".format("k_mer_sequences"))
 
-        X_train = X_train.drop(columns=["methyl_type","molecular_id","atom_index"])
-        X_test = X_test.drop(columns=["methyl_type","molecular_id","atom_index"])
+        X_train = X_train.drop(columns=["methyl_type","molecular_id"])
+        X_test = X_test.drop(columns=["methyl_type","molecular_id"])
         # y_train = y_train.drop(columns=["methyl_type"])
         # y_test = y_test.drop(columns=["methyl_type"])
         # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
         #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
         model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                                "167fg_bond3_rf{}_{}".format(d1,"MACCS"),i=0)
+                                "138fg_bond3_rf{}_{}".format(d1,"morganbit"),i=0)
 
 if __name__ == "__main__":
     main()

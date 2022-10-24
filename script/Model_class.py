@@ -1233,13 +1233,13 @@ class Model_class():
 
         return X_train, X_test, Y_train, Y_test
 
-    def check_test_train_similarity(self, test, train, numbit,similarity_dictionary:dict={}):
+    def check_test_train_similarity(self, test, train, numbit,similarity_dictionary:dict={},maxmum_similarity:float=1.0,minimum_similarity:float=0.1):
         """
 
         :param test: entry in test
         :param train: entry in train
-        similarity_dictionary: {entry；[entry1,entry2,....,identity1,identity2...]}
-        :return:
+        similarity_dictionary: {entry；{entry1:identity1,entry2:identity2...}}
+        :return: train with sequences within the range of similarity
         """
 
         print(len(train.index))
@@ -1276,25 +1276,27 @@ class Model_class():
                     train_entry = train.loc[index_train,"Entry"]
                     #train_seq=seq_dictionary[train_entry]
                     #if train seq is similar to test seq, remove this row in train
-                    if train_entry in similarity_dictionary[test_entry]:
-                        #check the similarity
-                        print("similarity is :")
-                        print(similarity_dictionary[test_entry][train_entry])
-                        remove_index.append(index_train)
-
+                    if test_entry in similarity_dictionary.keys():
+                        if train_entry in similarity_dictionary[test_entry].keys():
+                            #check the similarity
+                            similarity = similarity_dictionary[test_entry][train_entry]
+                            print(similarity_dictionary[test_entry][train_entry])
+                            if (similarity > maxmum_similarity) or (similarity < minimum_similarity):
+                                remove_index.append(index_train)
+                    else:
+                        print("There are no similar sequences with {}".format(test_entry))
         train.drop(index=remove_index,inplace=True)
         print(len(train))
         self.train = train
-
         return train
 
-    def create_similarity_dictionary(self,file="../autodata/sequences/all_seq_smilarity_result.tab"):
+    def create_similarity_dictionary(self,file="../autodata/all_seq_smilarity_result.tab"):
         """
         This is the function to get the similarity dictionary
 
         :param file: string, file name and path with mmseqs result
         :return:
-        similarity_dictionary: {entry1；[entry2,identity2,...],entry2:[...]}
+        similarity_dictionary: {entry1；{entry2:identity2,...},entry2:{...}}
         """
 
         pd_result_mmseqs=pd.read_csv(file,header=None,index_col=None,sep="\t")
@@ -1319,14 +1321,11 @@ class Model_class():
             entry2 = pd_result_mmseqs.loc[i,"Entry2"]
             identity = pd_result_mmseqs.loc[i,"identity"]
             # save in the dictionary idf identity larger than 0.5
-            if identity >= 0.8:
-                if entry1 not in similarity_dictionary.keys():
-                    similarity_dictionary[entry1]=[entry2,identity]
-                else:
-                    similarity_dictionary[entry1].append(entry2)
-                    similarity_dictionary[entry1].append(identity)
+            if entry1 not in similarity_dictionary.keys():
+                similarity_dictionary[entry1]={entry2:identity}
             else:
-                break
+                similarity_dictionary[entry1][entry2] = identity
+
 
         print(similarity_dictionary)
         #save similarity dictionary for later use
@@ -1350,25 +1349,36 @@ class Model_class():
 
         #load similarity dictionary
         try:
-            with open("autodata/similarity_dictionary", 'rb') as file1:
+            with open("../autodata/similarity_dictionary", 'rb') as file1:
                 similarity_dictionary = dill.load(file1)
         except:
+            print("create similarity dictionary")
             similarity_dictionary = self.create_similarity_dictionary()
-
+        print(similarity_dictionary)
         #split test data bsed on different sequences similarity
         input_df=pd.read_csv(input_file,header=0,index_col=0)
         splitter = GroupShuffleSplit(test_size=0.4, n_splits=1, random_state=0)
         split = splitter.split(input_df, groups=input_df["molecular_id"])
         train_inds, test_inds = next(split)
         train = input_df.iloc[train_inds]
+        print("train len {}".format(len(train)))
         test = input_df.iloc[test_inds]
-
-        self.check_test_train_similarity(test, train, 167,similarity_dictionary=similarity_dictionary)
-        # X_train = (copy.deepcopy(train)).drop(columns=["Entry","molecular_id","label"])
-        # Y_train = train["label"]
-        #
-        # X_test = (copy.deepcopy(test)).drop(columns=["Entry", "molecular_id", "label"])
-        # Y_test = test["label"]
+        for similarity in [(0.0,0.2),(0.2,0.4),(0.4,0.6),(0.6,0.8),(0.8,1.0)]:
+            print(similarity)
+            minmum,maxmum = similarity
+            self.check_test_train_similarity(test, train, 167,similarity_dictionary=similarity_dictionary,minimum_similarity=minmum,maxmum_similarity=maxmum)
+            train = self.train
+            print(len(train))
+            X_train = (copy.deepcopy(train)).drop(columns=["Entry","label"])
+            Y_train = train["label"]
+            X_test = (copy.deepcopy(test)).drop(columns=["Entry", "label"])
+            X_test.to_csv("167fg_bond3_rf{}_{}X_test".format('MACCS',similarity))
+            Y_test = test["label"]
+            Y_test.to_csv("167fg_bond3_rf{}_{}Y_test".format('MACCS',similarity))
+            X_train.drop(columns=["molecular_id","atom_index","methyl_type"])
+            X_test.drop(columns=["molecular_id", "atom_index","methyl_type"])
+            self.RF_model(X_train, X_test, Y_train, Y_test,
+                                "167fg_bond3_rf{}_{}".format('MACCS',similarity),i=0)
 
 def create_MACCSkey_fingerprint():
     model=Model_class()
@@ -1381,6 +1391,6 @@ def create_MACCSkey_fingerprint():
 
 def main():
     model = Model_class()
-    model.comapre_result_for_different_similarity_test("autodata/input_data/input128fg_bond3_N_k_mer.csv")
+    model.comapre_result_for_different_similarity_test("../autodata/input_data/active_site/PF08241_bit_score15_coverage0.5_ACS_bit167_3_remove_redundant_MACCS.csv")
 if __name__ == "__main__":
     main()
