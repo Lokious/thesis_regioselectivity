@@ -4,7 +4,7 @@ packages needed to be installed:
 python >= 3.7
 pandas1.4.3
 proDy 2.0
-numpy 1.21.2
+numpy NumPy 1.21 or less（because of Numba)
 openpyxl-3.0.10
 rdkit 2022.03.4
 dill 0.3.5.1
