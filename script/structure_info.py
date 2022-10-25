@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
-This works on server, seems due to environment problem of Biopython and prody on my pycharm
+need Numpy version equal or less than 1.21
 """
+import copy
 from urllib.request import urlopen
+
+import dill
 import pandas as pd
 import prody as pro
 from geometricus import MomentInvariants, SplitType
@@ -10,6 +13,9 @@ from geometricus import GeometricusEmbedding
 import numpy as np
 import umap
 import matplotlib.pyplot as plt
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GroupShuffleSplit
+from Model_class import Model_class
 
 def download_pdb_structure_from_alphafola(input_file="",entry_pdb="../autodata/entry_pdb.xlsx"):
 
@@ -34,6 +40,7 @@ def download_pdb_structure_from_alphafola(input_file="",entry_pdb="../autodata/e
     pdbs = []
     invariants_kmer = []
     invariants_radius = []
+    missing_structure = []
     for index in input_df.index:
         print(index)
         entry = input_df.loc[index,"Entry"]
@@ -135,35 +142,76 @@ def download_pdb_structure_from_alphafola(input_file="",entry_pdb="../autodata/e
                     print("{} do not have predicted structure in alphafold database".format(entry))
                     pdbs.append("NA")
                     invariants_kmer.append("NA")
-
                     invariants_radius.append("NA")
-
+    file1.close()
     input_df["structure"] = pdbs
-    input_df["invariants_kmer"] = invariants_kmer
-    input_df["invariants_radius"] = invariants_radius
-    print(input_df)
-    for index in input_df.index:
-        pdb_structure= input_df.loc[index,"structure"]
-        invariants_kmer = input_df.loc[index,"invariants_kmer"]
-        print(type(invariants_kmer))
-        invariants_radius = input_df.loc[index, "invariants_radius"]
-        print(type(invariants_radius))
-        geometrius_embedding(invariants_kmer, invariants_radius)
 
-def geometrius_embedding(invariants_kmer,invariants_radius):
+
+def geometrius_embedding(invariants_kmer,invariants_radius,entry):
 
         kmer_embedder = GeometricusEmbedding.from_invariants(invariants_kmer,
-                                                             resolution=2.)
+                                                             resolution=2.,protein_keys=entry)
         radius_embedder = GeometricusEmbedding.from_invariants(invariants_radius,
-                                                               resolution=2.)
+                                                               resolution=2.,protein_keys=entry)
 
         print(kmer_embedder )#2D
         print(radius_embedder)
-        print(len(kmer_embedder))
-        print(len(radius_embedder))
-def main():
+        return kmer_embedder,radius_embedder
 
-    download_pdb_structure_from_alphafola(input_file="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit128_3_remove_redundant.csv")
+def merge_structure_embedding_to_input(input_df=""):
+
+    #  with open("invariants_kmer", "rb") as dillfile1:
+    #     invariants_kmer = dill.load(dillfile1)
+    # dillfile1.close()
+    #
+    # with open("invariants_radius", "rb") as dillfile2:
+    #     invariants_radius=dill.load(dillfile2)
+
+    # dillfile2.close()
+    # input_df["invariants_kmer"] = invariants_kmer
+    # input_df["invariants_radius"] = invariants_radius
+    with open(
+            "../autodata/input_data/active_site/with_structure/PF08241_bit_score15_coverage0.7_ACS_bit128_3_remove_redundant_with_structure",
+            "rb") as dillfile:
+        input_df = dill.load(dillfile)
+    print(input_df)
+
+    # train_test split
+    splitter = GroupShuffleSplit(test_size=0.8, n_splits=1, random_state=0)
+    split = splitter.split(input_df, groups=input_df["molecular_id"])
+    train_inds, test_inds = next(split)
+    train = input_df.iloc[train_inds]
+    test = input_df.iloc[test_inds]
+
+    # X_train = train[list(train.columns)[:-2]]
+    X_train = (copy.deepcopy(train)).drop(columns=["label"])
+    Y_train = train["label"]
+    # X_test = test[list(test.columns)[:-2]]
+    X_test = (copy.deepcopy(test)).drop(columns=["label"])
+    Y_test = test["label"]
+
+    train_invariants_kmer = X_train["invariants_kmer"]
+    train_invariants_radius = X_train["invariants_radius"]
+    # embeddding for training data
+    train_kmer_embedder, train_radius_embedder = geometrius_embedding(
+        train_invariants_kmer, train_invariants_radius,entry=X_train["Entry"])
+    shapemers_k_mer = train_kmer_embedder.shapemer_keys
+    shapemers_radius_mer = train_radius_embedder.shapemer_keys
+    # use the same shapmer for test embedding
+    test_invariants_kmer = X_test["invariants_kmer"]
+    test_invariants_radius = X_test["invariants_radius"]
+    # test_kmer_embedder = GeometricusEmbedding.from_invariants(
+    #     test_invariants_kmer,
+    #     resolution=2., shapemer_keys=shapemers_k_mer,protein_keys=X_test["Entry"])
+    # test_radius_embedder = GeometricusEmbedding.from_invariants(
+    #     test_invariants_radius,
+    #     resolution=2., shapemer_keys=shapemers_radius_mer,protein_keys=X_test["Entry"])
+    test_kmer_embedder=train_kmer_embedder.embed(test_invariants_kmer, X_test["Entry"])
+    print(len(train_kmer_embedder.embedding))
+    print(train_kmer_embedder.embedding)
+def main():
+    merge_structure_embedding_to_input()
+    #download_pdb_structure_from_alphafola(input_file="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit128_3_remove_redundant.csv")
 
 if __name__ == "__main__":
     main()

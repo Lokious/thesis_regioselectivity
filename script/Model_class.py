@@ -751,10 +751,16 @@ class Model_class():
         :return: randomforest model
         """
 
-        hyperparameters = {'n_estimators': [500,1000,1500,2000],
+        hyperparameters = {'n_estimators': [500,1000,1500],
                            'max_features': [0.3,0.5,0.7],
-                           'max_depth' : [6,8,10,12,14,16,18,20]
+                           'max_depth' : [6,8,10,12,14,16]
                            }
+
+        #just for test
+        # hyperparameters = {'n_estimators': [100,200],
+        #                    'max_features': [0.3,0.5],
+        #                    'max_depth' : [6,8]
+        #                    }
 
         #n_jobs number of cores used for it
         #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
@@ -808,7 +814,7 @@ class Model_class():
         ### size and font size should be set before the sns plot###
         sns_default=sns.axes_style()
         sns.set(rc={'figure.figsize': (40,20)})
-        sns.set(font_scale=3)
+        #sns.set(font_scale=3)
         ax1=sns.barplot(data=fi.head(30), x="Importance", y=(fi.head(30)).index)
         ax1.set_title(
             "feature importance for RF model")
@@ -1242,9 +1248,9 @@ class Model_class():
         :return: train with sequences within the range of similarity
         """
 
-        print(len(train.index))
+        print(len(test.index))
         # this dictionary is to save fingerprint and corresponding index in train data
-        print(train.index)
+        #print(train.index)
         train_sub_fg_dictionary={}
         for index_train in train.index:
             column_name=[str(x) for x in range(numbit * 2)]
@@ -1259,7 +1265,7 @@ class Model_class():
         #list odf all fingerprint present in train data
         train_sub_fg_list=list(train_sub_fg_dictionary.keys())
 
-        remove_index=[]
+        keep_index=[]
         for index_test in test.index:
             #join the fingerprint to a sting for searching
             column_name = [str(x) for x in range(numbit * 2)]
@@ -1272,23 +1278,32 @@ class Model_class():
                 #test_seq=seq_dictionary[test_entry]
                 #check all the index for this substrate in train data
                 for index_train in train_sub_fg_dictionary[sub_fingerprint]:
-                    print(test_entry,"test",test_entry)
+                    #print(test_entry,"test",test_entry)
                     train_entry = train.loc[index_train,"Entry"]
                     #train_seq=seq_dictionary[train_entry]
-                    #if train seq is similar to test seq, remove this row in train
-                    if test_entry in similarity_dictionary.keys():
-                        if train_entry in similarity_dictionary[test_entry].keys():
+                    #if test seq is similar to test seq, remove this row in train
+                    if train_entry in similarity_dictionary.keys():
+                        if test_entry in similarity_dictionary[train_entry].keys():
                             #check the similarity
-                            similarity = similarity_dictionary[test_entry][train_entry]
-                            print(similarity_dictionary[test_entry][train_entry])
-                            if (similarity > maxmum_similarity) or (similarity < minimum_similarity):
-                                remove_index.append(index_train)
+                            similarity = similarity_dictionary[train_entry][test_entry]
+
+                            if (similarity < maxmum_similarity) and (similarity > minimum_similarity):
+                                print(similarity_dictionary[train_entry][
+                                          test_entry])
+                                print(maxmum_similarity)
+                                print(minimum_similarity)
+                                keep_index.append(index_test)
                     else:
-                        print("There are no similar sequences with {}".format(test_entry))
-        train.drop(index=remove_index,inplace=True)
-        print(len(train))
-        self.train = train
-        return train
+                        if minimum_similarity==0.0:
+                            keep_index.append(index_test)
+                        #print("There are no similar sequences with {}".format(test_entry))
+        print(keep_index)
+        test= test.loc[keep_index]
+        #test = pd.DataFrame(test,index=keep_index)
+        print(len(test.index))
+        print(test)
+        # self.train = train
+        return test
 
     def create_similarity_dictionary(self,file="../autodata/all_seq_smilarity_result.tab"):
         """
@@ -1361,14 +1376,16 @@ class Model_class():
         split = splitter.split(input_df, groups=input_df["molecular_id"])
         train_inds, test_inds = next(split)
         train = input_df.iloc[train_inds]
-        print("train len {}".format(len(train)))
-        test = input_df.iloc[test_inds]
+
+
         for similarity in [(0.0,0.2),(0.2,0.4),(0.4,0.6),(0.6,0.8),(0.8,1.0)]:
+            test = input_df.iloc[test_inds]
+            print("test len {}".format(len(test)))
             print(similarity)
             minmum,maxmum = similarity
-            self.check_test_train_similarity(test, train, 167,similarity_dictionary=similarity_dictionary,minimum_similarity=minmum,maxmum_similarity=maxmum)
-            train = self.train
-            print(len(train))
+            test=self.check_test_train_similarity(test, train, 167,similarity_dictionary=similarity_dictionary,minimum_similarity=minmum,maxmum_similarity=maxmum)
+
+            print(len(test))
             X_train = (copy.deepcopy(train)).drop(columns=["Entry","label"])
             Y_train = train["label"]
             X_test = (copy.deepcopy(test)).drop(columns=["Entry", "label"])
@@ -1379,7 +1396,7 @@ class Model_class():
             X_test=X_test.drop(columns=["molecular_id","methyl_type"])
             print(X_test)
             self.RF_model(X_train, X_test, Y_train, Y_test,
-                                "167fg_bond3_rf{}_({}%_{}%)".format('MACCS',str(minmum*100),str(maxmum*100)),i=0)
+                                "167fg_bond3_rf{}_{}%_{}%".format('MACCS',str(int(minmum*100)),str(int(maxmum*100))),i=0)
 
 def create_MACCSkey_fingerprint():
     model=Model_class()
@@ -1392,6 +1409,6 @@ def create_MACCSkey_fingerprint():
 
 def main():
     model = Model_class()
-    model.comapre_result_for_different_similarity_test("../autodata/input_data/active_site/PF08241_bit_score15_coverage0.5_ACS_bit167_3_remove_redundant_MACCS.csv")
+    model.comapre_result_for_different_similarity_test("../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit167_3_remove_redundant_MACCS.csv")
 if __name__ == "__main__":
     main()
