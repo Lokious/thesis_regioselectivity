@@ -961,6 +961,7 @@ class Model_class():
         label_1_pre=[]
         label_0_pre=[]
         for i,index in enumerate(y_test.index):
+            print(y_test.loc[index])
             if y_test.loc[index]==1:
                 label_1_pre.append(i)
             else:
@@ -1391,12 +1392,13 @@ class Model_class():
             X_test = (copy.deepcopy(test)).drop(columns=["Entry", "label"])
             X_test.to_csv("167fg_bond3_rf{}_{}X_test.csv".format('MACCS',similarity))
             Y_test = test["label"]
+            print(Y_test)
             Y_test.to_csv("167fg_bond3_rf{}_{}Y_test.csv".format('MACCS',similarity))
             X_train=X_train.drop(columns=["molecular_id","methyl_type"])
             X_test=X_test.drop(columns=["molecular_id","methyl_type"])
-            print(X_test)
-            self.RF_model(X_train, X_test, Y_train, Y_test,
-                                "167fg_bond3_rf{}_{}%_{}%".format('MACCS',str(int(minmum*100)),str(int(maxmum*100))),i=0)
+            #print(X_test)
+            self.RF_model(X_train, X_test, y_train=Y_train, y_test=Y_test,
+                                file_name="167fg_bond3_rf{}_{}%_{}%".format('MACCS',str(int(minmum*100)),str(int(maxmum*100))),i=0)
 
 def create_MACCSkey_fingerprint():
     model=Model_class()

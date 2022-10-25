@@ -154,8 +154,8 @@ def geometrius_embedding(invariants_kmer,invariants_radius,entry):
         radius_embedder = GeometricusEmbedding.from_invariants(invariants_radius,
                                                                resolution=2.,protein_keys=entry)
 
-        print(kmer_embedder )#2D
-        print(radius_embedder)
+        # print(kmer_embedder )#2D
+        # print(radius_embedder)
         return kmer_embedder,radius_embedder
 
 def merge_structure_embedding_to_input(input_df=""):
@@ -175,7 +175,9 @@ def merge_structure_embedding_to_input(input_df=""):
             "rb") as dillfile:
         input_df = dill.load(dillfile)
     print(input_df)
-
+    input_df.replace("NA", np.nan, inplace=True)
+    input_df = input_df.dropna()
+    print(input_df)
     # train_test split
     splitter = GroupShuffleSplit(test_size=0.8, n_splits=1, random_state=0)
     split = splitter.split(input_df, groups=input_df["molecular_id"])
@@ -192,26 +194,64 @@ def merge_structure_embedding_to_input(input_df=""):
 
     train_invariants_kmer = X_train["invariants_kmer"]
     train_invariants_radius = X_train["invariants_radius"]
+    test_invariants_kmer = X_test["invariants_kmer"]
+    test_invariants_radius = X_test["invariants_radius"]
     # embeddding for training data
     train_kmer_embedder, train_radius_embedder = geometrius_embedding(
         train_invariants_kmer, train_invariants_radius,entry=X_train["Entry"])
     shapemers_k_mer = train_kmer_embedder.shapemer_keys
+    #print(shapemers_k_mer)
     shapemers_radius_mer = train_radius_embedder.shapemer_keys
     # use the same shapmer for test embedding
-    test_invariants_kmer = X_test["invariants_kmer"]
-    test_invariants_radius = X_test["invariants_radius"]
-    # test_kmer_embedder = GeometricusEmbedding.from_invariants(
-    #     test_invariants_kmer,
-    #     resolution=2., shapemer_keys=shapemers_k_mer,protein_keys=X_test["Entry"])
-    # test_radius_embedder = GeometricusEmbedding.from_invariants(
-    #     test_invariants_radius,
-    #     resolution=2., shapemer_keys=shapemers_radius_mer,protein_keys=X_test["Entry"])
-    test_kmer_embedder=train_kmer_embedder.embed(test_invariants_kmer, X_test["Entry"])
-    print(len(train_kmer_embedder.embedding))
-    print(train_kmer_embedder.embedding)
+
+    #print(X_train["Entry"])
+    #print(X_test["Entry"])
+    test_kmer_embedder = GeometricusEmbedding.from_invariants(
+        test_invariants_kmer,shapemer_keys=shapemers_k_mer,
+        resolution=2.,protein_keys=X_test["Entry"])
+    test_radius_embedder = GeometricusEmbedding.from_invariants(
+        test_invariants_radius,
+        resolution=2., shapemer_keys=shapemers_radius_mer,protein_keys=X_test["Entry"])
+    # test_kmer_embedder=geometrius_embedding(
+    #     test_invariants_kmer, test_invariants_radius,entry=X_test["Entry"])
+    # print(len(train_kmer_embedder.embedding))
+    # print(shapemers_radius_mer)
+    # print(len(test_kmer_embedder.embedding))
+    train_structure_embedding_k_mer = pd.DataFrame(data=train_kmer_embedder.embedding,index=range(len(train_kmer_embedder.embedding)),columns=[str(x) for x in shapemers_k_mer])
+    test_structure_embedding_k_mer = pd.DataFrame(
+        data=test_kmer_embedder.embedding,
+        index=range(len(test_kmer_embedder.embedding)),
+        columns=[str(x) for x in shapemers_k_mer])
+    train_structure_embedding_radius_mer = pd.DataFrame(data=train_radius_embedder.embedding,index=range(len(train_radius_embedder.embedding)),columns=[str(x) for x in shapemers_radius_mer])
+    test_structure_embedding_radius_mer = pd.DataFrame(
+        data=test_radius_embedder.embedding,
+        index=range(len(test_radius_embedder.embedding)),
+        columns=[str(x) for x in shapemers_radius_mer])
+    print(train_structure_embedding_radius_mer)
+    input_train = pd.concat([train,train_structure_embedding_k_mer,train_structure_embedding_radius_mer],axis=1).reindex(train.index)
+    input_test = pd.concat([test, test_structure_embedding_k_mer,test_structure_embedding_radius_mer], axis=1).reindex(test.index)
+    print(input_test)
+    input_train.to_csv("traindata.csv")
+    input_test.to_csv("testdata.csv")
+    return input_train,input_test
+    #print(train_kmer_embedder.embedding)
 def main():
-    merge_structure_embedding_to_input()
+    train,test=merge_structure_embedding_to_input()
+    test.dropna(inplace=True)
+    train.dropna(inplace=True)
+    # train = pd.read_csv("traindata.csv")
+    # test = pd.read_csv("testdata.csv")
     #download_pdb_structure_from_alphafola(input_file="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit128_3_remove_redundant.csv")
+    X_train = (copy.deepcopy(train)).drop(columns=["label","invariants_kmer","Entry","invariants_radius","molecular_id","methyl_type"])
+    y_train = train["label"]
+    # X_test = test[list(test.columns)[:-2]]
+    X_test = (copy.deepcopy(test)).drop(columns=["label","invariants_kmer","Entry","invariants_radius","molecular_id","methyl_type"])
+    y_test = test["label"]
+    print(test)
+    mo_del = Model_class()
+    model = mo_del.RF_model(X_train, X_test, y_train, y_test,
+                            "167fg__rf{}_{}".format("26_10","PF08241_with_structure"),i=0)
+
 
 if __name__ == "__main__":
     main()
