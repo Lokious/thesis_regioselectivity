@@ -175,7 +175,7 @@ def merge_structure_embedding_to_input(input_df=""):
             "rb") as dillfile:
         input_df = dill.load(dillfile)
     print(input_df)
-    input_df.replace("NA", np.nan, inplace=True)
+    input_df.drop(input_df.index[input_df["invariants_radius"]=="NA"], inplace=True)
     input_df = input_df.dropna()
     print(input_df)
     # train_test split
@@ -227,27 +227,35 @@ def merge_structure_embedding_to_input(input_df=""):
         data=test_radius_embedder.embedding,
         index=range(len(test_radius_embedder.embedding)),
         columns=[str(x) for x in shapemers_radius_mer])
-    print(train_structure_embedding_radius_mer)
+    #print(train_structure_embedding_radius_mer)
+    print(len(test.index))
+    print(train.isnull().sum())
+    print(test.isnull().sum())
+    print(len(test_structure_embedding_radius_mer.index))
+    print(test_structure_embedding_radius_mer.isnull())
     input_train = pd.concat([train,train_structure_embedding_k_mer,train_structure_embedding_radius_mer],axis=1).reindex(train.index)
     input_test = pd.concat([test, test_structure_embedding_k_mer,test_structure_embedding_radius_mer], axis=1).reindex(test.index)
-    print(input_test)
+    print(len(input_test.index))
     input_train.to_csv("traindata.csv")
     input_test.to_csv("testdata.csv")
     return input_train,input_test
     #print(train_kmer_embedder.embedding)
+
 def main():
     train,test=merge_structure_embedding_to_input()
-    test.dropna(inplace=True)
-    train.dropna(inplace=True)
+
     # train = pd.read_csv("traindata.csv")
     # test = pd.read_csv("testdata.csv")
+    test = test.dropna()
+    train = train.dropna()
     #download_pdb_structure_from_alphafola(input_file="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit128_3_remove_redundant.csv")
-    X_train = (copy.deepcopy(train)).drop(columns=["label","invariants_kmer","Entry","invariants_radius","molecular_id","methyl_type"])
+    X_train = (copy.deepcopy(train)).drop(columns=["label","invariants_kmer","Entry","invariants_radius","molecular_id","methyl_type","structure"])
     y_train = train["label"]
     # X_test = test[list(test.columns)[:-2]]
-    X_test = (copy.deepcopy(test)).drop(columns=["label","invariants_kmer","Entry","invariants_radius","molecular_id","methyl_type"])
+    X_test = (copy.deepcopy(test)).drop(columns=["label","invariants_kmer","Entry","invariants_radius","molecular_id","methyl_type","structure"])
     y_test = test["label"]
     print(test)
+    #print(test.columns)
     mo_del = Model_class()
     model = mo_del.RF_model(X_train, X_test, y_train, y_test,
                             "167fg__rf{}_{}".format("26_10","PF08241_with_structure"),i=0)

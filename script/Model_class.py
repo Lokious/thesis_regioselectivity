@@ -753,7 +753,7 @@ class Model_class():
 
         hyperparameters = {'n_estimators': [500,1000,1500],
                            'max_features': [0.3,0.5,0.7],
-                           'max_depth' : [6,8,10,12,14,16]
+                           'max_depth' : [10,15,20,30]
                            }
 
         #just for test
@@ -961,7 +961,7 @@ class Model_class():
         label_1_pre=[]
         label_0_pre=[]
         for i,index in enumerate(y_test.index):
-            print(y_test.loc[index])
+            #print(y_test.loc[index])
             if y_test.loc[index]==1:
                 label_1_pre.append(i)
             else:
@@ -1273,7 +1273,6 @@ class Model_class():
             list_sub_fg = (test.loc[index_test,column_name]).values.tolist()
             list_sub_fg = [str(x) for x in list_sub_fg]
             sub_fingerprint = "".join(list_sub_fg)
-
             if sub_fingerprint in train_sub_fg_list:
                 test_entry = test.loc[index_test,"Entry"]
                 #test_seq=seq_dictionary[test_entry]
@@ -1299,6 +1298,7 @@ class Model_class():
                             keep_index.append(index_test)
                         #print("There are no similar sequences with {}".format(test_entry))
         print(keep_index)
+        keep_index = list(set(keep_index))
         test= test.loc[keep_index]
         #test = pd.DataFrame(test,index=keep_index)
         print(len(test.index))
@@ -1376,10 +1376,10 @@ class Model_class():
         splitter = GroupShuffleSplit(test_size=0.4, n_splits=1, random_state=0)
         split = splitter.split(input_df, groups=input_df["molecular_id"])
         train_inds, test_inds = next(split)
-        train = input_df.iloc[train_inds]
 
 
         for similarity in [(0.0,0.2),(0.2,0.4),(0.4,0.6),(0.6,0.8),(0.8,1.0)]:
+            train = input_df.iloc[train_inds]
             test = input_df.iloc[test_inds]
             print("test len {}".format(len(test)))
             print(similarity)
@@ -1392,7 +1392,7 @@ class Model_class():
             X_test = (copy.deepcopy(test)).drop(columns=["Entry", "label"])
             X_test.to_csv("167fg_bond3_rf{}_{}X_test.csv".format('MACCS',similarity))
             Y_test = test["label"]
-            print(Y_test)
+            print(Y_test.index)
             Y_test.to_csv("167fg_bond3_rf{}_{}Y_test.csv".format('MACCS',similarity))
             X_train=X_train.drop(columns=["molecular_id","methyl_type"])
             X_test=X_test.drop(columns=["molecular_id","methyl_type"])

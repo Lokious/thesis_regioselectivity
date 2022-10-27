@@ -956,14 +956,106 @@ def output_analysis(predict_df,fingerprint_df,similarity_range=""):
     # print(df.dtypes)
     # print(fingerprint_df)
     violiint_plot(summary_df)
+
 def violiint_plot(summary_df, x="methyl_type", y="number_of_possiable_atoms",hue="predict"):
-    ax = sns.violinplot(data=summary_df, x=x, y=y, hue=hue, split=True,inner="stick")
+    ax = sns.violinplot(data=summary_df, x=x, y=y, hue=hue, split=True,inner="stick",scale="count")
     y_stick = [(x*0.1) for x in list(range(0,11,2))]
     ax.set_yticks(y_stick)
     plt.savefig("violint.png")
     plt.show()
+def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
+    input_data = pd.read_csv(input_data,index_col=0,header=0)
+    substrate_df=pd.read_csv(substrate_df,index_col=0,header=0)
+    #print(input_data)
+    methyl_groups=input_data.groupby(by="methyl_type")
+    substrate_C=pd.DataFrame()
+    substrate_O = pd.DataFrame()
+    substrate_N = pd.DataFrame()
+    substrate_S = pd.DataFrame()
+    for group in methyl_groups.groups:
+        sub_group_df=methyl_groups.get_group(group)
+        #print(sub_group_df["methyl_type"].unique())
+        if sub_group_df["methyl_type"].unique()[0]=="C":
+            merge = substrate_df.merge(sub_group_df,on=["Entry","methyl_type"])
+            print(merge.columns)
+            print(merge["main_sub"])
+            substrate_C["main_sub"] = merge["main_sub"]
+            substrate_C["methyl_type"] = merge["methyl_type"]
+            substrate_C["reactant_site"] = merge["reactant_site"]
+        if sub_group_df["methyl_type"].unique()[0]=="O":
+            merge = substrate_df.merge(sub_group_df,on=["Entry","methyl_type"])
+            print(merge.columns)
+            print(merge["main_sub"])
+            substrate_O["main_sub"]=merge["main_sub"]
+            substrate_O["methyl_type"] = merge["methyl_type"]
+            substrate_O["reactant_site"] = merge["reactant_site"]
+        if sub_group_df["methyl_type"].unique()[0] == "N":
+            merge = substrate_df.merge(sub_group_df, on=["Entry","methyl_type"])
+            print(merge.columns)
+            print(merge["main_sub"])
+            substrate_N["main_sub"] = merge["main_sub"]
+            substrate_N["methyl_type"] = merge["methyl_type"]
+            substrate_N["reactant_site"] = merge["reactant_site"]
+        if sub_group_df["methyl_type"].unique()[0] == "S":
+            merge = substrate_df.merge(sub_group_df, on=["Entry","methyl_type"])
+            print(merge.columns)
+            print(merge["main_sub"])
+            substrate_S["main_sub"] = merge["main_sub"]
+            substrate_S["methyl_type"] = merge["methyl_type"]
+            substrate_S["reactant_site"] = merge["reactant_site"]
+    print("O")
+    print(len(substrate_O.index))
+    substrate_O = substrate_O.drop_duplicates()
+    print(len(substrate_O.index))
+    #(substrate_O)
+    print("N")
+    print(len(substrate_N.index))
+    substrate_N = substrate_N.drop_duplicates()
+    print(len(substrate_N.index))
+    #print(substrate_N)
+    print("S")
+    print(len(substrate_S.index))
+    substrate_S = substrate_S.drop_duplicates()
+    print(len(substrate_S.index))
+    #print(substrate_S)
+    print("C")
+    print(len(substrate_C.index))
+    substrate_C = substrate_C.drop_duplicates()
+    print(len(substrate_C.index))
+    #print(substrate_C)
 
-def main():
+    dfs=[substrate_O,substrate_N,substrate_C,substrate_S]
+    for df in dfs:
+        type = df["methyl_type"].unique()[0]
+        print(type)
+        for index in df.index:
+            smile1=df.loc[index,"main_sub"]
+            sites=df.loc[index,"reactant_site"]
+            print(sites)
+            if "," in sites:
+                site_list = sites.split(",")
+            else:
+                site_list = [sites]
+            sites = []
+            for site in site_list:
+                sites.append(site.split(":")[1])
+            mol1 = Chem.MolFromSmiles(smile1)
+            print(mol1)
+            atomindex = []
+            for atom in mol1.GetAtoms():
+                isotope = atom.GetIsotope()
+                print("iso:{}".format(isotope))
+                print(sites)
+                for item in sites:
+                    if isotope == int(item):
+                        print("iso:{}".format(isotope))
+                        atomindex.append(atom.GetIdx())
+            print(smile1)
+            #Draw.ShowMol(mol1,(600,600),highlightAtoms=[int(atomindex)])
+            file="{}/{}.png".format(type,index)
+            img1=Draw.MolToImage(mol1,(600,600),highlightAtoms=atomindex)
+            img1.save(file)
+def different_similarity_result():
     #check_overlap(file1="PF08241PF01795_bit_score5_coverage0.6_ACS_bit128_3_remove_redundant.csv")
     sum_df=pd.DataFrame()
     for similarity_range in [(0.0,0.2),(0.2,0.4),(0.4,0.6),(0.6,0.8),(0.8,1.0)]:
@@ -1060,6 +1152,8 @@ def main():
     #               hue="predict")
     violiint_plot(sum_df, x="methyl_type", y="similarity_range",
                   hue="atom_predict")
+def main():
+    check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit167_3_remove_redundant_MACCS.csv")
     # sum_df.to_csv("prediction_x_test.csv")
     # output_analysis("prediction_x_test.csv", "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv")
 
@@ -1089,5 +1183,6 @@ def main():
     #      trget_df=read_hmmscan_out("../autodata/align/hmmsearch/{}_tblout.tsv".format(i))
     # get_active_and_binding_site_realted_to_methylation()
     #merge_encoding_to_onefile()
+
 if __name__ == "__main__":
     main()
