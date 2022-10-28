@@ -982,6 +982,7 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
             substrate_C["main_sub"] = merge["main_sub"]
             substrate_C["methyl_type"] = merge["methyl_type"]
             substrate_C["reactant_site"] = merge["reactant_site"]
+            substrate_C["Entry"] = merge["Entry"]
         if sub_group_df["methyl_type"].unique()[0]=="O":
             merge = substrate_df.merge(sub_group_df,on=["Entry","methyl_type"])
             print(merge.columns)
@@ -989,6 +990,7 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
             substrate_O["main_sub"]=merge["main_sub"]
             substrate_O["methyl_type"] = merge["methyl_type"]
             substrate_O["reactant_site"] = merge["reactant_site"]
+            substrate_O["Entry"] = merge["Entry"]
         if sub_group_df["methyl_type"].unique()[0] == "N":
             merge = substrate_df.merge(sub_group_df, on=["Entry","methyl_type"])
             print(merge.columns)
@@ -996,6 +998,7 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
             substrate_N["main_sub"] = merge["main_sub"]
             substrate_N["methyl_type"] = merge["methyl_type"]
             substrate_N["reactant_site"] = merge["reactant_site"]
+            substrate_N["Entry"] = merge["Entry"]
         if sub_group_df["methyl_type"].unique()[0] == "S":
             merge = substrate_df.merge(sub_group_df, on=["Entry","methyl_type"])
             print(merge.columns)
@@ -1003,35 +1006,40 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
             substrate_S["main_sub"] = merge["main_sub"]
             substrate_S["methyl_type"] = merge["methyl_type"]
             substrate_S["reactant_site"] = merge["reactant_site"]
+            substrate_S["Entry"] = merge["Entry"]
     print("O")
     print(len(substrate_O.index))
+    print("Entries: {}".format(len(substrate_O["Entry"].unique())))
     substrate_O = substrate_O.drop_duplicates()
-    print(len(substrate_O.index))
+    print(len(substrate_O["main_sub"].unique()))
     #(substrate_O)
     print("N")
     print(len(substrate_N.index))
     substrate_N = substrate_N.drop_duplicates()
-    print(len(substrate_N.index))
+    print(len(substrate_N["main_sub"].unique()))
+    print("Entries: {}".format(len(substrate_N["Entry"].unique())))
     #print(substrate_N)
     print("S")
     print(len(substrate_S.index))
     substrate_S = substrate_S.drop_duplicates()
-    print(len(substrate_S.index))
+    print(len(substrate_S["main_sub"].unique()))
+    print("Entries: {}".format(len(substrate_S["Entry"].unique())))
     #print(substrate_S)
     print("C")
     print(len(substrate_C.index))
     substrate_C = substrate_C.drop_duplicates()
-    print(len(substrate_C.index))
+    print(len(substrate_C["main_sub"].unique()))
+    print("Entries: {}".format(len(substrate_C["Entry"].unique())))
     #print(substrate_C)
 
     dfs=[substrate_O,substrate_N,substrate_C,substrate_S]
     for df in dfs:
         type = df["methyl_type"].unique()[0]
-        print(type)
+        #print(type)
         for index in df.index:
             smile1=df.loc[index,"main_sub"]
             sites=df.loc[index,"reactant_site"]
-            print(sites)
+            #print(sites)
             if "," in sites:
                 site_list = sites.split(",")
             else:
@@ -1040,17 +1048,17 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
             for site in site_list:
                 sites.append(site.split(":")[1])
             mol1 = Chem.MolFromSmiles(smile1)
-            print(mol1)
+            #print(mol1)
             atomindex = []
             for atom in mol1.GetAtoms():
                 isotope = atom.GetIsotope()
-                print("iso:{}".format(isotope))
-                print(sites)
+                #print("iso:{}".format(isotope))
+                #print(sites)
                 for item in sites:
                     if isotope == int(item):
-                        print("iso:{}".format(isotope))
+                        #print("iso:{}".format(isotope))
                         atomindex.append(atom.GetIdx())
-            print(smile1)
+            #print(smile1)
             #Draw.ShowMol(mol1,(600,600),highlightAtoms=[int(atomindex)])
             file="{}/{}.png".format(type,index)
             img1=Draw.MolToImage(mol1,(600,600),highlightAtoms=atomindex)
