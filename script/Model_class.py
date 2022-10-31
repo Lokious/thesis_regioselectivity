@@ -633,7 +633,7 @@ class Model_class():
         for key in map_dictionary.keys():
             handle_list.append(mpatches.Patch(color=map_dictionary[key], label=key))
         ax.legend(
-            handles=handle_list,loc="upper right",title="Sizes")
+            handles=handle_list,loc="upper right",title="Type")
 
         #plt.scatter(pca_df.PC1, pca_df.PC2,  s=5,c=colour_label)
         print(pca_fit.explained_variance_ratio_)
@@ -751,7 +751,7 @@ class Model_class():
         :return: randomforest model
         """
 
-        hyperparameters = {'n_estimators': [500,1000,1500],
+        hyperparameters = {'n_estimators': [500,1000,1500,2000],
                            'max_features': [0.3,0.5,0.7],
                            'max_depth' : [10,15,20,30]
                            }
@@ -766,7 +766,7 @@ class Model_class():
         #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
         rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced",),
                              hyperparameters, scoring='roc_auc',
-                             cv=3,
+                             cv=5,
                              verbose=3,
                              n_jobs=20)
 
@@ -813,6 +813,7 @@ class Model_class():
         #And visualize
         ### size and font size should be set before the sns plot###
         sns_default=sns.axes_style()
+        print(sns_default)
         sns.set(rc={'figure.figsize': (40,20)})
         #sns.set(font_scale=3)
         ax1=sns.barplot(data=fi.head(30), x="Importance", y=(fi.head(30)).index)
@@ -1006,6 +1007,10 @@ class Model_class():
 
     def show_roc(self,rf,X,y,file_name):
         from sklearn import metrics
+
+        #save drfault parameters
+        print(plt.rcParams)
+        default_para=plt.rcParams
         # roc for training data
         y_probs = rf.predict_proba(X)
         # keep probabilities for the positive outcome only
@@ -1032,13 +1037,16 @@ class Model_class():
         from sklearn.metrics import PrecisionRecallDisplay
 
         display = PrecisionRecallDisplay.from_estimator(
-            rf, X, y, name="LinearSVC"
+            rf, X, y, name="Random Forest"
         )
         precision_recall_figure = display.ax_.set_title("Precision-Recall curve")
         display.figure_.savefig(
             "../autodata/separate_seed_result/RF_precision_recall_figure_{}_data".format(
                 file_name))
         #plt.show()
+
+        #reset to rc parameter before
+        plt.rcParams.update(default_para)
         plt.close()
         return thresholds[ix]
 
@@ -1047,6 +1055,9 @@ class Model_class():
         The function is to plot confusion matrix with set threshold
 
         """
+        #save drfault parameters
+        print(plt.rcParams)
+        default_para=plt.rcParams
         y_pre_threshold = []
         for point in rf.predict_proba(x):
             if point[1] >= threshold:
@@ -1066,6 +1077,7 @@ class Model_class():
                 '../autodata/separate_seed_result/cm_threshold{}_{}.png'.format(
                     threshold, file_name), dpi=300)
             # plt.show()
+            plt.rcParams.update(default_para)
             plt.close()
         return cm
 
@@ -1076,6 +1088,8 @@ class Model_class():
         """
         # Draw the density plot
         fig, ax = plt.subplots()
+        print(plt.rcParams)
+        default_para=plt.rcParams
         #se the same bin
         bin=[x*0.01 for x in list(range(1,101,1))]
         sns.histplot(label_1, kde=True,
@@ -1090,6 +1104,8 @@ class Model_class():
         plt.title('{}_{} probability distribution'.format(file_name,titile))
         plt.xlabel('probability')
         plt.savefig("../autodata/separate_seed_result/{} probability distribution.png".format(file_name))
+        #reset to the parameter before drawing the plot
+        plt.rcParams.update(default_para)
         plt.close()
         # plt.ylabel('Density')
         #plt.show()

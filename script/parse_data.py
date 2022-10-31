@@ -904,12 +904,12 @@ def check_overlap(file1:str="",file2:str=""):
     # print(len(df2["Entry"]))
 
 
-def output_analysis(predict_df,fingerprint_df,similarity_range=""):
+def output_analysis(predict_df,fingerprint_df):
     from scipy.stats.stats import pearsonr
     predict_df=pd.read_csv(predict_df,header=0,index_col=0)
-    predict_df=pd.DataFrame(predict_df,columns=["molecular_id",'predict_label'])
+    predict_df=pd.DataFrame(predict_df,columns=["molecular_id",'predict_label',"atom_index"])
     fingerprint_df=pd.read_csv(fingerprint_df,header=0,index_col=0)
-    fingerprint_df=pd.DataFrame(fingerprint_df,columns=["molecular_id","atom_index","label","methyl_type"])
+    fingerprint_df=pd.DataFrame(fingerprint_df,columns=["molecular_id","atom_index","label","methyl_type","Entry"])
     molecule_id=predict_df["molecular_id"].unique()
     print(len(molecule_id))
     remove_index=[]
@@ -918,8 +918,11 @@ def output_analysis(predict_df,fingerprint_df,similarity_range=""):
             remove_index.append(index)
     fingerprint_df.drop(index=remove_index,inplace=True)
     fingerprint_df['predict_label']=predict_df['predict_label']
+    fingerprint_df['atom_index_TEST'] = predict_df['atom_index']
+    for index in fingerprint_df.index:
+        assert (fingerprint_df.loc[index,'atom_index_TEST'] ==fingerprint_df.loc[index,'atom_index'] )
     group_by_methylation_type=fingerprint_df.groupby(by="methyl_type")
-    summary_df = pd.DataFrame(columns=["methyl_type","molecular_id","number_of_possiable_atoms","predict"],index=list(range(len(molecule_id))))
+    summary_df = pd.DataFrame(columns=["methyl_type","molecular_id","number_of_possiable_atoms","predict","Entry"],index=list(range(len(molecule_id))))
     # df = sns.load_dataset("titanic")
     i=0
     for group in group_by_methylation_type.groups:
@@ -930,6 +933,7 @@ def output_analysis(predict_df,fingerprint_df,similarity_range=""):
         for id_group in sub_group_id.groups:
             id_group_df=sub_group_id.get_group(id_group)
             molecular_id = id_group_df["molecular_id"].unique()[0]
+            entry = id_group_df["Entry"]
             count = 0
             predict_boolean = True
             for index in id_group_df.index:
@@ -944,12 +948,12 @@ def output_analysis(predict_df,fingerprint_df,similarity_range=""):
             summary_df.loc[i,"number_of_possiable_atoms"]=count
             summary_df.loc[i,"predict"]=predict_boolean
             summary_df.loc[i, "molecular_id"] = molecular_id
-
+            summary_df.loc[i, "Entry"] = entry
             i +=1
 
     summary_df["number_of_possiable_atoms"]=summary_df["number_of_possiable_atoms"].astype("int")
     summary_df["predict"]=summary_df["predict"].astype("bool")
-
+    summary_df.to_csv("summary_OAA_predict")
     print(summary_df)
     # print(summary_df.dtypes)
     # print(df)
@@ -959,8 +963,8 @@ def output_analysis(predict_df,fingerprint_df,similarity_range=""):
 
 def violiint_plot(summary_df, x="methyl_type", y="number_of_possiable_atoms",hue="predict"):
     ax = sns.violinplot(data=summary_df, x=x, y=y, hue=hue, split=True,inner="stick",scale="count")
-    y_stick = [(x*0.1) for x in list(range(0,11,2))]
-    ax.set_yticks(y_stick)
+    #y_stick = [(x*0.1) for x in list(range(0,11,2))]
+    #ax.set_yticks(y_stick)
     plt.savefig("violint.png")
     plt.show()
 def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
@@ -1161,9 +1165,9 @@ def different_similarity_result():
     violiint_plot(sum_df, x="methyl_type", y="similarity_range",
                   hue="atom_predict")
 def main():
-    check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit167_3_remove_redundant_MACCS.csv")
+    #check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit167_3_remove_redundant_MACCS.csv")
     # sum_df.to_csv("prediction_x_test.csv")
-    # output_analysis("prediction_x_test.csv", "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv")
+    output_analysis("O_AAprediction_x_test.csv", "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv")
 
     #seq_number_df=pd.DataFrame(index=list(range(10)),columns=[("bit_score" + str(x)) for x in [5,7,9,11,13,15,17,19,21]])
     #try_different_coverage()

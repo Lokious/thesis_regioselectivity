@@ -217,6 +217,9 @@ def merge_structure_embedding_to_input(input_df=""):
     # print(len(train_kmer_embedder.embedding))
     # print(shapemers_radius_mer)
     # print(len(test_kmer_embedder.embedding))
+    print("shape")
+    print(train_kmer_embedder.embedding.shape)
+    print(train_kmer_embedder.embedding[0].shape)
     train_structure_embedding_k_mer = pd.DataFrame(data=train_kmer_embedder.embedding,index=range(len(train_kmer_embedder.embedding)),columns=[str(x) for x in shapemers_k_mer])
     test_structure_embedding_k_mer = pd.DataFrame(
         data=test_kmer_embedder.embedding,
