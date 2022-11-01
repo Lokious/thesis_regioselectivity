@@ -440,8 +440,8 @@ def main():
 
     #for active site encoding
     #O methyltransferase
-    X=pd.read_csv("../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv",header=0,index_col=0)
-    add_dataframe=pd.read_csv("../autodata/protein_encoding/active_site/O_AA_properties_encoding.csv",header=0,index_col=0)
+    X=pd.read_csv("../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv",header=0,index_col=0)
+    add_dataframe=pd.read_csv("../autodata/protein_encoding/active_site/N_AA_properties_encoding.csv",header=0,index_col=0)
     add_dataframe["Entry"]=add_dataframe.index
     add_dataframe.reset_index(drop=True,inplace=True)
     print(add_dataframe)
@@ -449,7 +449,7 @@ def main():
     print(input_dataframe)
     input_dataframe = input_dataframe.dropna(axis=0,how="any")
     print(input_dataframe)
-    input_dataframe.to_csv("../autodata/input_data/active_site/O_AA_properties_encoding_MACCSkey.csv")
+    input_dataframe.to_csv("../autodata/input_data/active_site/N_AA_properties_encoding_MACCSkey.csv")
     mo_del = Model_class()
     print(input_dataframe)
     X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
@@ -458,13 +458,13 @@ def main():
     X_train = X_train.drop(columns=["methyl_type", "molecular_id","atom_index"])
     # save x test for further analysis result
     y_test.to_csv(
-        "../autodata/model/O_AA_properties_encoding_MACCSkey_y_test.csv")
+        "../autodata/model/N_AA_properties_encoding_MACCSkey_y_test.csv")
     X_test.to_csv(
-        "../autodata/model/O_AA_properties_encoding_MACCSkey_X_test.csv")
+        "../autodata/model/N_AA_properties_encoding_MACCSkey_X_test.csv")
     X_test = X_test.drop(columns=["methyl_type", "molecular_id","atom_index"])
     # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
     model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                             "O_AA_properties_encoding_MACCSkey", i=0)
+                             "N_AA_properties_encoding_MACCSkey", i=0)
 
 
     #

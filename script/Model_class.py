@@ -619,7 +619,7 @@ class Model_class():
         V1_PCA = V1_PCA.sort_values(by=["V_sum"], ascending=False)
         sns.barplot(data=V1_PCA.iloc[:30], x="V_sum", y=V1_PCA.index[:30]).set(
             title='Sum of v1 and v2 loading value of PCA')
-
+        plt.tight_layout()
         plt.savefig("../Sum_of_v1_v2_loading_value_of_PCA_{}".format(file_name))
 
         plt.close()
@@ -643,6 +643,7 @@ class Model_class():
         plt.savefig(
             "../pca_for encoding sequences and fingerprint_PC1 PC2{}".format(file_name))
         plt.clf()
+        plt.close()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
                  pca_fit.explained_variance_ratio_, '-ro')
         plt.ylabel('Proportion of Variance Explained_{}'.format(file_name))
@@ -812,19 +813,23 @@ class Model_class():
 
         #And visualize
         ### size and font size should be set before the sns plot###
-        sns_default=sns.axes_style()
-        print(sns_default)
+        fig,ax = plt.subplots()
+        plt.rcParams["figure.figsize"] = (40, 20)
+        # sns_default=sns.axes_style()
+        # print(sns_default)
+        plt.tight_layout()
         sns.set(rc={'figure.figsize': (40,20)})
-        #sns.set(font_scale=3)
+        sns.set(font_scale=3)
         ax1=sns.barplot(data=fi.head(30), x="Importance", y=(fi.head(30)).index)
         ax1.set_title(
             "feature importance for RF model")
 
         #fig = ax.get_figure()
+
         plt.savefig('../autodata/separate_seed_result/feature_importance{}.png'.format(file_name),)
         plt.close()
         #reset parameters
-        sns.set_style(sns_default)
+        # sns.set_style(sns_default)
         ##save result to file
         self.save_result_tofile(rf_cv, X_test, y_test, cm_matrix, file_name=file_name)
 
@@ -1032,7 +1037,8 @@ class Model_class():
         display.figure_.savefig("../autodata/separate_seed_result/RF_ROC_curve_{}_data".format(file_name))
         #plt.show()
         plt.close()
-
+        #reset to rc parameter before
+        plt.rcParams.update(default_para)
         ###precision_recall###
         from sklearn.metrics import PrecisionRecallDisplay
 
@@ -1045,8 +1051,7 @@ class Model_class():
                 file_name))
         #plt.show()
 
-        #reset to rc parameter before
-        plt.rcParams.update(default_para)
+
         plt.close()
         return thresholds[ix]
 
@@ -1065,9 +1070,20 @@ class Model_class():
             else:
                 y_pre_threshold.append(0)
         else:
+            plt.rcParams["figure.figsize"] = (20, 20)
+            #plt.rcParams.update({'font.size': 8})
             cm = confusion_matrix(y, y_pre_threshold)
+            fig,ax=plt.subplots()
+            sns.set(font_scale=4)
+            # sns.heatmap(cm, annot=True, annot_kws={"size": 16},ax=ax)  # font size
+            # plt.xlabel("Predicted label")
+            # plt.ylabel("True label")
+            # plt.title(
+            #     "RF confusion matrix threshold:{}".format(
+            #         threshold))
+            # plt.savefig("heatmap_cmplot{}.png".format(file_name))
+            # plt.close()
             cm_display = ConfusionMatrixDisplay(cm).plot()
-            plt.rc('font', size=15)
             # cm_display.figure_.savefig(
             #     'cm_{}_{}.png'.format(threshold, file_name),dpi=300)
             plt.title(
@@ -1091,6 +1107,7 @@ class Model_class():
         print(plt.rcParams)
         default_para=plt.rcParams
         #se the same bin
+
         bin=[x*0.01 for x in list(range(1,101,1))]
         sns.histplot(label_1, kde=True,
                      color="orange",
@@ -1099,7 +1116,7 @@ class Model_class():
                      color="blue",
                      label="label0",ax=ax,bins=bin)
         # Plot formatting
-
+        plt.tight_layout()
         plt.legend(prop={'size': 8}, title='Label')
         plt.title('{}_{} probability distribution'.format(file_name,titile))
         plt.xlabel('probability')

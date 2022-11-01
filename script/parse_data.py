@@ -933,7 +933,7 @@ def output_analysis(predict_df,fingerprint_df):
         for id_group in sub_group_id.groups:
             id_group_df=sub_group_id.get_group(id_group)
             molecular_id = id_group_df["molecular_id"].unique()[0]
-            entry = id_group_df["Entry"]
+            entry = id_group_df["Entry"].unique()[0]
             count = 0
             predict_boolean = True
             for index in id_group_df.index:
@@ -948,6 +948,8 @@ def output_analysis(predict_df,fingerprint_df):
             summary_df.loc[i,"number_of_possiable_atoms"]=count
             summary_df.loc[i,"predict"]=predict_boolean
             summary_df.loc[i, "molecular_id"] = molecular_id
+            print(entry)
+            print(molecular_id)
             summary_df.loc[i, "Entry"] = entry
             i +=1
 
@@ -965,7 +967,7 @@ def violiint_plot(summary_df, x="methyl_type", y="number_of_possiable_atoms",hue
     ax = sns.violinplot(data=summary_df, x=x, y=y, hue=hue, split=True,inner="stick",scale="count")
     #y_stick = [(x*0.1) for x in list(range(0,11,2))]
     #ax.set_yticks(y_stick)
-    plt.savefig("violint.png")
+    plt.savefig("violint_Oaa.png")
     plt.show()
 def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
     input_data = pd.read_csv(input_data,index_col=0,header=0)
@@ -1023,25 +1025,28 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
     print(len(substrate_N["main_sub"].unique()))
     print("Entries: {}".format(len(substrate_N["Entry"].unique())))
     #print(substrate_N)
-    print("S")
-    print(len(substrate_S.index))
-    substrate_S = substrate_S.drop_duplicates()
-    print(len(substrate_S["main_sub"].unique()))
-    print("Entries: {}".format(len(substrate_S["Entry"].unique())))
+    # print("S")
+    # print(len(substrate_S.index))
+    # substrate_S = substrate_S.drop_duplicates()
+    # print(len(substrate_S["main_sub"].unique()))
+    # print("Entries: {}".format(len(substrate_S["Entry"].unique())))
     #print(substrate_S)
-    print("C")
-    print(len(substrate_C.index))
-    substrate_C = substrate_C.drop_duplicates()
-    print(len(substrate_C["main_sub"].unique()))
-    print("Entries: {}".format(len(substrate_C["Entry"].unique())))
-    #print(substrate_C)
+    # print("C")
+    # print(len(substrate_C.index))
+    # substrate_C = substrate_C.drop_duplicates()
+    # print(len(substrate_C["main_sub"].unique()))
+    # print("Entries: {}".format(len(substrate_C["Entry"].unique())))
+    # #print(substrate_C)
 
-    dfs=[substrate_O,substrate_N,substrate_C,substrate_S]
+    #,substrate_C,substrate_S
+    dfs=[substrate_O,substrate_N]
+    saved_smile=[]
     for df in dfs:
         type = df["methyl_type"].unique()[0]
         #print(type)
         for index in df.index:
             smile1=df.loc[index,"main_sub"]
+
             sites=df.loc[index,"reactant_site"]
             #print(sites)
             if "," in sites:
@@ -1064,9 +1069,12 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
                         atomindex.append(atom.GetIdx())
             #print(smile1)
             #Draw.ShowMol(mol1,(600,600),highlightAtoms=[int(atomindex)])
-            file="{}/{}.png".format(type,index)
-            img1=Draw.MolToImage(mol1,(600,600),highlightAtoms=atomindex)
-            img1.save(file)
+            if smile1 not in saved_smile:
+                file="{}_oaa/{}.png".format(type,index)
+                img1=Draw.MolToImage(mol1,(600,600),highlightAtoms=atomindex)
+                img1.save(file)
+                saved_smile.append(smile1)
+
 def different_similarity_result():
     #check_overlap(file1="PF08241PF01795_bit_score5_coverage0.6_ACS_bit128_3_remove_redundant.csv")
     sum_df=pd.DataFrame()
@@ -1165,9 +1173,9 @@ def different_similarity_result():
     violiint_plot(sum_df, x="methyl_type", y="similarity_range",
                   hue="atom_predict")
 def main():
-    #check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit167_3_remove_redundant_MACCS.csv")
+    #check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data=r"E:\Download\regioselectivity_prediction\autodata\input_data\active_site\O_AA_properties_encoding_MACCSkey.csv")
     # sum_df.to_csv("prediction_x_test.csv")
-    output_analysis("O_AAprediction_x_test.csv", "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv")
+    output_analysis("O_AAprediction_x_test.csv", "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
 
     #seq_number_df=pd.DataFrame(index=list(range(10)),columns=[("bit_score" + str(x)) for x in [5,7,9,11,13,15,17,19,21]])
     #try_different_coverage()

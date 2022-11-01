@@ -268,7 +268,7 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
         #     "../autodata/fingerprint/fingerprint_bit128_radius3_all_data_drop_atom_19_09.csv",
         #     header=0, index_col=0)
         X = pd.read_csv(
-            "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv",
+            "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv",
             header=0, index_col=0)
 
 
@@ -279,6 +279,13 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
         print(input_dataframe)
         print("remove NA")
         input_dataframe = input_dataframe.dropna(axis=0, how="any")
+        print("before drop duplicate")
+        print(input_dataframe)
+        drop_duplicate_columns=list(input_dataframe.columns)
+        drop_duplicate_columns.remove("molecular_id")
+        drop_duplicate_columns.remove("atom_index")
+        input_dataframe.drop_duplicates(subset=drop_duplicate_columns)
+        print("after drop duplicate")
         print(input_dataframe)
         input_dataframe.to_csv(
             "../autodata/input_data/active_site/{}_ACS_bit167_3_remove_redundant_MACCS.csv".format(
@@ -290,7 +297,7 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
         X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
             input_dataframe)
 
-        X_train = X_train.drop(columns=["methyl_type","molecular_id"])
+        X_train = X_train.drop(columns=["methyl_type","molecular_id","atom_index"])
 
         #save x test for further analysis result
         y_test.to_csv(
@@ -299,7 +306,7 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
                 str(int(coverage * 100)), i=0))
         X_test.to_csv("../autodata/model/active_site_167fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_X_test.csv".format(domain, bit_score,
                                      str(int(coverage * 100)), i=0))
-        X_test = X_test.drop(columns=["methyl_type", "molecular_id"])
+        X_test = X_test.drop(columns=["methyl_type", "molecular_id","atom_index"])
         # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
         #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
         model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
@@ -335,7 +342,7 @@ def separate_model_for_different_domain():
     #    "../autodata/align/different_version_pfam/Pfam35.0uniprot_2_1_1_domout.tsv")
     # domains, seq_df = parse_data.sepreate_sequence_based_on_domain_without_overlap(
     #     seq_domain_df)
-    bit_score=[9,11,15]
+    bit_score=[11,15]
     #coverage=[round(x*0.1,2) for x in list(range(1,11,2))]
     coverage=[0.5,0.6,0.7,0.8,0.9]
     '''

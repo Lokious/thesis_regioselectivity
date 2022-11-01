@@ -22,20 +22,20 @@ def run_pca_for_kmer_sequences():
         sequence_data.drop("group", axis=1, inplace=True)
         mo_del.run_PCA(sequence_data, group_label,
                        "{}".format("k_mer_sequences"))
-def predict(input_dataframe):
+def predict(input_dataframe=""):
 
         import joblib
-        model = joblib.load('../autodata/model/rf_test_model_cvO_AA_properties_encoding_MACCSkey')
+        model = joblib.load('../autodata/model/rf_test_model_cvN_AA_properties_encoding_MACCSkey')
         # input = copy.deepcopy(input_dataframe)
         # input =input.drop(columns=["methyl_type"])
         # input = input.drop(columns=["Entry", "molecular_id", "label"])
-        input = pd.read_csv("../autodata/model/O_AA_properties_encoding_MACCSkey_X_test.csv",header=0,index_col=0)
+        input = pd.read_csv("../autodata/model/N_AA_properties_encoding_MACCSkey_X_test.csv",header=0,index_col=0)
         input = input.drop(columns=["molecular_id","methyl_type","atom_index"])
         Y = model.predict(input)
         print(Y)
 
         input["predict_label"] = Y
-        input_frame = pd.read_csv("../autodata/model/O_AA_properties_encoding_MACCSkey_X_test.csv",header=0,index_col=0)
+        input_frame = pd.read_csv("../autodata/model/N_AA_properties_encoding_MACCSkey_X_test.csv",header=0,index_col=0)
         input["molecular_id"] = input_frame["molecular_id"]
         input["atom_index"] = input_frame["atom_index"]
         input["methyl_type"] = input_frame["methyl_type"]
@@ -52,7 +52,7 @@ def predict(input_dataframe):
         #         else:
         #                 print(group_df)
         # input_dataframe.drop(index=index,inplace=True)
-        input.to_csv("O_AAprediction_x_test.csv")
+        input.to_csv("N_AAprediction_x_test.csv")
 def pca_molecule(input):
 
         fps = input.iloc[:,:167]
@@ -68,7 +68,7 @@ def pca_molecule(input):
         y_label = input["label"]
         fps["methyl_type"]=input["methyl_type"]
         mo_del = Model_class()
-        mo_del.run_PCA(fps,y_label,"onlytMACCS")
+        mo_del.run_PCA(fps,y_label,"MACCS_OAA")
 def main():
 
         mo_del = Model_class()
@@ -126,43 +126,13 @@ def main():
         #     input_dataframe = pd.read_csv("../autodata/input_data/bit_info/input128fg_dpna_bond3_{}_seed_onehot_encoding.csv.csv".format(file), header=0, index_col=0)
         #     #input_dataframe.dropna(inplace=True)
 
-        input_dataframe=pd.read_csv("../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv",header=0,index_col=0)
-        #other_info = pd.DataFrame(input_dataframe,columns=['Entry','atom_index','label','methyl_type','molecular_id'])
-        input_dataframe = input_dataframe.drop(columns=["0","167"])
-        print(input_dataframe)
-        molecule = Molecule()
-        maccs_dict=molecule.MACCSkey_dictionary
-        map_dict={}
-        for key in maccs_dict.keys():
-                #print(key)
-                map_dict[str(key)]= maccs_dict[key][0]
-
-        for i in list(range(168,334)):
-                map_dict[str(i)]="atom"+maccs_dict[(i-167)][0]
-        print(map_dict)
-        fingerprint_df = input_dataframe.rename(columns=map_dict)
-        print(input_dataframe)
-        print(fingerprint_df)
-        fingerprint_df.to_csv("../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
-
-        input_dataframe = pd.read_csv(
-                "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv",
-                header=0, index_col=0)
-        # other_info = pd.DataFrame(input_dataframe,columns=['Entry','atom_index','label','methyl_type','molecular_id'])
-
-        print(input_dataframe)
-        columns=[str(x) for x in list(range(1,334))]
-        input_dataframe = input_dataframe.drop_duplicates(subset=columns)
-        input_dataframe = input_dataframe.dropna()
-        print(input_dataframe)
-        input_dataframe = input_dataframe.drop(columns=["0", "167"])
-        input_dataframe=input_dataframe.rename(columns=map_dict)
-        print(input_dataframe)
-        input_dataframe.to_csv("../autodata/input_data/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
-        #input_dataframe=pd.read_csv("../autodata/input_data/fingerprint_bit128_radius3_all_data_morganfingerprint.csv")
-        print(input_dataframe)
-        #pca_molecule(input_dataframe)
-        #predict(input_dataframe)
+        #input_dataframe=pd.read_csv("../autodata/input_data/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv",header=0,index_col=0)
+        # input_dataframe=pd.read_csv(r"E:\Download\regioselectivity_prediction\autodata\input_data\active_site\O_AA_properties_encoding_MACCSkey.csv",header=0,index_col=0)
+        # label=pd.read_csv(r"E:\Download\regioselectivity_prediction\autodata\input_data\active_site\O_AA_properties_encoding_MACCSkey.csv",header=0,index_col=0)
+        # input_dataframe["label"]=label["label"]
+        # print(input_dataframe)
+        # pca_molecule(input_dataframe)
+        predict()
 
         # #input_dataframe=mo_del.duplicate_1_class(input_dataframe, 12)
         # #input_dataframe.drop(columns="226",inplace=True)
@@ -190,16 +160,17 @@ def main():
         # #
         # #     # mo_del.three_D_pca(X_train, y_train, "{}_128_2".format(file))
         # #mo_del.run_PCA(input_dataframe, group_label, "{}".format("k_mer_sequences"))
-        #
-        # X_train = X_train.drop(columns=["methyl_type","molecular_id"])
-        # X_test = X_test.drop(columns=["methyl_type","molecular_id"])
+        # X_test.to_csv("X_test_for_only_maccskeys.csv")
+        # y_test.to_csv("y_test_for_only_maccskeys.csv")
+        # X_train = X_train.drop(columns=["methyl_type","molecular_id","atom_index"])
+        # X_test = X_test.drop(columns=["methyl_type","molecular_id","atom_index"])
         # print(X_test)
         # # y_train = y_train.drop(columns=["methyl_type"])
         # # y_test = y_test.drop(columns=["methyl_type"])
         # # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
         # #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
         # model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-        #                         "128fg_bond3_rf{}_{}".format(d1,"morganbit"),i=0)
+        #                         "166fg_bond3_rf{}_{}".format(d1,"MACCS_keys"),i=0)
 
 if __name__ == "__main__":
     main()
