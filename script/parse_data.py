@@ -1077,7 +1077,7 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
             #print(smile1)
             #Draw.ShowMol(mol1,(600,600),highlightAtoms=[int(atomindex)])
             if smile1 not in saved_smile:
-                file="{}_oaa/{}.png".format(type,index)
+                file="{}_naa/{}.png".format(type,index)
                 img1=Draw.MolToImage(mol1,(600,600),highlightAtoms=atomindex)
                 img1.save(file)
                 saved_smile.append(smile1)
@@ -1180,17 +1180,17 @@ def different_similarity_result():
     violiint_plot(sum_df, x="methyl_type", y="similarity_range",
                   hue="atom_predict")
 def main():
-    #check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data=r"E:\Download\regioselectivity_prediction\autodata\input_data\active_site\O_AA_properties_encoding_MACCSkey.csv")
+    check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data=r"E:\Download\regioselectivity_prediction\autodata\input_data\active_site\N_AA_properties_encoding_MACCSkey.csv")
     # sum_df.to_csv("prediction_x_test.csv")
     #output_analysis("prediction_x_test.csv", "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
-    output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_15_70_MACCSprediction_x_test.csv",
-                    "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
-    output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_15_50_MACCSprediction_x_test.csv",
-                    "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
-    output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_70_MACCSprediction_x_test.csv",
-                    "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
-    output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCSprediction_x_test.csv",
-                    "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
+    # output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_15_70_MACCSprediction_x_test.csv",
+    #                 "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
+    # output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_15_50_MACCSprediction_x_test.csv",
+    #                 "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
+    # output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_70_MACCSprediction_x_test.csv",
+    #                 "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
+    # output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCSprediction_x_test.csv",
+    #                 "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
     #seq_number_df=pd.DataFrame(index=list(range(10)),columns=[("bit_score" + str(x)) for x in [5,7,9,11,13,15,17,19,21]])
     #try_different_coverage()
     #use_atom_properties_for_sequences_encoding(file_name="../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/PF08241.15PF03602.18/PF08241.15PF03602.18_hmmalign_out_pdb_5WP4.aln",group="PF08241.15PF03602.18",file_format="clustal",start=0, structure_chain="5WP4_1|Chain",pdb_name="5wp4.pdb")

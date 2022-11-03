@@ -11,6 +11,7 @@ includes Rhea-ec_2_1_1.tsv
 import dill
 import sklearn.metrics
 
+import train_model
 from molecular_class import Molecule, Reaction,main_substrate
 import parse_data
 #for data structure
@@ -298,6 +299,8 @@ class Model_class():
                             input_dataframe.loc[current_index, "Entry"] = \
                             sauce_data.loc[index, "Entry"]
                             input_dataframe.loc[current_index, "methyl_type"] = sauce_data.loc[index, "methyl_type"]
+                            input_dataframe.loc[
+                                current_index, 'atom_index'] = sy_index
                             current_index += 1
 
                     else:
@@ -320,6 +323,8 @@ class Model_class():
                         input_dataframe.loc[current_index,"label"] = label
                         input_dataframe.loc[current_index,"Entry"] = sauce_data.loc[index,"Entry"]
                         input_dataframe.loc[current_index, "methyl_type"] = sauce_data.loc[index, "methyl_type"]
+                        input_dataframe.loc[
+                            current_index, 'atom_index'] = sy_index
                         current_index += 1
                         print(current_index)
             except:
@@ -830,6 +835,7 @@ class Model_class():
         #fig = ax.get_figure()
 
         plt.savefig('../autodata/separate_seed_result/feature_importance{}.png'.format(file_name),)
+        plt.clf()
         plt.close()
         #reset parameters
         # sns.set_style(sns_default)
@@ -1443,11 +1449,12 @@ def create_MACCSkey_fingerprint():
                                  header=0, index_col=0)
     with open('../autodata/diction_atom_all', 'rb') as file1:
         diction_atom = dill.load(file1)
-    model.save_MACCSkeys_fingerprints_to_dataframe(data_with_site, diction_atom,3, drop_atoms=True,file_name="all_data")
-    #model.save_fingerprints_to_dataframe(data_with_site, diction_atom,num_bits=128,radius=3, drop_atoms=True,file_name="all_data")
+    #model.save_MACCSkeys_fingerprints_to_dataframe(data_with_site, diction_atom,3, drop_atoms=True,file_name="all_data")
+    model.save_fingerprints_to_dataframe(data_with_site, diction_atom,num_bits=128,radius=3, drop_atoms=True,file_name="all_data")
 
 def main():
     create_MACCSkey_fingerprint()
+    train_model.rename_column()
     # model = Model_class()
     # model.comapre_result_for_different_similarity_test("../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit167_3_remove_redundant_MACCS.csv")
 if __name__ == "__main__":

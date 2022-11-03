@@ -268,7 +268,7 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
         #     "../autodata/fingerprint/fingerprint_bit128_radius3_all_data_drop_atom_19_09.csv",
         #     header=0, index_col=0)
         X = pd.read_csv(
-            "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_2_11.csv",
+            "../autodata/fingerprint/fingerprint_bit128_radius3_all_data.csv",
             header=0, index_col=0)
 
 
@@ -288,7 +288,7 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
         print("after drop duplicate")
         print(input_dataframe)
         input_dataframe.to_csv(
-            "../autodata/input_data/active_site/{}_ACS_bit167_3_remove_redundant_MACCS.csv".format(
+            "../autodata/input_data/active_site/{}_ACS_bit128_3_remove_redundant_morgan.csv".format(
                 "{}_bit_score{}_coverage{}".format(domain, bit_score,
                                                    coverage)))
         # train model
@@ -301,16 +301,16 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
 
         #save x test for further analysis result
         y_test.to_csv(
-            "../autodata/model/active_site_167fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_y_test.csv".format(
+            "../autodata/model/active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_morgan_y_test.csv".format(
                 domain, bit_score,
                 str(int(coverage * 100)), i=0))
-        X_test.to_csv("../autodata/model/active_site_167fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_X_test.csv".format(domain, bit_score,
+        X_test.to_csv("../autodata/model/active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_morgan_X_test.csv".format(domain, bit_score,
                                      str(int(coverage * 100)), i=0))
         X_test = X_test.drop(columns=["methyl_type", "molecular_id","atom_index"])
         # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
         #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
         model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                                 "active_site_167fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS".format(
+                                 "active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_morgan".format(
                                      domain, bit_score,
                                      str(int(coverage * 100)), i=0))
 

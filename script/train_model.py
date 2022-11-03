@@ -69,43 +69,113 @@ def pca_molecule(input):
         fps["methyl_type"]=input["methyl_type"]
         mo_del = Model_class()
         mo_del.run_PCA(fps,y_label,"MACCS_OAA")
+def rename_column():
+        input_dataframe = pd.read_csv(
+                "../autodata/fingerprint/fingerprint_bit128_radius3_all_data.csv",
+                header=0, index_col=0)
+        # other_info = pd.DataFrame(input_dataframe,columns=['Entry','atom_index','label','methyl_type','molecular_id'])
+
+        print(input_dataframe)
+        molecule = Molecule()
+
+        map_dict = {}
+        list_columns = []
+        for key in range(128):
+                # print(key)
+                map_dict[str(key)] = "molecule_" + str(key)
+                list_columns.append("molecule_" + str(key))
+
+        for i in list(range(128, 256)):
+                map_dict[str(i)] = "atom_" + str(i)
+                list_columns.append("atom_" + str(i))
+        print(map_dict)
+        fingerprint_df = input_dataframe.rename(columns=map_dict)
+        print(fingerprint_df)
+        fingerprint_df.to_csv(
+                "../autodata/fingerprint/fingerprint_bit128_radius3_all_data.csv")
+        columns = list_columns
+        input_dataframe = fingerprint_df.drop_duplicates(subset=columns)
+        input_dataframe = input_dataframe.dropna()
+        print(input_dataframe)
+        input_dataframe.to_csv(
+                "../autodata/input_data/fingerprint_bit128_radius3_all_data_morganfingerprint.csv")
+        #rename for maccs key
+        input_dataframe = pd.read_csv(
+                "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_2_11.csv",
+                header=0, index_col=0)
+        # other_info = pd.DataFrame(input_dataframe,columns=['Entry','atom_index','label','methyl_type','molecular_id'])
+        input_dataframe = input_dataframe.drop(columns=["0", "167"])
+        print(input_dataframe)
+        molecule = Molecule()
+        maccs_dict = molecule.MACCSkey_dictionary
+        map_dict = {}
+        for key in maccs_dict.keys():
+                # print(key)
+                map_dict[str(key)] = maccs_dict[key][0]
+
+        for i in list(range(168, 334)):
+                map_dict[str(i)] = "atom" + maccs_dict[(i - 167)][0]
+        print(map_dict)
+        fingerprint_df = input_dataframe.rename(columns=map_dict)
+        print(input_dataframe)
+        print(fingerprint_df)
+        fingerprint_df.to_csv(
+                "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv")
+
+        input_dataframe = pd.read_csv(
+                "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_2_11.csv",
+                header=0, index_col=0)
+        # other_info = pd.DataFrame(input_dataframe,columns=['Entry','atom_index','label','methyl_type','molecular_id'])
+
+        print(input_dataframe)
+        columns = [str(x) for x in list(range(1, 334))]
+        input_dataframe = input_dataframe.drop_duplicates(subset=columns)
+        input_dataframe = input_dataframe.dropna()
+        print(input_dataframe)
+        input_dataframe = input_dataframe.drop(columns=["0", "167"])
+        input_dataframe = input_dataframe.rename(columns=map_dict)
+        print(input_dataframe)
+        input_dataframe.to_csv(
+                "../autodata/input_data/MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name.csv")
+        # input_dataframe=pd.read_csv("../autodata/input_data/fingerprint_bit128_radius3_all_data_morganfingerprint.csv")
+        print(input_dataframe)
 def main():
 
         mo_del = Model_class()
         today = date.today()
         # dd/mm/YY
         d1 = today.strftime("%d_%m_%Y")
-        # N methyltransferase
-        X = pd.read_csv(
-                "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_2_11.csv",
-                header=0, index_col=0)
-        add_dataframe = pd.read_csv(
-                "../autodata/protein_encoding/active_site/N_AA_properties_encoding.csv",
-                header=0, index_col=0)
-        add_dataframe["Entry"] = add_dataframe.index
-        add_dataframe.reset_index(drop=True, inplace=True)
-        print(add_dataframe)
-        input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
-        print(input_dataframe)
-        input_dataframe = input_dataframe.dropna(axis=0, how="any")
-        print(input_dataframe)
-        input_dataframe.to_csv(
-                "../autodata/input_data/active_site/N_AA_properties_encoding_MACCSkey.csv")
-        print(input_dataframe)
-        X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
-                input_dataframe)
-
-        X_train = X_train.drop(
-                columns=["methyl_type", "molecular_id", "atom_index"])
-        # save x test for further analysis result
-        y_test.to_csv(
-                "../autodata/model/N_AA_properties_encoding_MACCSkey_y_test.csv")
-        X_test.to_csv(
-                "../autodata/model/N_AA_properties_encoding_MACCSkey_X_test.csv")
-        X_test = X_test.drop(
-                columns=["methyl_type", "molecular_id", "atom_index"])
-        model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                                 "N_AA_properties_encoding_MACCSkey", i=0)
+        # # N methyltransferase
+        # X = pd.read_csv(
+        #  "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_2_11.csv",
+        #  header=0, index_col=0)
+        # add_dataframe = pd.read_csv(
+        #  "../autodata/protein_encoding/active_site/N_AA_properties_encoding.csv",
+        #  header=0, index_col=0)
+        # add_dataframe["Entry"] = add_dataframe.index
+        # add_dataframe.reset_index(drop=True, inplace=True)
+        # print(add_dataframe)
+        # input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
+        # print(input_dataframe)
+        # input_dataframe = input_dataframe.dropna(axis=0, how="any")
+        # print(input_dataframe)
+        # input_dataframe.to_csv(
+        #  "../autodata/input_data/active_site/N_AA_properties_encoding_MACCSkey.csv")
+        # print(input_dataframe)
+        # X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
+        #         input_dataframe)
+        #
+        # X_train = X_train.drop(
+        #         columns=["methyl_type", "molecular_id", "atom_index"])
+        # # save x test for further analysis result
+        # y_test.to_csv(
+        #         "../autodata/model/N_AA_properties_encoding_MACCSkey_y_test.csv")
+        # X_test.to_csv(
+        #         "../autodata/model/N_AA_properties_encoding_MACCSkey_X_test.csv")
+        # X_test = X_test.drop(
+        #         columns=["methyl_type", "molecular_id", "atom_index"])
+        # model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
+        #                          "N_AA_properties_encoding_MACCSkey", i=0)
         #parse_data.read_msa_and_encoding("6_seed")
 
         #predict("")
@@ -161,7 +231,22 @@ def main():
         X_test["label"] = y_test
         pca_molecule(X_test)
         '''
+        input_dataframe=pd.read_csv( "../autodata/input_data/fingerprint_bit128_radius3_all_data_morganfingerprint.csv",header=0,index_col=0)
+        print(input_dataframe)
+        X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
+                input_dataframe)
+        y_test.to_csv(
+                "../autodata/model/onlyfingerprint_bit128_radius3_all_data_morganfingerprint_y_test.csv")
+        X_test.to_csv(
+                "../autodata/model/onlyfingerprint_bit128_radius3_all_data_morganfingerprint_X_test.csv")
+        X_train = X_train.drop(
+                columns=["methyl_type", "molecular_id", "atom_index"])
+        # save x test for further analysis result
 
+        X_test = X_test.drop(
+                columns=["methyl_type", "molecular_id", "atom_index"])
+        model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
+                                 "onlyfingerprint_bit128_radius3_all_data_morganfingerprint", i=0)
         # X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(input_dataframe)
         # #
         # #     # mo_del.three_D_pca(X_train, y_train, "{}_128_2".format(file))
