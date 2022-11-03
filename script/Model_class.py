@@ -101,8 +101,11 @@ class Model_class():
         df1.index = df1.index.map(lambda x: x.split(":")[1])
         df1["RHEA_ID"] = df1.index
         df1.set_index("RHEA_ID", inplace=True)
-        uniprot_entry = parse_data.remove_duplicated_id(
-            r"E:\Download\regioselectivity_prediction\data\hmm_out")
+        #list of uniprot entry
+        uniprot_entry=pd.read_csv("../autodata/rawdata/uniprot-ec2.1.1.tsv",header=0,sep="\t")["Entry"].tolist()
+        #print(uniprot_entry)
+        # uniprot_entry = parse_data.remove_duplicated_id(
+        #     r"E:\Download\regioselectivity_prediction\data\hmm_out")
         fulldata = parse_data.rheaid_to_uniprot(uniprot_entry,
                                                 rheauniprot_dataframe)
         fulldata.set_index("RHEA_ID", inplace=True)
@@ -360,7 +363,7 @@ class Model_class():
                 for atom in sub_mol.GetAtoms():
                     #set label
                     #isotope is what we saved before in the list of methylaion site
-                    sy_index =(atom.GetSymbol() + ":" + str(atom.GetIsotope()))
+                    sy_index = (atom.GetSymbol() + ":" + str(atom.GetIsotope()))
                     # print(sy_index)
                     # print(atom_object_dictionary[index])
                     if sy_index in atom_object_dictionary[index]:
@@ -433,12 +436,12 @@ class Model_class():
                     print("somethingwrong with this index{}".format(index))
                     continue
         if drop_atoms:
-            input_dataframe.to_csv("../autodata/fingerprint/MACCS_fingerprint_bit{}_radius{}_{}.csv".format(167,radius,file_name))
-            with open("../autodata/MACCS_fingerprint_bit{}_radius{}_{}".format(167,radius,file_name), "wb") as dill_file:
+            input_dataframe.to_csv("../autodata/fingerprint/MACCS_fingerprint_bit{}_radius{}_{}_2_11.csv".format(167,radius,file_name))
+            with open("../autodata/MACCS_fingerprint_bit{}_radius{}_{}_2_11".format(167,radius,file_name), "wb") as dill_file:
                 dill.dump(input_dataframe, dill_file)
         else:
-            input_dataframe.to_csv("../autodata/fingerprint/MACCS_fingerprint_bit{}_radius{}_{}.csv".format(167,radius,file_name))
-            with open("../autodata/MACCS_fingerprint_bit{}_radius{}_{}".format(167,radius,file_name), "wb") as dill_file:
+            input_dataframe.to_csv("../autodata/fingerprint/MACCS_fingerprint_bit{}_radius{}_{}_2_11.csv".format(167,radius,file_name))
+            with open("../autodata/MACCS_fingerprint_bit{}_radius{}_{}_2_11".format(167,radius,file_name), "wb") as dill_file:
                 dill.dump(input_dataframe, dill_file)
         return input_dataframe
 
@@ -767,7 +770,7 @@ class Model_class():
         #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
         rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced",),
                              hyperparameters, scoring='roc_auc',
-                             cv=5,
+                             cv=3,
                              verbose=3,
                              n_jobs=20)
 
@@ -1045,7 +1048,7 @@ class Model_class():
         display = PrecisionRecallDisplay.from_estimator(
             rf, X, y, name="Random Forest"
         )
-        precision_recall_figure = display.ax_.set_title("Precision-Recall curve")
+        precision_recall_figure = display.ax_.set_title("Precision-recall curve")
         display.figure_.savefig(
             "../autodata/separate_seed_result/RF_precision_recall_figure_{}_data".format(
                 file_name))
@@ -1070,7 +1073,7 @@ class Model_class():
             else:
                 y_pre_threshold.append(0)
         else:
-            plt.rcParams["figure.figsize"] = (20, 20)
+            #plt.rcParams["figure.figsize"] = (20, 20)
             #plt.rcParams.update({'font.size': 8})
             cm = confusion_matrix(y, y_pre_threshold)
             fig,ax=plt.subplots()
@@ -1441,9 +1444,11 @@ def create_MACCSkey_fingerprint():
     with open('../autodata/diction_atom_all', 'rb') as file1:
         diction_atom = dill.load(file1)
     model.save_MACCSkeys_fingerprints_to_dataframe(data_with_site, diction_atom,3, drop_atoms=True,file_name="all_data")
+    #model.save_fingerprints_to_dataframe(data_with_site, diction_atom,num_bits=128,radius=3, drop_atoms=True,file_name="all_data")
 
 def main():
-    model = Model_class()
-    model.comapre_result_for_different_similarity_test("../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit167_3_remove_redundant_MACCS.csv")
+    create_MACCSkey_fingerprint()
+    # model = Model_class()
+    # model.comapre_result_for_different_similarity_test("../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit167_3_remove_redundant_MACCS.csv")
 if __name__ == "__main__":
     main()

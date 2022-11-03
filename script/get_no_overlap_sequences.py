@@ -268,7 +268,7 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
         #     "../autodata/fingerprint/fingerprint_bit128_radius3_all_data_drop_atom_19_09.csv",
         #     header=0, index_col=0)
         X = pd.read_csv(
-            "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv",
+            "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_2_11.csv",
             header=0, index_col=0)
 
 

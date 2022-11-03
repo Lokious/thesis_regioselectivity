@@ -44,6 +44,7 @@ def target_sequences(file):
             'exp', 'reg', 'clu',  'ov', 'env', 'dom','rep','inc', 'description_of_target']
     #hmmscan_df = (pd.read_table(file, header=None, comment='#',names=name,sep= '\s+', skip_blank_lines=True)).dropna()
     hmmscan_df=pd.read_csv(file,sep="\t")
+    print(hmmscan_df)
     hmmscan_df = hmmscan_df.iloc[:,[0,2]]
     for i in hmmscan_df.index:
         hmmscan_df.iloc[i][1] = (hmmscan_df.iloc[i][1]).split("|")[1]
@@ -320,6 +321,7 @@ def rheaid_touniprot(rhea,data_frame):
             continue
     print(entrys)
     return entrys
+
 def rheaid_to_uniprot(uniprotids,data_frame):
 
     entrys = pd.DataFrame()
@@ -906,6 +908,7 @@ def check_overlap(file1:str="",file2:str=""):
 
 def output_analysis(predict_df,fingerprint_df):
     from scipy.stats.stats import pearsonr
+    file_name=predict_df.split(".")[0]
     predict_df=pd.read_csv(predict_df,header=0,index_col=0)
     predict_df=pd.DataFrame(predict_df,columns=["molecular_id",'predict_label',"atom_index"])
     fingerprint_df=pd.read_csv(fingerprint_df,header=0,index_col=0)
@@ -917,9 +920,12 @@ def output_analysis(predict_df,fingerprint_df):
         if fingerprint_df.loc[index,"molecular_id"] not in molecule_id:
             remove_index.append(index)
     fingerprint_df.drop(index=remove_index,inplace=True)
-    fingerprint_df['predict_label']=predict_df['predict_label']
+    print(predict_df['predict_label'])
+    fingerprint_df['predict_label'] = predict_df['predict_label']
     fingerprint_df['atom_index_TEST'] = predict_df['atom_index']
     for index in fingerprint_df.index:
+        print(fingerprint_df.loc[index,'atom_index'])
+        print(fingerprint_df.loc[index,'atom_index_TEST'])
         assert (fingerprint_df.loc[index,'atom_index_TEST'] ==fingerprint_df.loc[index,'atom_index'] )
     group_by_methylation_type=fingerprint_df.groupby(by="methyl_type")
     summary_df = pd.DataFrame(columns=["methyl_type","molecular_id","number_of_possiable_atoms","predict","Entry"],index=list(range(len(molecule_id))))
@@ -961,14 +967,15 @@ def output_analysis(predict_df,fingerprint_df):
     # print(df)
     # print(df.dtypes)
     # print(fingerprint_df)
-    violiint_plot(summary_df)
+    violiint_plot(summary_df,file_name=file_name)
 
-def violiint_plot(summary_df, x="methyl_type", y="number_of_possiable_atoms",hue="predict"):
+def violiint_plot(summary_df, x="methyl_type", y="number_of_possiable_atoms",hue="predict",file_name=""):
     ax = sns.violinplot(data=summary_df, x=x, y=y, hue=hue, split=True,inner="stick",scale="count")
-    #y_stick = [(x*0.1) for x in list(range(0,11,2))]
-    #ax.set_yticks(y_stick)
-    plt.savefig("violint_Oaa.png")
-    plt.show()
+    y_stick = [x for x in list(range(0,21,2))]
+    ax.set_yticks(y_stick)
+    plt.savefig("violint_{}_count.png".format(file_name))
+    #plt.show()
+    plt.close()
 def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
     input_data = pd.read_csv(input_data,index_col=0,header=0)
     substrate_df=pd.read_csv(substrate_df,index_col=0,header=0)
@@ -1175,8 +1182,15 @@ def different_similarity_result():
 def main():
     #check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data=r"E:\Download\regioselectivity_prediction\autodata\input_data\active_site\O_AA_properties_encoding_MACCSkey.csv")
     # sum_df.to_csv("prediction_x_test.csv")
-    output_analysis("O_AAprediction_x_test.csv", "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
-
+    #output_analysis("prediction_x_test.csv", "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
+    output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_15_70_MACCSprediction_x_test.csv",
+                    "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
+    output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_15_50_MACCSprediction_x_test.csv",
+                    "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
+    output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_70_MACCSprediction_x_test.csv",
+                    "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
+    output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCSprediction_x_test.csv",
+                    "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
     #seq_number_df=pd.DataFrame(index=list(range(10)),columns=[("bit_score" + str(x)) for x in [5,7,9,11,13,15,17,19,21]])
     #try_different_coverage()
     #use_atom_properties_for_sequences_encoding(file_name="../autodata/align/separate_by_domain/no_overlap_sequences/hmmalign/PF08241.15PF03602.18/PF08241.15PF03602.18_hmmalign_out_pdb_5WP4.aln",group="PF08241.15PF03602.18",file_format="clustal",start=0, structure_chain="5WP4_1|Chain",pdb_name="5wp4.pdb")

@@ -46,7 +46,7 @@ def download_pdb_structure_from_alphafola(input_file="",entry_pdb="../autodata/e
         print(index)
         entry = input_df.loc[index,"Entry"]
         #if there are structure in pdb database
-        if entry in entry_pdb_df.index:
+        try:
             try:
                 pdb_id = entry_pdb_df.loc[entry,"PDB"].split(";")[0]
                 print(pdb_id)
@@ -94,7 +94,7 @@ def download_pdb_structure_from_alphafola(input_file="",entry_pdb="../autodata/e
                                                               split_type=SplitType.RADIUS,
                                                               split_size=10))
                     save_structure=True
-        else:
+        except:
             try:
                 pdb_structure=pro.parsePDB(
                     "../autodata/pdb_structure_from_alphafold/{}.pdb".format(
@@ -249,14 +249,14 @@ def merge_structure_embedding_to_input(input_df="../autodata/input_data/active_s
     input_test = pd.concat([test, test_structure_embedding_k_mer,test_structure_embedding_radius_mer], axis=1).reindex(test.index)
     print("Test number of rows after concat {}".format(len(input_test.index)))
     print("Train number of rows after concat {}".format(len(input_train.index)))
-    # input_test.dropna(inplace=True)
-    # input_train.dropna(inplace=True)
-    # mo_del = Model_class()
-    # train_columns= list(train.columns)
-    # train_columns.remove("methyl_type")
-    # structure = input_test.drop(columns=train_columns)
-    # y_label=input_test["label"]
-    # mo_del.run_PCA(structure, y_label,"structure")
+    input_test.dropna(inplace=True)
+    input_train.dropna(inplace=True)
+    mo_del = Model_class()
+    train_columns= list(train.columns)
+    train_columns.remove("methyl_type")
+    structure = input_test.drop(columns=train_columns)
+    y_label=input_test["label"]
+    mo_del.run_PCA(structure, y_label,"structure_all")
     print("training data:")
     print(input_train)
     input_train.to_csv("traindata.csv")
@@ -267,7 +267,7 @@ def merge_structure_embedding_to_input(input_df="../autodata/input_data/active_s
 
 def main():
     # download_pdb_structure_from_alphafola(input_file="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit128_3_remove_redundant.csv")
-    train,test=merge_structure_embedding_to_input(input_df="../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10")
+    train,test=merge_structure_embedding_to_input(input_df="../autodata/input_data/MACCS_fingerprint_bit167_radius3_all_data_31_10")
 
     # train = pd.read_csv("traindata.csv")
     # test = pd.read_csv("testdata.csv")
@@ -282,10 +282,10 @@ def main():
     #print(test)
     print(train)
     #print(test.columns)
-    # mo_del = Model_class()
-    # model = mo_del.RF_model(X_train, X_test, y_train, y_test,
-    #                         "166fg_rf{}_{}".format("11_1","MACCS_fingerprint_with_structure"),i=0)
-    #
+    mo_del = Model_class()
+    model = mo_del.RF_model(X_train, X_test, y_train, y_test,
+                            "166fg_rf{}_{}".format("11_3","MACCS_fingerprint_with_structure"),i=0)
+
 
 if __name__ == "__main__":
     main()
