@@ -977,6 +977,12 @@ def violiint_plot(summary_df, x="methyl_type", y="number_of_possiable_atoms",hue
     #plt.show()
     plt.close()
 def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
+    """
+    This function is to visualize and summarize substrates in inputdata
+    :param substrate_df:
+    :param input_data:
+    :return:
+    """
     input_data = pd.read_csv(input_data,index_col=0,header=0)
     substrate_df=pd.read_csv(substrate_df,index_col=0,header=0)
     #print(input_data)
@@ -991,7 +997,7 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
         if sub_group_df["methyl_type"].unique()[0]=="C":
             substrate_C["main_sub"]=pd.DataFrame(
                 len(sub_group_df.index) * [""]).astype('string')
-            for i in substrate_C.index:
+            for i in sub_group_df.index:
                 index=int("".join(list(substrate_C.loc[i,"molecular_id"])[1:]))
                 substrate_C.loc[i,"main_sub"]=substrate_df.loc[index,"main_sub"]
                 substrate_C.loc[i, "reactant_site"] = substrate_df.loc[
@@ -1008,8 +1014,8 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
         if sub_group_df["methyl_type"].unique()[0]=="O":
             substrate_O["main_sub"]=pd.DataFrame(
                 len(sub_group_df.index) * [""]).astype('string')
-            for i in substrate_C.index:
-                index=int("".join(list(substrate_O.loc[i,"molecular_id"])[1:]))
+            for i in sub_group_df.index:
+                index=int("".join(list(sub_group_df.loc[i,"molecular_id"])[1:]))
                 substrate_O.loc[i,"main_sub"]=substrate_df.loc[index,"main_sub"]
                 substrate_O.loc[i, "reactant_site"] = substrate_df.loc[
                     index, "reactant_site"]
@@ -1025,8 +1031,9 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
         if sub_group_df["methyl_type"].unique()[0] == "N":
             substrate_N["main_sub"]=pd.DataFrame(
                 len(sub_group_df.index) * [""]).astype('string')
-            for i in substrate_N.index:
-                index=int("".join(list(substrate_N.loc[i,"molecular_id"])[1:]))
+            print(sub_group_df)
+            for i in sub_group_df.index:
+                index=int("".join(list(sub_group_df.loc[i,"molecular_id"])[1:]))
                 substrate_N.loc[i,"main_sub"]=substrate_df.loc[index,"main_sub"]
                 substrate_N.loc[i, "reactant_site"] = substrate_df.loc[
                     index, "reactant_site"]
@@ -1042,8 +1049,8 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
         if sub_group_df["methyl_type"].unique()[0] == "S":
             substrate_S["main_sub"]=pd.DataFrame(
                 len(sub_group_df.index) * [""]).astype('string')
-            for i in substrate_S.index:
-                index=int("".join(list(substrate_S.loc[i,"molecular_id"])[1:]))
+            for i in sub_group_df.index:
+                index=int("".join(list(sub_group_df.loc[i,"molecular_id"])[1:]))
                 substrate_S.loc[i,"main_sub"]=substrate_df.loc[index,"main_sub"]
                 substrate_S.loc[i, "reactant_site"] = substrate_df.loc[
                     index, "reactant_site"]
