@@ -989,37 +989,73 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
         sub_group_df=methyl_groups.get_group(group)
         #print(sub_group_df["methyl_type"].unique())
         if sub_group_df["methyl_type"].unique()[0]=="C":
-            merge = substrate_df.merge(sub_group_df,on=["Entry","methyl_type"])
-            print(merge.columns)
-            print(merge["main_sub"])
-            substrate_C["main_sub"] = merge["main_sub"]
-            substrate_C["methyl_type"] = merge["methyl_type"]
-            substrate_C["reactant_site"] = merge["reactant_site"]
-            substrate_C["Entry"] = merge["Entry"]
+            substrate_C["main_sub"]=pd.DataFrame(
+                len(sub_group_df.index) * [""]).astype('string')
+            for i in substrate_C.index:
+                index=int("".join(list(substrate_C.loc[i,"molecular_id"])[1:]))
+                substrate_C.loc[i,"main_sub"]=substrate_df.loc[index,"main_sub"]
+                substrate_C.loc[i, "reactant_site"] = substrate_df.loc[
+                    index, "reactant_site"]
+            substrate_C["methyl_type"] = sub_group_df["methyl_type"]
+            substrate_C["Entry"] = sub_group_df["Entry"]
+            # merge = substrate_df.merge(sub_group_df,on=["Entry","methyl_type"])
+            # print(merge.columns)
+            # print(merge["main_sub"])
+            # substrate_C["main_sub"] = merge["main_sub"]
+            # substrate_C["methyl_type"] = merge["methyl_type"]
+            # substrate_C["reactant_site"] = merge["reactant_site"]
+            # substrate_C["Entry"] = merge["Entry"]
         if sub_group_df["methyl_type"].unique()[0]=="O":
-            merge = substrate_df.merge(sub_group_df,on=["Entry","methyl_type"])
-            print(merge.columns)
-            print(merge["main_sub"])
-            substrate_O["main_sub"]=merge["main_sub"]
-            substrate_O["methyl_type"] = merge["methyl_type"]
-            substrate_O["reactant_site"] = merge["reactant_site"]
-            substrate_O["Entry"] = merge["Entry"]
+            substrate_O["main_sub"]=pd.DataFrame(
+                len(sub_group_df.index) * [""]).astype('string')
+            for i in substrate_C.index:
+                index=int("".join(list(substrate_O.loc[i,"molecular_id"])[1:]))
+                substrate_O.loc[i,"main_sub"]=substrate_df.loc[index,"main_sub"]
+                substrate_O.loc[i, "reactant_site"] = substrate_df.loc[
+                    index, "reactant_site"]
+            substrate_O["methyl_type"] = sub_group_df["methyl_type"]
+            substrate_O["Entry"] = sub_group_df["Entry"]
+            # merge = substrate_df.merge(sub_group_df,on=["Entry","methyl_type"])
+            # print(merge.columns)
+            # print(merge["main_sub"])
+            # substrate_O["main_sub"]=merge["main_sub"]
+            # substrate_O["methyl_type"] = merge["methyl_type"]
+            # substrate_O["reactant_site"] = merge["reactant_site"]
+            # substrate_O["Entry"] = merge["Entry"]
         if sub_group_df["methyl_type"].unique()[0] == "N":
-            merge = substrate_df.merge(sub_group_df, on=["Entry","methyl_type"])
-            print(merge.columns)
-            print(merge["main_sub"])
-            substrate_N["main_sub"] = merge["main_sub"]
-            substrate_N["methyl_type"] = merge["methyl_type"]
-            substrate_N["reactant_site"] = merge["reactant_site"]
-            substrate_N["Entry"] = merge["Entry"]
+            substrate_N["main_sub"]=pd.DataFrame(
+                len(sub_group_df.index) * [""]).astype('string')
+            for i in substrate_N.index:
+                index=int("".join(list(substrate_N.loc[i,"molecular_id"])[1:]))
+                substrate_N.loc[i,"main_sub"]=substrate_df.loc[index,"main_sub"]
+                substrate_N.loc[i, "reactant_site"] = substrate_df.loc[
+                    index, "reactant_site"]
+            substrate_N["methyl_type"] = sub_group_df["methyl_type"]
+            substrate_N["Entry"] = sub_group_df["Entry"]
+            # merge = substrate_df.merge(sub_group_df, on=["Entry","methyl_type"])
+            # print(merge.columns)
+            # print(merge["main_sub"])
+            # substrate_N["main_sub"] = merge["main_sub"]
+            # substrate_N["methyl_type"] = merge["methyl_type"]
+            # substrate_N["reactant_site"] = merge["reactant_site"]
+            # substrate_N["Entry"] = merge["Entry"]
         if sub_group_df["methyl_type"].unique()[0] == "S":
-            merge = substrate_df.merge(sub_group_df, on=["Entry","methyl_type"])
-            print(merge.columns)
-            print(merge["main_sub"])
-            substrate_S["main_sub"] = merge["main_sub"]
-            substrate_S["methyl_type"] = merge["methyl_type"]
-            substrate_S["reactant_site"] = merge["reactant_site"]
-            substrate_S["Entry"] = merge["Entry"]
+            substrate_S["main_sub"]=pd.DataFrame(
+                len(sub_group_df.index) * [""]).astype('string')
+            for i in substrate_S.index:
+                index=int("".join(list(substrate_S.loc[i,"molecular_id"])[1:]))
+                substrate_S.loc[i,"main_sub"]=substrate_df.loc[index,"main_sub"]
+                substrate_S.loc[i, "reactant_site"] = substrate_df.loc[
+                    index, "reactant_site"]
+            substrate_S["methyl_type"] = sub_group_df["methyl_type"]
+            substrate_S["Entry"] = sub_group_df["Entry"]
+            # merge = substrate_df.merge(sub_group_df, on=["Entry","methyl_type"])
+            # print(merge.columns)
+            # print(merge["main_sub"])
+            # substrate_S["main_sub"] = merge["main_sub"]
+            # substrate_S["methyl_type"] = merge["methyl_type"]
+            # substrate_S["reactant_site"] = merge["reactant_site"]
+            # substrate_S["Entry"] = merge["Entry"]
     print("O")
     print(len(substrate_O.index))
     print("Entries: {}".format(len(substrate_O["Entry"].unique())))

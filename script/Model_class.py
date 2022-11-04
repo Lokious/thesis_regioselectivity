@@ -11,7 +11,7 @@ includes Rhea-ec_2_1_1.tsv
 import dill
 import sklearn.metrics
 
-import train_model
+
 from molecular_class import Molecule, Reaction,main_substrate
 import parse_data
 #for data structure
@@ -544,24 +544,47 @@ class Model_class():
         :return:
         """
 
+        if group_column=="molecular_id":
+            splitter = GroupShuffleSplit(test_size=test, n_splits=1, random_state=i)
+            split = splitter.split(df, groups=df[group_column])
+            train_inds, test_inds = next(split)
+            train = df.iloc[train_inds]
+            test = df.iloc[test_inds]
 
-        splitter = GroupShuffleSplit(test_size=test, n_splits=1, random_state=i)
-        split = splitter.split(df, groups=df[group_column])
-        train_inds, test_inds = next(split)
-        train = df.iloc[train_inds]
-        test = df.iloc[test_inds]
+            #X_train = train[list(train.columns)[:-2]]
+            X_train = (copy.deepcopy(train)).drop(columns=["Entry","label"])
+            Y_train = train["label"]
+            #X_test = test[list(test.columns)[:-2]]
+            X_test = (copy.deepcopy(test)).drop(columns=["Entry", "label"])
+            Y_test = test["label"]
+            #print(X_train, X_test, Y_train, Y_test)
+            return X_train, X_test, Y_train, Y_test
+        elif group_column=="main_sub":
+            seq_smile_df = pd.read_csv("../autodata/seq_smiles_all.csv",header=0,index_col=0)
+            seq_smile_df = pd.DataFrame(seq_smile_df,columns=["main_sub"])
+            # print(seq_smile_df)
+            # print(df)
 
-        #X_train = train[list(train.columns)[:-2]]
-        X_train = (copy.deepcopy(train)).drop(columns=["Entry","label"])
-        Y_train = train["label"]
-        #X_test = test[list(test.columns)[:-2]]
-        X_test = (copy.deepcopy(test)).drop(columns=["Entry", "label"])
-        Y_test = test["label"]
-        #print(X_train, X_test, Y_train, Y_test)
-        return X_train, X_test, Y_train, Y_test
+            df["main_sub"]=pd.DataFrame(
+                len(df.index) * [""]).astype('string')
+            for i in df.index:
+                index=int("".join(list(df.loc[i,"molecular_id"])[1:]))
+                df.loc[i,"main_sub"]=seq_smile_df.loc[index,"main_sub"]
+            #print(df)
 
-
-
+            splitter = GroupShuffleSplit(test_size=test, n_splits=1,
+                                         random_state=i)
+            split = splitter.split(df, groups=df[group_column])
+            train_inds, test_inds = next(split)
+            train = df.iloc[train_inds]
+            test = df.iloc[test_inds]
+            print(len(train["main_sub"].unique()))
+            print(len(test["main_sub"].unique()))
+            X_train = (copy.deepcopy(train)).drop(columns=["Entry", "label","main_sub"])
+            Y_train = train["label"]
+            X_test = (copy.deepcopy(test)).drop(columns=["Entry", "label","main_sub"])
+            Y_test = test["label"]
+            return X_train, X_test, Y_train, Y_test
     def _get_colors(self,num_colors):
         import colorsys
         colors = []
@@ -775,7 +798,7 @@ class Model_class():
         #scoring is the Strategy to evaluate the performance of the cross-validated model on the test set
         rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced",),
                              hyperparameters, scoring='roc_auc',
-                             cv=3,
+                             cv=5,
                              verbose=3,
                              n_jobs=20)
 
@@ -821,26 +844,26 @@ class Model_class():
 
         #And visualize
         ### size and font size should be set before the sns plot###
-        fig,ax = plt.subplots()
-        plt.rcParams["figure.figsize"] = (40, 20)
+        plt.figure(figsize=(50,30))
+        #plt.rcParams["figure.figsize"] = (40, 20)
         # sns_default=sns.axes_style()
         # print(sns_default)
-        plt.tight_layout()
-        sns.set(rc={'figure.figsize': (40,20)})
+
+        #sns.set(rc={'figure.figsize': (40,20)})
         sns.set(font_scale=3)
         ax1=sns.barplot(data=fi.head(30), x="Importance", y=(fi.head(30)).index)
         ax1.set_title(
             "feature importance for RF model")
-
+        plt.tight_layout()
         #fig = ax.get_figure()
 
-        plt.savefig('../autodata/separate_seed_result/feature_importance{}.png'.format(file_name),)
+        plt.savefig('../autodata/separate_seed_result/feature_importance{}.png'.format(file_name),bbox_inches = 'tight')
         plt.clf()
         plt.close()
         #reset parameters
         # sns.set_style(sns_default)
         ##save result to file
-        self.save_result_tofile(rf_cv, X_test, y_test, cm_matrix, file_name=file_name)
+        self.save_result_tofile(rf_cv, X_test, y_test, cm_matrix, file_name=file_name,threshold=threshold_train)
 
 
         """
@@ -958,7 +981,7 @@ class Model_class():
             "Accuracy with different estimators and features for SVC model")
         #plt.savefig("../Accuracy with different estimators and features for SVC model_{}".format(file_name))
 
-    def save_result_tofile(self,rf,X_test, y_test,cm_matrix,file_name=""):
+    def save_result_tofile(self,rf,X_test, y_test,cm_matrix,file_name="",threshold=0):
         """
 
         :param rf:
@@ -972,6 +995,11 @@ class Model_class():
         y_probs = rf.predict_proba(X_test)
         # keep probabilities for the positive outcome only
         yhat = y_probs[:, 1]
+        result=pd.DataFrame()
+        print(yhat)
+        result["yhat"] = yhat
+        result["y_test"] = y_test
+        result.to_csv('../autodata/model/{}_predictresult.csv'.format(file_name))
         ##distribution for the probability of prediction
         label_1_pre=[]
         label_0_pre=[]
@@ -1015,16 +1043,17 @@ class Model_class():
         file1.write("precision : {}\n".format(precision))
         file1.write("mcc_score: {}\n".format(mcc_score))
         file1.write("roc_score: {}\n".format(roc_score))
-        file1.write("best_score: {}\n".format(rf.best_score_))
+        file1.write("threshold: {}\n".format(threshold))
+        #file1.write("best_score: {}\n".format(rf.best_score_))
         file1.write("###############################################")
         file1.close()
 
     def show_roc(self,rf,X,y,file_name):
         from sklearn import metrics
 
-        #save drfault parameters
-        print(plt.rcParams)
-        default_para=plt.rcParams
+        # #save drfault parameters
+        # print(plt.rcParams)
+        # default_para=plt.rcParams
         # roc for training data
         y_probs = rf.predict_proba(X)
         # keep probabilities for the positive outcome only
@@ -1046,8 +1075,8 @@ class Model_class():
         display.figure_.savefig("../autodata/separate_seed_result/RF_ROC_curve_{}_data".format(file_name))
         #plt.show()
         plt.close()
-        #reset to rc parameter before
-        plt.rcParams.update(default_para)
+        # #reset to rc parameter before
+        # plt.rcParams.update(default_para)
         ###precision_recall###
         from sklearn.metrics import PrecisionRecallDisplay
 
@@ -1083,7 +1112,7 @@ class Model_class():
             #plt.rcParams.update({'font.size': 8})
             cm = confusion_matrix(y, y_pre_threshold)
             fig,ax=plt.subplots()
-            sns.set(font_scale=4)
+            #sns.set(font_scale=4)
             # sns.heatmap(cm, annot=True, annot_kws={"size": 16},ax=ax)  # font size
             # plt.xlabel("Predicted label")
             # plt.ylabel("True label")
@@ -1102,7 +1131,7 @@ class Model_class():
                 '../autodata/separate_seed_result/cm_threshold{}_{}.png'.format(
                     threshold, file_name), dpi=300)
             # plt.show()
-            plt.rcParams.update(default_para)
+            # plt.rcParams.update(default_para)
             plt.close()
         return cm
 
@@ -1112,11 +1141,11 @@ class Model_class():
 
         """
         # Draw the density plot
-        fig, ax = plt.subplots()
+        #fig, ax = plt.subplots()
         print(plt.rcParams)
         default_para=plt.rcParams
         #se the same bin
-
+        fig, ax =plt.subplots(figsize=(50,30))
         bin=[x*0.01 for x in list(range(1,101,1))]
         sns.histplot(label_1, kde=True,
                      color="orange",
@@ -1129,9 +1158,9 @@ class Model_class():
         plt.legend(prop={'size': 8}, title='Label')
         plt.title('{}_{} probability distribution'.format(file_name,titile))
         plt.xlabel('probability')
-        plt.savefig("../autodata/separate_seed_result/{} probability distribution.png".format(file_name))
+        plt.savefig("../autodata/separate_seed_result/{} probability distribution.png".format(file_name),bbox_inches = 'tight')
         #reset to the parameter before drawing the plot
-        plt.rcParams.update(default_para)
+        #plt.rcParams.update(default_para)
         plt.close()
         # plt.ylabel('Density')
         #plt.show()
@@ -1454,7 +1483,7 @@ def create_MACCSkey_fingerprint():
 
 def main():
     create_MACCSkey_fingerprint()
-    train_model.rename_column()
+
     # model = Model_class()
     # model.comapre_result_for_different_similarity_test("../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit167_3_remove_redundant_MACCS.csv")
 if __name__ == "__main__":
