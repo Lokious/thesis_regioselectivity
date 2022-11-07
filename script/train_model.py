@@ -25,6 +25,7 @@ def run_pca_for_kmer_sequences():
 def predict(name="N_AA_properties_encoding_MACCSkey"):
 
         import joblib
+        print(name)
         model = joblib.load('../autodata/model/rf_test_model_cv{}'.format(name))
         # input = copy.deepcopy(input_dataframe)
         # input =input.drop(columns=["methyl_type"])
@@ -32,14 +33,15 @@ def predict(name="N_AA_properties_encoding_MACCSkey"):
         input = pd.read_csv("../autodata/model/{}_X_test.csv".format(name),header=0,index_col=0)
         input = input.drop(columns=["molecular_id","methyl_type","atom_index"])
         Y = model.predict(input)
-        print(Y)
-
+        #print(Y)
+        y_test= pd.read_csv("../autodata/model/{}_y_test.csv".format(name),header=0,index_col=0)
         input["predict_label"] = Y
+        input["true_label"]=y_test["label"]
         input_frame = pd.read_csv("../autodata/model/{}_X_test.csv".format(name),header=0,index_col=0)
         input["molecular_id"] = input_frame["molecular_id"]
         input["atom_index"] = input_frame["atom_index"]
         input["methyl_type"] = input_frame["methyl_type"]
-        print(input["methyl_type"].unique())
+        #print(input["methyl_type"].unique())
         # groups=input_dataframe.groupby(["molecular_id"])
         # index = []
         # for group in groups.groups:
@@ -148,13 +150,34 @@ def main():
         today = date.today()
         # dd/mm/YY
         d1 = today.strftime("%d_%m_%Y")
+
+        predict(name="N_AA_properties_encoding_MACCSkey_no_same_sub")
+        parse_data.molecular_accuracy("N_AA_properties_encoding_MACCSkey_no_same_subprediction_x_test.csv")
+        predict(name="O_AA_properties_encoding_MACCSkey_no_same_sub")
+        parse_data.molecular_accuracy(
+                "O_AA_properties_encoding_MACCSkey_no_same_subprediction_x_test.csv")
+        predict(name="N_AA_properties_encoding_MACCSkey")
+        parse_data.molecular_accuracy(
+                "N_AA_properties_encoding_MACCSkeyprediction_x_test.csv")
+        predict(name="O_AA_properties_encoding_MACCSkey")
+        parse_data.molecular_accuracy(
+                "O_AA_properties_encoding_MACCSkeyprediction_x_test.csv")
+        predict(name="onlyfingerprint_bit128_radius3_all_data_morganfingerprint_no_same_sub")
+        parse_data.molecular_accuracy(
+                "onlyfingerprint_bit128_radius3_all_data_morganfingerprint_no_same_subprediction_x_test.csv")
+        predict(name="onlyfingerprint_bit128_radius3_all_data_morganfingerprint")
+        parse_data.molecular_accuracy(
+                "onlyfingerprint_bit128_radius3_all_data_morganfingerprintprediction_x_test.csv")
+        predict(name="MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name")
+        parse_data.molecular_accuracy(
+                "MACCS_fingerprint_bit167_radius3_all_data_2_11_change_nameprediction_x_test.csv")
         # #rename_column()
         # # N methyltransferase
         # X = pd.read_csv(
         #  "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv",
         #  header=0, index_col=0)
         # add_dataframe = pd.read_csv(
-        #  "../autodata/protein_encoding/active_site/O_AA_properties_encoding.csv",
+        #  "../autodata/protein_encoding/active_site/N_AA_properties_encoding.csv",
         #  header=0, index_col=0)
         # add_dataframe["Entry"] = add_dataframe.index
         # add_dataframe.reset_index(drop=True, inplace=True)
@@ -164,22 +187,22 @@ def main():
         # input_dataframe = input_dataframe.dropna(axis=0, how="any")
         # print(input_dataframe)
         # input_dataframe.to_csv(
-        #  "../autodata/input_data/active_site/O_AA_properties_encoding_MACCSkey.csv")
+        #  "../autodata/input_data/active_site/N_AA_properties_encoding_MACCSkey_no_same_sub.csv")
         # print(input_dataframe)
         # X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
-        #         input_dataframe)
-        #
+        #         input_dataframe,group_column="main_sub")
+
         # X_train = X_train.drop(
         #         columns=["methyl_type", "molecular_id", "atom_index"])
         # # save x test for further analysis result
         # y_test.to_csv(
-        #         "../autodata/model/O_AA_properties_encoding_MACCSkey_y_test.csv")
+        #         "../autodata/model/N_AA_properties_encoding_MACCSkey_no_same_sub_y_test.csv")
         # X_test.to_csv(
-        #         "../autodata/model/O_AA_properties_encoding_MACCSkey_X_test.csv")
+        #         "../autodata/model/N_AA_properties_encoding_MACCSkey_no_same_sub_X_test.csv")
         # X_test = X_test.drop(
         #         columns=["methyl_type", "molecular_id", "atom_index"])
         # model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-        #                          "O_AA_properties_encoding_MACCSkey", i=0)
+        #                          "N_AA_properties_encoding_MACCSkey_no_same_sub", i=0)
         #parse_data.read_msa_and_encoding("6_seed")
 
         #predict("")
@@ -239,11 +262,11 @@ def main():
         # input_dataframe=pd.read_csv( "../autodata/input_data/fingerprint_bit128_radius3_all_data_morganfingerprint.csv",header=0,index_col=0)
         # print(input_dataframe)
         # X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
-        #         input_dataframe)
+        #         input_dataframe,group_column="main_sub")
         # y_test.to_csv(
-        #         "../autodata/model/onlyfingerprint_bit128_radius3_all_data_morganfingerprint_y_test.csv")
+        #         "../autodata/model/onlyfingerprint_bit128_radius3_all_data_morganfingerprint_no_same_sub_y_test.csv")
         # X_test.to_csv(
-        #         "../autodata/model/onlyfingerprint_bit128_radius3_all_data_morganfingerprint_X_test.csv")
+        #         "../autodata/model/onlyfingerprint_bit128_radius3_all_data_morganfingerprint_no_same_sub_X_test.csv")
         # X_train = X_train.drop(
         #         columns=["methyl_type", "molecular_id", "atom_index"])
         # # save x test for further analysis result
@@ -251,25 +274,25 @@ def main():
         # X_test = X_test.drop(
         #         columns=["methyl_type", "molecular_id", "atom_index"])
         # model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-        #                          "onlyfingerprint_bit128_radius3_all_data_morganfingerprint", i=0)
+        #                          "onlyfingerprint_bit128_radius3_all_data_morganfingerprint_no_same_sub", i=0)
 
-        input_dataframe=pd.read_csv( "../autodata/input_data/MACCS_fingerprint_bit167_radius3_all_data_2_11.csv",header=0,index_col=0)
-        print(input_dataframe)
-        X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
-                input_dataframe,group_column="main_sub")
-        print(X_test)
-        y_test.to_csv(
-                "../autodata/model/MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name_y_test_no_same_sub.csv")
-        X_test.to_csv(
-                "../autodata/model/MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name_X_test_no_same_sub.csv")
-        X_train = X_train.drop(
-                columns=["methyl_type", "molecular_id", "atom_index"])
-        # save x test for further analysis result
-
-        X_test = X_test.drop(
-                columns=["methyl_type", "molecular_id", "atom_index"])
-        model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                                 "MACCS_fingerprint_bit167_radius3_all_data_2_11_no_same_sub", i=0)
+        # input_dataframe=pd.read_csv( "../autodata/input_data/MACCS_fingerprint_bit167_radius3_all_data_2_11.csv",header=0,index_col=0)
+        # print(input_dataframe)
+        # X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
+        #         input_dataframe,group_column="main_sub")
+        # print(X_test)
+        # y_test.to_csv(
+        #         "../autodata/model/MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name_y_test_no_same_sub.csv")
+        # X_test.to_csv(
+        #         "../autodata/model/MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name_X_test_no_same_sub.csv")
+        # X_train = X_train.drop(
+        #         columns=["methyl_type", "molecular_id", "atom_index"])
+        # # save x test for further analysis result
+        #
+        # X_test = X_test.drop(
+        #         columns=["methyl_type", "molecular_id", "atom_index"])
+        # model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
+        #                          "MACCS_fingerprint_bit167_radius3_all_data_2_11_no_same_sub", i=0)
         # X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(input_dataframe)
         # #
         # #     # mo_del.three_D_pca(X_train, y_train, "{}_128_2".format(file))

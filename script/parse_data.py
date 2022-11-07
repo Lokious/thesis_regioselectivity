@@ -911,6 +911,7 @@ def output_analysis(predict_df,fingerprint_df):
     file_name=predict_df.split(".")[0]
     predict_df=pd.read_csv(predict_df,header=0,index_col=0)
     predict_df=pd.DataFrame(predict_df,columns=["molecular_id",'predict_label',"atom_index"])
+    print(len(predict_df.index))
     fingerprint_df=pd.read_csv(fingerprint_df,header=0,index_col=0)
     fingerprint_df=pd.DataFrame(fingerprint_df,columns=["molecular_id","atom_index","label","methyl_type","Entry"])
     molecule_id=predict_df["molecular_id"].unique()
@@ -920,13 +921,19 @@ def output_analysis(predict_df,fingerprint_df):
         if fingerprint_df.loc[index,"molecular_id"] not in molecule_id:
             remove_index.append(index)
     fingerprint_df.drop(index=remove_index,inplace=True)
-    print(predict_df['predict_label'])
-    fingerprint_df['predict_label'] = predict_df['predict_label']
-    fingerprint_df['atom_index_TEST'] = predict_df['atom_index']
+    print(len(fingerprint_df.index))
+    print(predict_df['atom_index'].isna().sum())
+
+
+    fingerprint_df['predict_label'] = list(predict_df['predict_label'])
+    fingerprint_df['atom_index_TEST'] = list(predict_df['atom_index'])
+    print(list(predict_df['atom_index']))
+
     for index in fingerprint_df.index:
+        print(fingerprint_df.loc[index, 'molecular_id'])
         print(fingerprint_df.loc[index,'atom_index'])
         print(fingerprint_df.loc[index,'atom_index_TEST'])
-        assert (fingerprint_df.loc[index,'atom_index_TEST'] ==fingerprint_df.loc[index,'atom_index'] )
+        assert (fingerprint_df.loc[index,'atom_index_TEST'] == fingerprint_df.loc[index,'atom_index'] )
     group_by_methylation_type=fingerprint_df.groupby(by="methyl_type")
     summary_df = pd.DataFrame(columns=["methyl_type","molecular_id","number_of_possiable_atoms","predict","Entry"],index=list(range(len(molecule_id))))
     # df = sns.load_dataset("titanic")
@@ -961,7 +968,7 @@ def output_analysis(predict_df,fingerprint_df):
 
     summary_df["number_of_possiable_atoms"]=summary_df["number_of_possiable_atoms"].astype("int")
     summary_df["predict"]=summary_df["predict"].astype("bool")
-    summary_df.to_csv("summary_OAA_predict")
+    summary_df.to_csv("summary_{}_predict".format(file_name))
     print(summary_df)
     # print(summary_df.dtypes)
     # print(df)
@@ -987,6 +994,7 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
     substrate_df=pd.read_csv(substrate_df,index_col=0,header=0)
     #print(input_data)
     methyl_groups=input_data.groupby(by="methyl_type")
+    print(input_data["methyl_type"].unique())
     substrate_C=pd.DataFrame()
     substrate_O = pd.DataFrame()
     substrate_N = pd.DataFrame()
@@ -998,19 +1006,13 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
             substrate_C["main_sub"]=pd.DataFrame(
                 len(sub_group_df.index) * [""]).astype('string')
             for i in sub_group_df.index:
-                index=int("".join(list(substrate_C.loc[i,"molecular_id"])[1:]))
+                index=int("".join(list(sub_group_df.loc[i,"molecular_id"])[1:]))
                 substrate_C.loc[i,"main_sub"]=substrate_df.loc[index,"main_sub"]
                 substrate_C.loc[i, "reactant_site"] = substrate_df.loc[
                     index, "reactant_site"]
             substrate_C["methyl_type"] = sub_group_df["methyl_type"]
-            substrate_C["Entry"] = sub_group_df["Entry"]
-            # merge = substrate_df.merge(sub_group_df,on=["Entry","methyl_type"])
-            # print(merge.columns)
-            # print(merge["main_sub"])
-            # substrate_C["main_sub"] = merge["main_sub"]
-            # substrate_C["methyl_type"] = merge["methyl_type"]
-            # substrate_C["reactant_site"] = merge["reactant_site"]
-            # substrate_C["Entry"] = merge["Entry"]
+            #substrate_C["Entry"] = sub_group_df["Entry"]
+
         if sub_group_df["methyl_type"].unique()[0]=="O":
             substrate_O["main_sub"]=pd.DataFrame(
                 len(sub_group_df.index) * [""]).astype('string')
@@ -1020,32 +1022,24 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
                 substrate_O.loc[i, "reactant_site"] = substrate_df.loc[
                     index, "reactant_site"]
             substrate_O["methyl_type"] = sub_group_df["methyl_type"]
-            substrate_O["Entry"] = sub_group_df["Entry"]
-            # merge = substrate_df.merge(sub_group_df,on=["Entry","methyl_type"])
-            # print(merge.columns)
-            # print(merge["main_sub"])
-            # substrate_O["main_sub"]=merge["main_sub"]
-            # substrate_O["methyl_type"] = merge["methyl_type"]
-            # substrate_O["reactant_site"] = merge["reactant_site"]
-            # substrate_O["Entry"] = merge["Entry"]
+            #substrate_O["Entry"] = sub_group_df["Entry"]
+
+        print(substrate_O)
+        substrate_O.dropna(inplace=True)
         if sub_group_df["methyl_type"].unique()[0] == "N":
             substrate_N["main_sub"]=pd.DataFrame(
                 len(sub_group_df.index) * [""]).astype('string')
-            print(sub_group_df)
+            #print(sub_group_df)
             for i in sub_group_df.index:
                 index=int("".join(list(sub_group_df.loc[i,"molecular_id"])[1:]))
                 substrate_N.loc[i,"main_sub"]=substrate_df.loc[index,"main_sub"]
                 substrate_N.loc[i, "reactant_site"] = substrate_df.loc[
                     index, "reactant_site"]
             substrate_N["methyl_type"] = sub_group_df["methyl_type"]
-            substrate_N["Entry"] = sub_group_df["Entry"]
-            # merge = substrate_df.merge(sub_group_df, on=["Entry","methyl_type"])
-            # print(merge.columns)
-            # print(merge["main_sub"])
-            # substrate_N["main_sub"] = merge["main_sub"]
-            # substrate_N["methyl_type"] = merge["methyl_type"]
-            # substrate_N["reactant_site"] = merge["reactant_site"]
-            # substrate_N["Entry"] = merge["Entry"]
+            #substrate_N["Entry"] = sub_group_df["Entry"]
+
+        print(substrate_N)
+        substrate_N.dropna(inplace=True)
         if sub_group_df["methyl_type"].unique()[0] == "S":
             substrate_S["main_sub"]=pd.DataFrame(
                 len(sub_group_df.index) * [""]).astype('string')
@@ -1055,17 +1049,13 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
                 substrate_S.loc[i, "reactant_site"] = substrate_df.loc[
                     index, "reactant_site"]
             substrate_S["methyl_type"] = sub_group_df["methyl_type"]
-            substrate_S["Entry"] = sub_group_df["Entry"]
-            # merge = substrate_df.merge(sub_group_df, on=["Entry","methyl_type"])
-            # print(merge.columns)
-            # print(merge["main_sub"])
-            # substrate_S["main_sub"] = merge["main_sub"]
-            # substrate_S["methyl_type"] = merge["methyl_type"]
-            # substrate_S["reactant_site"] = merge["reactant_site"]
-            # substrate_S["Entry"] = merge["Entry"]
+            #substrate_S["Entry"] = sub_group_df["Entry"]
+
+        print(substrate_S)
+        substrate_S.dropna(inplace=True)
     print("O")
     print(len(substrate_O.index))
-    print("Entries: {}".format(len(substrate_O["Entry"].unique())))
+    #print("Entries: {}".format(len(substrate_O["Entry"].unique())))
     substrate_O = substrate_O.drop_duplicates()
     print(len(substrate_O["main_sub"].unique()))
     #(substrate_O)
@@ -1073,57 +1063,58 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
     print(len(substrate_N.index))
     substrate_N = substrate_N.drop_duplicates()
     print(len(substrate_N["main_sub"].unique()))
-    print("Entries: {}".format(len(substrate_N["Entry"].unique())))
-    #print(substrate_N)
-    # print("S")
-    # print(len(substrate_S.index))
-    # substrate_S = substrate_S.drop_duplicates()
-    # print(len(substrate_S["main_sub"].unique()))
-    # print("Entries: {}".format(len(substrate_S["Entry"].unique())))
-    #print(substrate_S)
-    # print("C")
-    # print(len(substrate_C.index))
-    # substrate_C = substrate_C.drop_duplicates()
-    # print(len(substrate_C["main_sub"].unique()))
-    # print("Entries: {}".format(len(substrate_C["Entry"].unique())))
-    # #print(substrate_C)
+    #print("Entries: {}".format(len(substrate_N["Entry"].unique())))
+    print(substrate_N)
+    print("S")
+    print(len(substrate_S.index))
+    substrate_S = substrate_S.drop_duplicates()
+    print(len(substrate_S["main_sub"].unique()))
+    #print("Entries: {}".format(len(substrate_S["Entry"].unique())))
+    print(substrate_S)
+    print("C")
+    print(len(substrate_C.index))
+    substrate_C = substrate_C.drop_duplicates()
+    print(len(substrate_C["main_sub"].unique()))
+    #print("Entries: {}".format(len(substrate_C["Entry"].unique())))
+    #print(substrate_C)
 
     #,substrate_C,substrate_S
     dfs=[substrate_O,substrate_N]
     saved_smile=[]
-    for df in dfs:
-        type = df["methyl_type"].unique()[0]
-        #print(type)
-        for index in df.index:
-            smile1=df.loc[index,"main_sub"]
-
-            sites=df.loc[index,"reactant_site"]
-            #print(sites)
-            if "," in sites:
-                site_list = sites.split(",")
-            else:
-                site_list = [sites]
-            sites = []
-            for site in site_list:
-                sites.append(site.split(":")[1])
-            mol1 = Chem.MolFromSmiles(smile1)
-            #print(mol1)
-            atomindex = []
-            for atom in mol1.GetAtoms():
-                isotope = atom.GetIsotope()
-                #print("iso:{}".format(isotope))
-                #print(sites)
-                for item in sites:
-                    if isotope == int(item):
-                        #print("iso:{}".format(isotope))
-                        atomindex.append(atom.GetIdx())
-            #print(smile1)
-            #Draw.ShowMol(mol1,(600,600),highlightAtoms=[int(atomindex)])
-            if smile1 not in saved_smile:
-                file="{}_naa/{}.png".format(type,index)
-                img1=Draw.MolToImage(mol1,(600,600),highlightAtoms=atomindex)
-                img1.save(file)
-                saved_smile.append(smile1)
+    # for df in dfs:
+    #     type = df["methyl_type"].unique()[0]
+    #     #print(type)
+    #     print(df)
+    #     for index in df.index:
+    #         smile1=df.loc[index,"main_sub"]
+    #         sites=df.loc[index,"reactant_site"]
+    #         #print(sites)
+    #         if "," in sites:
+    #             print(sites)
+    #             site_list = sites.split(",")
+    #         else:
+    #             site_list = [sites]
+    #         sites = []
+    #         for site in site_list:
+    #             sites.append(site.split(":")[1])
+    #         mol1 = Chem.MolFromSmiles(smile1)
+    #         #print(mol1)
+    #         atomindex = []
+    #         for atom in mol1.GetAtoms():
+    #             isotope = atom.GetIsotope()
+    #             #print("iso:{}".format(isotope))
+    #             #print(sites)
+    #             for item in sites:
+    #                 if isotope == int(item):
+    #                     #print("iso:{}".format(isotope))
+    #                     atomindex.append(atom.GetIdx())
+    #         #print(smile1)
+    #         #Draw.ShowMol(mol1,(600,600),highlightAtoms=[int(atomindex)])
+    #         if smile1 not in saved_smile:
+    #             file="{}_oaa/{}.png".format(type,index)
+    #             img1=Draw.MolToImage(mol1,(600,600),highlightAtoms=atomindex)
+    #             img1.save(file)
+    #             saved_smile.append(smile1)
 
 def different_similarity_result():
     #check_overlap(file1="PF08241PF01795_bit_score5_coverage0.6_ACS_bit128_3_remove_redundant.csv")
@@ -1222,10 +1213,53 @@ def different_similarity_result():
     #               hue="predict")
     violiint_plot(sum_df, x="methyl_type", y="similarity_range",
                   hue="atom_predict")
+def molecular_accuracy(predict="active_site_128fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCSprediction_x_test.csv"):
+    df = pd.read_csv(predict,header=0,index_col=0)
+    predict = pd.DataFrame()
+    predict["predict"]= pd.DataFrame(
+        len(df["molecular_id"].unique()) * [0]).astype('object')
+    sub_group_id = df.groupby(by="molecular_id")
+    for i,id_group in enumerate(sub_group_id.groups):
+        id_group_df = sub_group_id.get_group(id_group)
+        molecular_id = id_group_df["molecular_id"].unique()[0]
+        predict_boolean = True
+        for index in id_group_df.index:
+            if int(id_group_df.loc[index, "predict_label"]) == int(
+                    id_group_df.loc[index, "true_label"]):
+                predict_boolean = True
+            else:
+                #print("false")
+                predict_boolean = False
+                break
+        predict.loc[i, "predict"] = predict_boolean
+        predict.loc[i, "molecular_id"] = molecular_id
+
+        #print(molecular_id)
+
+    #print(len(predict))
+    accuracy=(predict["predict"].value_counts()[True])/len(predict)
+    print((predict["predict"].value_counts()[True])/len(predict))
+    return round(accuracy,3)
+
 def main():
-    check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data=r"E:\Download\regioselectivity_prediction\autodata\input_data\active_site\N_AA_properties_encoding_MACCSkey.csv")
+    #molecular_accuracy("N_AA_properties_encoding_MACCSkey_no_same_sub_predictresult.csv")
+    # sum_pd = pd.DataFrame(columns=[50, 60, 70, 80, 90],index=[11, 15])
+    # for coverage in [50, 60, 70, 80, 90]:
+    #     for bitscore in [11, 15]:
+    #         accuracy=molecular_accuracy("active_site_128fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_{}_{}_MACCSprediction_x_test.csv".format(bitscore,coverage))
+    #         sum_pd.loc[bitscore,coverage]=accuracy
+    # print(sum_pd)
+    # sns.lineplot(data=sum_pd.T)
+    # plt.ylabel("Accuracy based on molecule")
+    # plt.xlabel("coverage")
+    # plt.show()
+    # check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data=r"E:\Download\regioselectivity_prediction\autodata\model\MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name_X_test_no_same_sub.csv")
+    # all=pd.read_csv("../autodata/seq_smiles_all.csv",header=0,index_col=0)
+    # print("sequences: {}".format(len(all["Entry"].unique())))
+    # print("reactions: {}".format(len(all["rxn"].unique())))
+    # print("main_sub: {}".format(len(all["main_sub"].unique())))
     # sum_df.to_csv("prediction_x_test.csv")
-    #output_analysis("prediction_x_test.csv", "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
+    output_analysis("active_site_128fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCSprediction_x_test.csv", "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv")
     # output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_15_70_MACCSprediction_x_test.csv",
     #                 "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
     # output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_15_50_MACCSprediction_x_test.csv",
