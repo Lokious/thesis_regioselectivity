@@ -11,6 +11,7 @@ from datetime import date
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from molecular_class import Molecule
+from rdkit import Chem
 def run_pca_for_kmer_sequences():
         mo_del = Model_class()
         sequence_data = pd.read_csv(
@@ -21,7 +22,7 @@ def run_pca_for_kmer_sequences():
         sequence_data.drop("Entry", axis=1, inplace=True)
         sequence_data.drop("group", axis=1, inplace=True)
         mo_del.run_PCA(sequence_data, group_label,
-                       "{}".format("k_mer_sequences"))
+                       "{}".format("128bitfp"))
 def predict(name="N_AA_properties_encoding_MACCSkey"):
 
         import joblib
@@ -57,7 +58,7 @@ def predict(name="N_AA_properties_encoding_MACCSkey"):
         input.to_csv("{}prediction_x_test.csv".format(name))
 def pca_molecule(input):
 
-        fps = input.iloc[:,:167]
+        fps = input.iloc[:,:256]
         # fps["fingerprint"] = pd.DataFrame(
         #     len(fps.index) * [""])
 
@@ -70,7 +71,7 @@ def pca_molecule(input):
         y_label = input["label"]
         fps["methyl_type"]=input["methyl_type"]
         mo_del = Model_class()
-        mo_del.run_PCA(fps,y_label,"MACCS_OAA")
+        mo_del.run_PCA(fps,y_label,"128BITFP")
 def rename_column():
         input_dataframe = pd.read_csv(
                 "../autodata/fingerprint/fingerprint_bit128_radius3_all_data.csv",
@@ -144,33 +145,57 @@ def rename_column():
                 "../autodata/input_data/MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name.csv")
         # input_dataframe=pd.read_csv("../autodata/input_data/fingerprint_bit128_radius3_all_data_morganfingerprint.csv")
         print(input_dataframe)
+
+def use_manual_data_for_test(data="../autodata/mannual_data.csv"):
+        dataset = pd.read_csv(data,index_col=0,header=0)
+        dataset['substrate_mol']= pd.DataFrame(len(dataset.index) * [0]).astype('object')
+        dataset.dropna(inplace=True)
+        for i in dataset.index:
+                sub_smile = dataset.loc[i,"substrate_smiles"]
+                mol = Chem.MolFromSmiles(sub_smile)
+                dataset.loc[i,'substrate_mol'] = mol
+        mo_del = Model_class()
+        fg=mo_del.MACCSkey_fingerprint_df_preapare(substrate_mol_df=dataset,radius = 3)
+        print(fg)
+        import joblib
+        name="MACCS_fingerprint_bit167_radius3_all_data_no_same_sub"
+        model = joblib.load('../autodata/model/rf_test_model_cv{}'.format(name))
+        # input = copy.deepcopy(input_dataframe)
+        # input =input.drop(columns=["methyl_type"])
+        # input = input.drop(columns=["Entry", "molecular_id", "label"])
+        input = pd.read_csv("../autodata/model/{}_X_test.csv".format(name),header=0,index_col=0)
+        input = input.drop(columns=["molecular_id","methyl_type","atom_index"])
+        Y = model.predict(input)
 def main():
 
         mo_del = Model_class()
         today = date.today()
         # dd/mm/YY
         d1 = today.strftime("%d_%m_%Y")
+        #use_manual_data_for_test(data="../autodata/mannual_data.csv")
+        # input = pd.read_csv("../autodata/fingerprint/fingerprint_bit128_radius3_all_data.csv",header=0,index_col=0)
+        # pca_molecule(input)
+        # predict(name="N_AA_properties_encoding_MACCSkey_no_same_sub")
+        # parse_data.molecular_accuracy("N_AA_properties_encoding_MACCSkey_no_same_subprediction_x_test.csv")
+        # predict(name="O_AA_properties_encoding_MACCSkey_no_same_sub")
+        # parse_data.molecular_accuracy(
+        #         "O_AA_properties_encoding_MACCSkey_no_same_subprediction_x_test.csv")
+        # predict(name="N_AA_properties_encoding_MACCSkey")
+        # parse_data.molecular_accuracy(
+        #         "N_AA_properties_encoding_MACCSkeyprediction_x_test.csv")
+        # predict(name="O_AA_properties_encoding_MACCSkey")
+        # parse_data.molecular_accuracy(
+        #         "O_AA_properties_encoding_MACCSkeyprediction_x_test.csv")
+        # predict(name="onlyfingerprint_bit128_radius3_all_data_morganfingerprint_no_same_sub")
+        # parse_data.molecular_accuracy(
+        #         "onlyfingerprint_bit128_radius3_all_data_morganfingerprint_no_same_subprediction_x_test.csv")
+        # predict(name="onlyfingerprint_bit128_radius3_all_data_morganfingerprint")
+        # parse_data.molecular_accuracy(
+        #         "onlyfingerprint_bit128_radius3_all_data_morganfingerprintprediction_x_test.csv")
+        # predict(name="MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name")
+        # parse_data.molecular_accuracy(
+        #         "MACCS_fingerprint_bit167_radius3_all_data_2_11_change_nameprediction_x_test.csv")
 
-        predict(name="N_AA_properties_encoding_MACCSkey_no_same_sub")
-        parse_data.molecular_accuracy("N_AA_properties_encoding_MACCSkey_no_same_subprediction_x_test.csv")
-        predict(name="O_AA_properties_encoding_MACCSkey_no_same_sub")
-        parse_data.molecular_accuracy(
-                "O_AA_properties_encoding_MACCSkey_no_same_subprediction_x_test.csv")
-        predict(name="N_AA_properties_encoding_MACCSkey")
-        parse_data.molecular_accuracy(
-                "N_AA_properties_encoding_MACCSkeyprediction_x_test.csv")
-        predict(name="O_AA_properties_encoding_MACCSkey")
-        parse_data.molecular_accuracy(
-                "O_AA_properties_encoding_MACCSkeyprediction_x_test.csv")
-        predict(name="onlyfingerprint_bit128_radius3_all_data_morganfingerprint_no_same_sub")
-        parse_data.molecular_accuracy(
-                "onlyfingerprint_bit128_radius3_all_data_morganfingerprint_no_same_subprediction_x_test.csv")
-        predict(name="onlyfingerprint_bit128_radius3_all_data_morganfingerprint")
-        parse_data.molecular_accuracy(
-                "onlyfingerprint_bit128_radius3_all_data_morganfingerprintprediction_x_test.csv")
-        predict(name="MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name")
-        parse_data.molecular_accuracy(
-                "MACCS_fingerprint_bit167_radius3_all_data_2_11_change_nameprediction_x_test.csv")
         # #rename_column()
         # # N methyltransferase
         # X = pd.read_csv(
@@ -258,7 +283,7 @@ def main():
         X_test["label"] = y_test
         pca_molecule(X_test)
         '''
-        # #######train on only morgan fp#########
+        #######train on only morgan fp#########
         # input_dataframe=pd.read_csv( "../autodata/input_data/fingerprint_bit128_radius3_all_data_morganfingerprint.csv",header=0,index_col=0)
         # print(input_dataframe)
         # X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
@@ -279,12 +304,13 @@ def main():
         # input_dataframe=pd.read_csv( "../autodata/input_data/MACCS_fingerprint_bit167_radius3_all_data_2_11.csv",header=0,index_col=0)
         # print(input_dataframe)
         # X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
-        #         input_dataframe,group_column="main_sub")
+        #         input_dataframe,group_column="main_sub",i=1)
         # print(X_test)
+        #
         # y_test.to_csv(
-        #         "../autodata/model/MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name_y_test_no_same_sub.csv")
+        #         "../autodata/model/MACCS_fingerprint_bit167_radius3_all_data_no_same_sub_1_y_test.csv")
         # X_test.to_csv(
-        #         "../autodata/model/MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name_X_test_no_same_sub.csv")
+        #         "../autodata/model/MACCS_fingerprint_bit167_radius3_all_data_no_same_sub_1_X_test.csv")
         # X_train = X_train.drop(
         #         columns=["methyl_type", "molecular_id", "atom_index"])
         # # save x test for further analysis result
@@ -292,7 +318,15 @@ def main():
         # X_test = X_test.drop(
         #         columns=["methyl_type", "molecular_id", "atom_index"])
         # model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-        #                          "MACCS_fingerprint_bit167_radius3_all_data_2_11_no_same_sub", i=0)
+        #                          "MACCS_fingerprint_bit167_radius3_all_data_no_same_sub_1", i=0)
+        # #
+        predict(name="O_seed_onehot_encoding_sepreate_MACCSkey")
+        parse_data.molecular_accuracy(
+                "O_seed_onehot_encoding_sepreate_MACCSkeyprediction_x_test.csv")
+        predict(name="S_seed_onehot_encoding_sepreate_MACCSkey")
+        parse_data.molecular_accuracy(
+                "S_seed_onehot_encoding_sepreate_MACCSkeyprediction_x_test.csv")
+
         # X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(input_dataframe)
         # #
         # #     # mo_del.three_D_pca(X_train, y_train, "{}_128_2".format(file))

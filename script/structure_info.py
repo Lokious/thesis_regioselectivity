@@ -155,9 +155,9 @@ def download_pdb_structure_from_alphafola(input_file="",entry_pdb="../autodata/e
     input_df["invariants_kmer"] = invariants_kmer
     input_df["invariants_radius"] = invariants_radius
 
-    with open(save_input_with_structure,
-            "wb") as dillfile:
-        dill.dump(input_df,dillfile)
+    # with open(save_input_with_structure,
+    #         "wb") as dillfile:
+    #     dill.dump(input_df,dillfile)
     return input_df
 def geometrius_embedding(invariants_kmer,invariants_radius,entry):
 
@@ -172,17 +172,17 @@ def geometrius_embedding(invariants_kmer,invariants_radius,entry):
 
 def merge_structure_embedding_to_input(input_df="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit128_3_remove_redundant_with_structure"):
 
-    try:
-        input_path = "../autodata/input_data/active_site/with_structure/"+input_df.split("/")[-1]
-        print(input_path)
-        with open(input_path,"rb") as dillfile:
-            input_df = dill.load(dillfile)
-        print(input_df)
-    except:
-        print("create input")
-        input_df=download_pdb_structure_from_alphafola(input_file=(input_df),
-                                              entry_pdb="../autodata/entry_pdb.xlsx")
-        print(input_df)
+    # try:
+    #     input_path = "../autodata/input_data/active_site/with_structure/"+input_df.split("/")[-1]
+    #     print(input_path)
+    #     with open(input_path,"rb") as dillfile:
+    #         input_df = dill.load(dillfile)
+    #     print(input_df)
+    # except:
+    print("create input")
+    input_df=download_pdb_structure_from_alphafola(input_file=(input_df),
+                                          entry_pdb="../autodata/entry_pdb.xlsx")
+    print(input_df)
     input_df.drop(input_df.index[input_df["invariants_radius"]=="NA"], inplace=True)
     input_df = input_df.dropna()
     print(input_df)
@@ -268,13 +268,18 @@ def merge_structure_embedding_to_input(input_df="../autodata/input_data/active_s
 
 def main():
     # download_pdb_structure_from_alphafola(input_file="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit128_3_remove_redundant.csv")
-    train,test=merge_structure_embedding_to_input(input_df="../autodata/input_data/active_site/N_AA_properties_encoding_MACCSkey")
+    train,test=merge_structure_embedding_to_input(input_df="../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data")
 
     # train = pd.read_csv("traindata.csv")
     # test = pd.read_csv("testdata.csv")
+    file1 = open("file1.txt","w")
+    file1.write("number of sequences{}\n".format(len(train["Entry"].unique())))
+    print("number of sequences".format(len(train["Entry"].unique())))
     test = test.dropna()
     train = train.dropna()
-
+    print("number of structure {}".format(len(train["Entry"].unique())))
+    file1.write("number of structure{}\n".format(len(train["Entry"].unique())))
+    file1.close()
     X_train = (copy.deepcopy(train)).drop(columns=["label","invariants_kmer","Entry","invariants_radius","molecular_id","methyl_type","structure","atom_index"])
     y_train = train["label"]
     # X_test = test[list(test.columns)[:-2]]
@@ -285,7 +290,7 @@ def main():
     #print(test.columns)
     mo_del = Model_class()
     model = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                            "166fg_rf{}_{}".format("11_6","N_AA_with_structure"),i=0)
+                            "166fg_rf{}_{}".format("11_8","MACCS_with_structure"),i=0)
 
 
 if __name__ == "__main__":

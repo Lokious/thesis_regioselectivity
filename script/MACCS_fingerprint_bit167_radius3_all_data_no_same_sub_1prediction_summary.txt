@@ -1,0 +1,10 @@
+The following is the result for MACCS_fingerprint_bit167_radius3_all_data_no_same_sub_1:best parameters:{'max_depth': 20, 'max_features': 0.3, 'n_estimators': 500}
+accuracy_score: 0.9389312977099237
+accuracy: 0.9351145038167938
+sensitivity : 0.2571428571428571
+specificity : 0.983640081799591
+precision : 0.5294117647058824
+mcc_score: 0.41299574937176586
+roc_score: 0.8638328951212386
+threshold: 0.579451896011915
+###############################################

@@ -506,7 +506,7 @@ def read_mannual_data(file=r"E:\Download\regioselectivity_prediction\data\mannua
 
 def read_msa_and_encoding(file_name=""):
     """
-    simpliest encoding by transfer aminoacide to number and encode it to binary arrary
+    One hot encoding, simpliest encoding by transfer aminoacide to number and encode it to binary arrary
 
     :param file_name: string, the file name for aligned sequences
     :return:
@@ -523,13 +523,11 @@ def read_msa_and_encoding(file_name=""):
     align_pd = align_pd.drop_duplicates()
 
     char_list = np.unique(align_array)
-
+    print(char_list)
+    print("encoding_length".format(len(char_list)))
     char_dictionary = {}
     for i,char in enumerate(char_list):
         char_dictionary[char] = (i+1)
-
-
-
 
     #drop columns which for over 80% sequences is gap
     from collections import Counter
@@ -1053,68 +1051,68 @@ def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
 
         print(substrate_S)
         substrate_S.dropna(inplace=True)
-    print("O")
-    print(len(substrate_O.index))
-    #print("Entries: {}".format(len(substrate_O["Entry"].unique())))
-    substrate_O = substrate_O.drop_duplicates()
-    print(len(substrate_O["main_sub"].unique()))
-    #(substrate_O)
-    print("N")
-    print(len(substrate_N.index))
-    substrate_N = substrate_N.drop_duplicates()
-    print(len(substrate_N["main_sub"].unique()))
-    #print("Entries: {}".format(len(substrate_N["Entry"].unique())))
-    print(substrate_N)
+    # print("O")
+    # print(len(substrate_O.index))
+    # #print("Entries: {}".format(len(substrate_O["Entry"].unique())))
+    # substrate_O = substrate_O.drop_duplicates()
+    # print(len(substrate_O["main_sub"].unique()))
+    # #(substrate_O)
+    # print("N")
+    # print(len(substrate_N.index))
+    # substrate_N = substrate_N.drop_duplicates()
+    # print(len(substrate_N["main_sub"].unique()))
+    # #print("Entries: {}".format(len(substrate_N["Entry"].unique())))
+    # print(substrate_N)
     print("S")
     print(len(substrate_S.index))
     substrate_S = substrate_S.drop_duplicates()
     print(len(substrate_S["main_sub"].unique()))
     #print("Entries: {}".format(len(substrate_S["Entry"].unique())))
     print(substrate_S)
-    print("C")
-    print(len(substrate_C.index))
-    substrate_C = substrate_C.drop_duplicates()
-    print(len(substrate_C["main_sub"].unique()))
-    #print("Entries: {}".format(len(substrate_C["Entry"].unique())))
-    #print(substrate_C)
+    # print("C")
+    # print(len(substrate_C.index))
+    # substrate_C = substrate_C.drop_duplicates()
+    # print(len(substrate_C["main_sub"].unique()))
+    # #print("Entries: {}".format(len(substrate_C["Entry"].unique())))
+    # #print(substrate_C)
 
     #,substrate_C,substrate_S
     dfs=[substrate_O,substrate_N]
     saved_smile=[]
-    # for df in dfs:
-    #     type = df["methyl_type"].unique()[0]
-    #     #print(type)
-    #     print(df)
-    #     for index in df.index:
-    #         smile1=df.loc[index,"main_sub"]
-    #         sites=df.loc[index,"reactant_site"]
-    #         #print(sites)
-    #         if "," in sites:
-    #             print(sites)
-    #             site_list = sites.split(",")
-    #         else:
-    #             site_list = [sites]
-    #         sites = []
-    #         for site in site_list:
-    #             sites.append(site.split(":")[1])
-    #         mol1 = Chem.MolFromSmiles(smile1)
-    #         #print(mol1)
-    #         atomindex = []
-    #         for atom in mol1.GetAtoms():
-    #             isotope = atom.GetIsotope()
-    #             #print("iso:{}".format(isotope))
-    #             #print(sites)
-    #             for item in sites:
-    #                 if isotope == int(item):
-    #                     #print("iso:{}".format(isotope))
-    #                     atomindex.append(atom.GetIdx())
-    #         #print(smile1)
-    #         #Draw.ShowMol(mol1,(600,600),highlightAtoms=[int(atomindex)])
-    #         if smile1 not in saved_smile:
-    #             file="{}_oaa/{}.png".format(type,index)
-    #             img1=Draw.MolToImage(mol1,(600,600),highlightAtoms=atomindex)
-    #             img1.save(file)
-    #             saved_smile.append(smile1)
+    for df in dfs:
+        type = df["methyl_type"].unique()[0]
+        #print(type)
+        print(df)
+        for index in df.index:
+            smile1=df.loc[index,"main_sub"]
+            sites=df.loc[index,"reactant_site"]
+            #print(sites)
+            if "," in sites:
+                print(sites)
+                site_list = sites.split(",")
+            else:
+                site_list = [sites]
+            sites = []
+            for site in site_list:
+                sites.append(site.split(":")[1])
+            mol1 = Chem.MolFromSmiles(smile1)
+            #print(mol1)
+            atomindex = []
+            for atom in mol1.GetAtoms():
+                isotope = atom.GetIsotope()
+                #print("iso:{}".format(isotope))
+                #print(sites)
+                for item in sites:
+                    if isotope == int(item):
+                        #print("iso:{}".format(isotope))
+                        atomindex.append(atom.GetIdx())
+            #print(smile1)
+            #Draw.ShowMol(mol1,(600,600),highlightAtoms=[int(atomindex)])
+            if smile1 not in saved_smile:
+                file="{}_s_one_hot/{}.png".format(type,index)
+                img1=Draw.MolToImage(mol1,(600,600),highlightAtoms=atomindex)
+                img1.save(file)
+                saved_smile.append(smile1)
 
 def different_similarity_result():
     #check_overlap(file1="PF08241PF01795_bit_score5_coverage0.6_ACS_bit128_3_remove_redundant.csv")
@@ -1242,6 +1240,7 @@ def molecular_accuracy(predict="active_site_128fg_bi_type_bond3_rf_PF08241_ACS_r
     return round(accuracy,3)
 
 def main():
+
     #molecular_accuracy("N_AA_properties_encoding_MACCSkey_no_same_sub_predictresult.csv")
     # sum_pd = pd.DataFrame(columns=[50, 60, 70, 80, 90],index=[11, 15])
     # for coverage in [50, 60, 70, 80, 90]:
@@ -1253,13 +1252,13 @@ def main():
     # plt.ylabel("Accuracy based on molecule")
     # plt.xlabel("coverage")
     # plt.show()
-    # check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data=r"E:\Download\regioselectivity_prediction\autodata\model\MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name_X_test_no_same_sub.csv")
+    check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data=r"../autodata/model/S_seed_onehot_encoding_sepreate_MACCSkey_X_test.csv")
     # all=pd.read_csv("../autodata/seq_smiles_all.csv",header=0,index_col=0)
     # print("sequences: {}".format(len(all["Entry"].unique())))
     # print("reactions: {}".format(len(all["rxn"].unique())))
     # print("main_sub: {}".format(len(all["main_sub"].unique())))
     # sum_df.to_csv("prediction_x_test.csv")
-    output_analysis("active_site_128fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCSprediction_x_test.csv", "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv")
+    #output_analysis("active_site_128fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCSprediction_x_test.csv", "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv")
     # output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_15_70_MACCSprediction_x_test.csv",
     #                 "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data_31_10.csv")
     # output_analysis("active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_15_50_MACCSprediction_x_test.csv",

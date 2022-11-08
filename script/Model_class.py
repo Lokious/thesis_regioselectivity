@@ -801,7 +801,7 @@ class Model_class():
                              hyperparameters, scoring='roc_auc',
                              cv=5,
                              verbose=3,
-                             n_jobs=20)
+                             n_jobs=12)
 
         ####use MCC as scoring#####
         # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
@@ -1459,9 +1459,9 @@ class Model_class():
             minmum,maxmum = similarity
             test=self.check_test_train_similarity(test, train, 166,similarity_dictionary=similarity_dictionary,minimum_similarity=minmum,maxmum_similarity=maxmum)
             print(len(test))
-            X_train = (copy.deepcopy(train)).drop(columns=["Entry","label"])
+            X_train = (copy.deepcopy(train)).drop(columns=["Entry","label", "atom_index"])
             Y_train = train["label"]
-            X_test = (copy.deepcopy(test)).drop(columns=["Entry", "label"])
+            X_test = (copy.deepcopy(test)).drop(columns=["Entry", "label", "atom_index"])
             X_test.to_csv("167fg_bond3_rf{}_{}X_test.csv".format('MACCS',similarity))
             Y_test = test["label"]
             #print(Y_test.index)
@@ -1480,7 +1480,7 @@ def create_MACCSkey_fingerprint():
     with open('../autodata/diction_atom_all', 'rb') as file1:
         diction_atom = dill.load(file1)
     #model.save_MACCSkeys_fingerprints_to_dataframe(data_with_site, diction_atom,3, drop_atoms=True,file_name="all_data")
-    model.save_fingerprints_to_dataframe(data_with_site, diction_atom,num_bits=128,radius=3, drop_atoms=True,file_name="all_data")
+    model.save_fingerprints_to_dataframe(data_with_site, diction_atom,num_bits=2048,radius=3, drop_atoms=True,file_name="all_data")
 
 def main():
     #create_MACCSkey_fingerprint()
