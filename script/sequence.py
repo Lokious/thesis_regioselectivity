@@ -200,10 +200,12 @@ class Sequences():
                 if distance <= 5:
                     # seems residue.get_id()[1] will return the id from author, which is
                     # use in the paper
-                    if residue1.get_id()[1] not in amino_acide_close_to_active_site:
-                        amino_acide_close_to_active_site[residue1.get_id()[1]]=[(residue2.get_id()[1],residue2.get_resname(),distance)]
-                    else:
-                        amino_acide_close_to_active_site[residue1.get_id()[1]].append((residue2.get_id()[1],residue2.get_resname(),distance))
+                    #when residue1.get_id()[0]==" " the residue is an amino acid
+                    if (residue1.get_id()[0]==" ") and (residue2.get_id()[0]==" "):
+                        if residue1.get_id()[1] not in amino_acide_close_to_active_site:
+                            amino_acide_close_to_active_site[residue1.get_id()[1]]=[(residue2.get_id()[1],residue2.get_resname(),distance)]
+                        else:
+                            amino_acide_close_to_active_site[residue1.get_id()[1]].append((residue2.get_id()[1],residue2.get_resname(),distance))
 
         # structure_seq_length = 0
         for residue in residues:
@@ -290,13 +292,17 @@ class Sequences():
         for key_acs in active_site_dictionary.keys():
             for item_tuple in active_site_dictionary[key_acs]:
                 #activesite_closeAA
+
                 columnname=item_tuple[0]
+                if str(columnname)==str(401):
+                    print(key_acs)
+                    print(item_tuple)
 
                 active_site_pd[columnname]=["NA"]*len(ids)
 
         for id in ids:
             for column in active_site_pd.columns:
-                #print(column)
+                #print(id,column)
                 aa = align_pd.loc[id,column]
                 active_site_pd.loc[id,column]=aa
         print("active_site pd:")
@@ -311,7 +317,8 @@ class Sequences():
                     print("drop:{}".format(column))
                     active_site_pd.drop(columns=column,inplace=True)
         print(active_site_pd)
-
+        active_site_pd.drop_duplicates(inplace=True)
+        print(active_site_pd)
         count=0
         #construct MSA with amino acids close to active sites
         ##save sequences to fasta file
@@ -319,7 +326,7 @@ class Sequences():
             "../autodata/protein_encoding/active_site/{}_seq_close_to_active_sites.fasta".format(
                 group), "w")
         for seq_id in active_site_pd.index:
-            seq= "".join(active_site_pd.loc[seq_id,:].values.tolist())
+            seq= "".join((active_site_pd.loc[seq_id,:].values).tolist())
             #print(seq,seq_id)
             if "-" in seq:
                 count +=1

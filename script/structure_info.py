@@ -38,7 +38,9 @@ def download_pdb_structure_from_alphafola(input_file="",entry_pdb="../autodata/e
         len(input_df.index) * [0]).astype('object')
 
     file1 = open(
-        "../autodata/pdb_structure_from_alphafold/missing_structure.txt", "w")
+        "../autodata/pdb_structure_from_alphafold/missing_structure_OAA.txt", "w")
+    file2 = open(
+        "../autodata/pdb_structure_from_alphafold/can_not_parse_structure_OAA.txt", "w")
     pdbs = []
     invariants_kmer = []
     invariants_radius = []
@@ -115,22 +117,29 @@ def download_pdb_structure_from_alphafola(input_file="",entry_pdb="../autodata/e
             except:
                 #otherwise download from alphafold
                 try:
-                    print("search {} in alphafold".format(entry))
-                    url = "https://alphafold.ebi.ac.uk/files/AF-{}-F1-model_v3.pdb".format(
-                        entry)
-                    # Download from URL
-                    with urlopen(url) as webpage:
-                        content = webpage.read()
-                    # Save to file
-                    with open("../autodata/pdb_structure_from_alphafold/" + str(entry) + ".pdb",
-                              'wb') as download:
-                        download.write(content)
-                    print("save ../autodata/pdb_structure_from_alphafold/" + str(entry) + ".pdb")
-                    #parase pdb and add to list
+                    saved_alphafold = False
+                    version=4
+                    while (version>=0) and (saved_alphafold==False):
+                        try:
+                            print("search {} in alphafold".format(entry))
+                            url = "https://alphafold.ebi.ac.uk/files/AF-{}-F1-model_v{}.pdb".format(
+                                entry,version)
+                            # Download from URL
+                            with urlopen(url) as webpage:
+                                content = webpage.read()
+                            # Save to file
+                            with open("../autodata/pdb_structure_from_alphafold/" + str(entry) + ".pdb",
+                                      'wb') as download:
+                                download.write(content)
+                            print("save ../autodata/pdb_structure_from_alphafold/" + str(entry) + ".pdb")
+                            saved_alphafold = True
+                        except:
+                            version = version-1
+                            #parase pdb and add to list
                     pdb_structure = pro.parsePDB(
                         "../autodata/pdb_structure_from_alphafold/{}.pdb".format(
                             entry))
-                    pdbs.append(pdb_structure)
+
                     invariants_kmer.append(
                         MomentInvariants.from_prody_atomgroup(entry,
                                                               pdb_structure,
@@ -142,6 +151,7 @@ def download_pdb_structure_from_alphafola(input_file="",entry_pdb="../autodata/e
                                                               pdb_structure,
                                                               split_type=SplitType.RADIUS,
                                                               split_size=10))
+                    pdbs.append(pdb_structure)
                 except:
                     print(entry)
                     #save missing structure to file
@@ -151,6 +161,7 @@ def download_pdb_structure_from_alphafola(input_file="",entry_pdb="../autodata/e
                     invariants_kmer.append("NA")
                     invariants_radius.append("NA")
     file1.close()
+    file2.close()
     input_df["structure"] = pdbs
     input_df["invariants_kmer"] = invariants_kmer
     input_df["invariants_radius"] = invariants_radius
@@ -260,37 +271,57 @@ def merge_structure_embedding_to_input(input_df="../autodata/input_data/active_s
     mo_del.run_PCA(structure, y_label,"structure_all")
     print("training data:")
     print(input_train)
-    input_train.to_csv("traindataN_AA.csv")
-    input_test.to_csv("testdataN_AA.csv")
+    input_train.to_csv("traindataO_AA_MACCS.csv")
+    input_test.to_csv("testdataO_AA_MACCS.csv")
 
     return input_train,input_test
     #print(train_kmer_embedder.embedding)
+def train_model_based_on_structure():
+    train, test = merge_structure_embedding_to_input(
+        input_df="../autodata/input_data/active_site/O_AA_properties_encoding_MACCSkey")
 
-def main():
-    # download_pdb_structure_from_alphafola(input_file="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit128_3_remove_redundant.csv")
-    train,test=merge_structure_embedding_to_input(input_df="../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data")
-
-    # train = pd.read_csv("traindata.csv")
-    # test = pd.read_csv("testdata.csv")
-    file1 = open("file1.txt","w")
-    file1.write("number of sequences{}\n".format(len(train["Entry"].unique())))
-    print("number of sequences".format(len(train["Entry"].unique())))
+    # train = pd.read_csv("traindataN_AA.csv",header=0,index_col=0)
+    # test = pd.read_csv("testdataN_AA.csv",header=0,index_col=0)
+    file1 = open("file_OAA.txt", "w")
+    file1.write("number of sequences in train{}\n".format(
+        len(train["Entry"].unique())))
+    print("number of sequences in train {}".format(
+        len(train["Entry"].unique())))
     test = test.dropna()
     train = train.dropna()
-    print("number of structure {}".format(len(train["Entry"].unique())))
-    file1.write("number of structure{}\n".format(len(train["Entry"].unique())))
+    print("number of structure in train {}".format(
+        len(train["Entry"].unique())))
+    all_seq = len(
+        set(list(train["Entry"].unique()) + list(test["Entry"].unique())))
+    file1.write("number of structure in train{}\n".format(
+        len(train["Entry"].unique())))
+    file1.write("number of structure in all{}\n".format(all_seq))
     file1.close()
-    X_train = (copy.deepcopy(train)).drop(columns=["label","invariants_kmer","Entry","invariants_radius","molecular_id","methyl_type","structure","atom_index"])
+    X_train = (copy.deepcopy(train)).drop(
+        columns=["label", "invariants_kmer", "Entry", "invariants_radius",
+                 "molecular_id", "methyl_type", "structure", "atom_index"])
     y_train = train["label"]
     # X_test = test[list(test.columns)[:-2]]
-    X_test = (copy.deepcopy(test)).drop(columns=["label","invariants_kmer","Entry","invariants_radius","molecular_id","methyl_type","structure","atom_index"])
+    X_test = (copy.deepcopy(test)).drop(
+        columns=["label", "invariants_kmer", "Entry", "invariants_radius",
+                 "molecular_id", "methyl_type", "structure", "atom_index"])
     y_test = test["label"]
-    #print(test)
+    # print(test)
     print(train)
-    #print(test.columns)
+    # print(test.columns)
     mo_del = Model_class()
     model = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                            "166fg_rf{}_{}".format("11_8","MACCS_with_structure"),i=0)
+                            "166fg_rf{}_{}".format("11_8",
+                                                   "MACCS_with_structure"),
+                            i=0)
+def main():
+    #train_model_based_on_structure()
+    entry = pd.read_table("missing_structure_OAA.txt")
+    entry.drop_duplicates(inplace=True)
+    print(entry)
+    entry.to_csv("structure_missing_OAA.csv")
+    # # download_pdb_structure_from_alphafola(input_file="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit128_3_remove_redundant.csv")
+
 
 
 if __name__ == "__main__":

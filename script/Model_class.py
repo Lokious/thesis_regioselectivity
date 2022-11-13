@@ -452,7 +452,8 @@ class Model_class():
 
     def fingerprint_df_preapare(self,substrate_mol_df,num_bits: int = 2048,radius: int = 3):
         """
-
+        This function is use for create fingerprint for given dataframe with substrate smile and reactant site
+        not use in prepare training and test data
         :param substrate_mol:
         :param num_bits:
         :param radius:
@@ -471,6 +472,21 @@ class Model_class():
                 fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
                     substrate_mol, num_bits=num_bits, radius=radius)
                 for atom in substrate_mol.GetAtoms():
+                    try:
+                        sites=substrate_mol_df.loc[index,'reactant_site'].split(";")
+                        methyl_sites=[(x.split(":")[0][0] + ":" +x.split(":")[1][0:]) for x in sites]
+                        print(methyl_sites)
+                    except:
+                        symbol_index=substrate_mol_df.loc[
+                            index, 'reactant_site']
+                        methyl_sites = [symbol_index.split(":")[0][0] + ":" +symbol_index.split(":")[1][0:]]
+                    sy_index = (atom.GetSymbol() + ":" + str(atom.GetIsotope()))
+                    #print(sy_index)
+                    if sy_index in methyl_sites:
+                        print(sy_index)
+                        label = 1
+                    else:
+                        label = 0
                     fingerprint_atom = self_defined_mol_object.create_fingerprint_atom(
                         substrate_mol, atom_object=atom, num_bits=num_bits, radius=radius)
                     atom_index_sub = atom.GetIdx()
@@ -479,13 +495,15 @@ class Model_class():
                     for i, item in enumerate(fingerprint_mol):
                         newrow[i] = item
                     for j, item in enumerate(fingerprint_atom):
-                        newrow[j + i] = item
+                        newrow[j + i+1] = item
 
                     add_dataframe = pd.DataFrame(newrow, index=[current_index])
                     fingerprint_dataframe = pd.concat([fingerprint_dataframe, add_dataframe], axis=
                     0)
                     fingerprint_dataframe.loc[current_index, "molecular_id"] = "m"+str(mol_id)
                     fingerprint_dataframe.loc[current_index, 'atom_index'] = atom_index_sub
+                    fingerprint_dataframe.loc[
+                        current_index, 'label'] = label
                     current_index += 1
             except:
                 print("skip in mol{}".format(mol_id))
@@ -495,7 +513,8 @@ class Model_class():
 
     def MACCSkey_fingerprint_df_preapare(self,substrate_mol_df,radius: int = 3):
         """
-
+        This function is use for create fingerprint for given dataframe with substrate smile and reactant site
+        not use in prepare training and test data
         :param substrate_mol:
         :param num_bits:
         :param radius:
@@ -514,6 +533,21 @@ class Model_class():
                 fingerprint_mol = self_defined_mol_object.create_MACCSkey_mol(
                     substrate_mol)
                 for atom in substrate_mol.GetAtoms():
+                    try:
+                        sites=substrate_mol_df.loc[index,'reactant_site'].split(";")
+                        methyl_sites=[(x.split(":")[0][0] + ":" +x.split(":")[1][0:]) for x in sites]
+                        print(methyl_sites)
+                    except:
+                        symbol_index=substrate_mol_df.loc[
+                            index, 'reactant_site']
+                        methyl_sites = [symbol_index.split(":")[0][0] + ":" +symbol_index.split(":")[1][0:]]
+                    sy_index = (atom.GetSymbol() + ":" + str(atom.GetIsotope()))
+                    #print(sy_index)
+                    if sy_index in methyl_sites:
+                        print(sy_index)
+                        label = 1
+                    else:
+                        label = 0
                     fingerprint_atom = self_defined_mol_object.create_MACCSkey_atom(
                         substrate_mol, atom_object=atom, radius=radius)
                     atom_index_sub = atom.GetIdx()
@@ -522,13 +556,15 @@ class Model_class():
                     for i, item in enumerate(fingerprint_mol):
                         newrow[i] = item
                     for j, item in enumerate(fingerprint_atom):
-                        newrow[j + i] = item
+                        newrow[j + i+1] = item
 
                     add_dataframe = pd.DataFrame(newrow, index=[current_index])
                     fingerprint_dataframe = pd.concat([fingerprint_dataframe, add_dataframe], axis=
                     0)
                     fingerprint_dataframe.loc[current_index, "molecular_id"] = "m"+str(mol_id)
                     fingerprint_dataframe.loc[current_index, 'atom_index'] = atom_index_sub
+                    fingerprint_dataframe.loc[
+                        current_index, 'label'] = label
                     current_index += 1
             except:
                 print("skip in mol{}".format(mol_id))
@@ -833,7 +869,7 @@ class Model_class():
         plt.ylabel("roc_auc (mean 3-fold CV)")
         plt.title(
             "roc_auc score with different max_depth and features for RF model")
-        plt.savefig("../autodata/separate_seed_result/Accuracy with different estimators and features for RF model_{}".format(file_name))
+        plt.savefig("../autodata/separate_seed_result/Accuracy with different estimators and features for RF model_{}.svg".format(file_name))
         plt.close()
 
         #plt.show()
@@ -858,7 +894,7 @@ class Model_class():
         plt.tight_layout()
         #fig = ax.get_figure()
 
-        plt.savefig('../autodata/separate_seed_result/feature_importance{}.png'.format(file_name),bbox_inches = 'tight')
+        plt.savefig('../autodata/separate_seed_result/feature_importance{}.svg'.format(file_name),bbox_inches = 'tight')
         plt.clf()
         plt.close()
         #reset parameters
@@ -1073,7 +1109,7 @@ class Model_class():
         display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr,
                                           roc_auc=roc_auc).plot()
         plt.title('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
-        display.figure_.savefig("../autodata/separate_seed_result/RF_ROC_curve_{}_data".format(file_name))
+        display.figure_.savefig("../autodata/separate_seed_result/RF_ROC_curve_{}_data.svg".format(file_name))
         #plt.show()
         plt.close()
         # #reset to rc parameter before
@@ -1086,7 +1122,7 @@ class Model_class():
         )
         precision_recall_figure = display.ax_.set_title("Precision-recall curve")
         display.figure_.savefig(
-            "../autodata/separate_seed_result/RF_precision_recall_figure_{}_data".format(
+            "../autodata/separate_seed_result/RF_precision_recall_figure_{}_data.svg".format(
                 file_name))
         #plt.show()
 
@@ -1129,7 +1165,7 @@ class Model_class():
                 "RF confusion matrix threshold:{}".format(
                     threshold))
             cm_display.figure_.savefig(
-                '../autodata/separate_seed_result/cm_threshold{}_{}.png'.format(
+                '../autodata/separate_seed_result/cm_threshold{}_{}.svg'.format(
                     threshold, file_name), dpi=300)
             # plt.show()
             # plt.rcParams.update(default_para)
@@ -1159,7 +1195,7 @@ class Model_class():
         plt.legend(prop={'size': 8}, title='Label')
         plt.title('{}_{} probability distribution'.format(file_name,titile))
         plt.xlabel('probability')
-        plt.savefig("../autodata/separate_seed_result/{} probability distribution.png".format(file_name),bbox_inches = 'tight')
+        plt.savefig("../autodata/separate_seed_result/{} probability distribution.svg".format(file_name),bbox_inches = 'tight')
         #reset to the parameter before drawing the plot
         #plt.rcParams.update(default_para)
         plt.close()

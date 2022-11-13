@@ -295,23 +295,23 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
         mo_del = Model_class()
         print(input_dataframe)
         X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
-            input_dataframe)
+            input_dataframe,group_column="main_sub")
 
         X_train = X_train.drop(columns=["methyl_type","molecular_id","atom_index"])
 
         #save x test for further analysis result
         y_test.to_csv(
-            "../autodata/model/active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_y_test.csv".format(
+            "../autodata/model/active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_y_test.csv".format(
                 domain, bit_score,
                 str(int(coverage * 100)), i=0))
-        X_test.to_csv("../autodata/model/active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_X_test.csv".format(domain, bit_score,
+        X_test.to_csv("../autodata/model/active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_X_test.csv".format(domain, bit_score,
                                      str(int(coverage * 100)), i=0))
         X_test = X_test.drop(columns=["methyl_type", "molecular_id","atom_index"])
         # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
         #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
         print(X_train)
         model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                                 "active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS".format(
+                                 "active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub".format(
                                      domain, bit_score,
                                      str(int(coverage * 100)), i=0))
 

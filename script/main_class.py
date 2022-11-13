@@ -21,6 +21,10 @@ from datetime import date
 from rdkit.Chem import Draw,DataStructs
 from rdkit.Chem import AllChem, rdmolops
 from rdkit.Chem.Draw import IPythonConsole
+from rdkit.Chem import rdDepictor
+from rdkit.Chem.Draw import rdMolDraw2D
+
+from IPython.display import SVG
 from rdkit import Chem
 import glob
 from sequence import Sequences
@@ -255,8 +259,8 @@ def visilize_bit_info_of_created_fingerprint(sub_smile,radius,numbit,atom_index,
             radius,
          numbit,bitInfo=bi
         )
-    print(fp)
     print(list(fp.GetOnBits()))
+
 
     #226 is the No.1 feature importance
     try:
@@ -284,15 +288,133 @@ def show_bitinfo_for_input_data(file="",smile_file=""):
             mol=Chem.MolFromSmiles(sub_smile)
             mol_id = id
             for atom in mol.GetAtoms():
-
                 atom_index= atom.GetIdx()
                 visilize_bit_info_of_created_fingerprint(sub_smile, radius=3, numbit=128,
                                                      atom_index=atom_index,product_smile=reactant_site,mol_id=mol_id)
+def check_if_atom_environment_has_specific_bit(substrate_molecule, radius=3,
+                                                 numbit=128,
+                                                 atom_index=0,bit:int=226):
+    atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(
+        substrate_molecule,
+        radius,
+        atom_index
+    )
+    atom_map = {}
+    submol = Chem.PathToSubmol(substrate_molecule, atom_environment,
+                               atomMap=atom_map)
+    Chem.SanitizeMol(submol,
+                     sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+    rdmolops.SanitizeFlags.SANITIZE_NONE
+    bi = {}
+    fp = AllChem.GetMorganFingerprintAsBitVect(submol,
+                                               radius,
+                                               numbit, bitInfo=bi
+                                               )
+    #print(fp)
+    bit_fingerprint_mol = np.zeros(
+        (0,),
+        dtype=int)  # (one dimention, 0 is number of rows)
+    DataStructs.ConvertToNumpyArray(fp, bit_fingerprint_mol)
+    fg=list(fp.GetOnBits())
+    #print(fg)
+    if (bit-128) in fg:
+        return True
+    else:
+        return False
+def highlight_atom_with_226_in_represent_mol(smile_file):
+    smile_df = pd.read_csv(smile_file, index_col=0, header=0)
+    smile_df.dropna(inplace=True)
 
+    # unique_sub=list((smile_df["reactant_site"].value_counts()).index)
+    unique_sub=[]
+    for i in smile_df.index:
+        substrate = smile_df.loc[i, "main_sub"]
+        if substrate not in unique_sub:
+            unique_sub.append(substrate)
+            try:
+                sites = smile_df.loc[i, "reactant_site"]
+                print(sites)
+                if "," in sites:
+                    site_list = sites.split(",")
+                else:
+                    site_list = [sites]
+                sites = []
+                for site in site_list:
+                    sites.append(site.split(":")[1])
+                #print(sites)
+                mol = Chem.MolFromSmiles(substrate)
+                high_light_index = []
+                high_light_colour={}
+                site_index = []
+                for atom in mol.GetAtoms():
+                    atom_index = atom.GetIdx()
+                    print("index{}".format(atom_index))
+                    Boolean_226=check_if_atom_environment_has_specific_bit(mol,radius=3,numbit=128,
+                                                                   atom_index=atom_index,
+                                                                   bit= 226)
+                    if Boolean_226:
+                        high_light_index.append(atom_index)
+                        high_light_colour[atom_index]=(1,0,0)
+                    isotope=str(atom.GetIsotope())
+                    print(isotope)
+                    if isotope in sites:
+                        print(atom_index)
+                        site_index.append(atom_index)
+                #site with 226 is red methyl site is green is both then yellow
+                change_colour_index=[]
+                change_colour_colour={}
+                for methyl_site in site_index:
+                    if methyl_site in high_light_index:
+                        high_light_index.remove(methyl_site)
+                        del high_light_colour[methyl_site]
+                        change_colour_index.append(methyl_site)
+                        change_colour_colour[methyl_site]=(1,1,0)
+                    else:
+                        change_colour_index.append(methyl_site)
+                        change_colour_colour[methyl_site]=(0,1,0)
+                high_light_index=high_light_index+change_colour_index
+                high_light_colour.update(change_colour_colour)
+                print(high_light_index)
+                print(high_light_colour)
+                drawer = Draw.MolDraw2DCairo(800, 800)
+                drawer.DrawMolecule(mol, highlightAtoms=high_light_index,
+                                    highlightAtomColors=high_light_colour)
+
+                drawer.FinishDrawing()
+
+                png = drawer.GetDrawingText()
+
+                # save png to file
+                with open('hight_light_226/{}.png'.format(i), 'wb') as png_file:
+                    png_file.write(png)
+                #
+                # img1= Draw.MolToImage(mol,highlightAtoms=high_light_index,highlightAtomColors=high_light_colour,size=(600,600))
+                # img1.save("hight_light_226/{}.jpg".format(i))
+                print(substrate)
+            except:
+                print(i)
+                #print(substrate)
+                print("cannot get mol from smile")
 def main():
     today = date.today()
     # dd/mm/YY
     d1 = today.strftime("%d_%m_%Y")
+
+    # drawer = Draw.MolDraw2DCairo(800, 800)
+    # print("here1")
+    # mol=Chem.MolFromSmiles("C(C)C")
+    # drawer.DrawMolecule(mol, highlightAtoms=[0],
+    #                                   highlightAtomColors={0:(0,0,1)})
+    # drawer.FinishDrawing()
+    # svg = drawer.GetDrawingText()
+    #
+    #
+    # drawer.DrawMolecule(mol, highlightAtoms=[0],
+    #                                   highlightAtomColors={0:(0,0,1)})
+    # drawer.FinishDrawing()
+    # svg = drawer.GetDrawingText().replace('svg:', '')
+    # SVG(svg)
+    highlight_atom_with_226_in_represent_mol(smile_file="../autodata/seq_smiles_all.csv")
     #show_bitinfo_for_input_data(file="../autodata/input_data/active_site/PF08241PF01795_bit_score11_coverage0.7_ACS_bit128_3_remove_redundant.csv", smile_file="../autodata/seq_smiles_all.csv")
     #build_different_input(auto="auto", x="../autodata/group/['N']_128_3_with_bitinfo.csv",num_bit = 128, radius:int = 3, seqfile= "6_seed_onehot_encoding.csv", group = "N")
     #visilize_bit_info_of_created_fingerprint(smile, 3,128,18)
@@ -437,18 +559,18 @@ def main():
     #
     # #
     #sepreate_input("auto","../autodata/fingerprint/fingerprint_bit128_radius3_all_data_drop_atom_19_09.csv",128,3)
-
+    '''
     #for active site encoding
     #O methyltransferase
     X=pd.read_csv("../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv",header=0,index_col=0)
-    add_dataframe=pd.read_csv("../autodata/protein_encoding/O_seed_onehot_encoding_sepreate.csv",header=0,index_col=0)
+    add_dataframe=pd.read_csv("../autodata/protein_encoding/6_seed_onehot_encoding.csv_128fg.csv",header=0,index_col=0)
 
     print(add_dataframe)
     input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
     print(input_dataframe)
     input_dataframe = input_dataframe.dropna(axis=0,how="any")
     print(input_dataframe)
-    input_dataframe.to_csv("../autodata/input_data/active_site/O_seed_onehot_encoding_sepreate_MACCSkey.csv")
+    input_dataframe.to_csv("../autodata/input_data/active_site/6_seed_onehot_encoding_MACCSkey_no_same_sub.csv")
     mo_del = Model_class()
     print(input_dataframe)
     X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
@@ -457,15 +579,15 @@ def main():
     X_train = X_train.drop(columns=["methyl_type", "molecular_id","atom_index"])
     # save x test for further analysis result
     y_test.to_csv(
-        "../autodata/model/O_seed_onehot_encoding_sepreate_MACCSkey_no_same_sub_y_test.csv")
+        "../autodata/model/6_seed_onehot_encoding_MACCSkey_no_same_sub_y_test.csv")
     X_test.to_csv(
-        "../autodata/model/O_seed_onehot_encoding_sepreate_MACCSkey_no_same_sub_X_test.csv")
+        "../autodata/model/6_seed_onehot_encoding_MACCSkey_no_same_sub_X_test.csv")
     X_test = X_test.drop(columns=["methyl_type", "molecular_id","atom_index"])
     # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
     model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                             "O_seed_onehot_encoding_sepreate_MACCSkey_no_same_sub", i=0)
+                             "6_seed_onehot_encoding_MACCSkey_no_same_sub", i=0)
 
-
+    '''
     #
     # #
     # input_dataframe.to_csv("data/input_data/input2048fg_dpna_manual.csv")

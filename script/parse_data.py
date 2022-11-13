@@ -975,10 +975,10 @@ def output_analysis(predict_df,fingerprint_df):
     violiint_plot(summary_df,file_name=file_name)
 
 def violiint_plot(summary_df, x="methyl_type", y="number_of_possiable_atoms",hue="predict",file_name=""):
-    ax = sns.violinplot(data=summary_df, x=x, y=y, hue=hue, split=True,inner="stick",scale="count")
-    y_stick = [x for x in list(range(0,21,2))]
+    ax = sns.violinplot(data=summary_df, x=x, y=y, hue=hue, split=True,inner="stick",scale="width")
+    y_stick = [x*0.1 for x in list(range(0,11,2))]
     ax.set_yticks(y_stick)
-    plt.savefig("violint_{}_count.png".format(file_name))
+    plt.savefig("violint_width{}.png".format(file_name))
     #plt.show()
     plt.close()
 def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
@@ -1211,6 +1211,7 @@ def different_similarity_result():
     #               hue="predict")
     violiint_plot(sum_df, x="methyl_type", y="similarity_range",
                   hue="atom_predict")
+
 def molecular_accuracy(predict="active_site_128fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCSprediction_x_test.csv"):
     df = pd.read_csv(predict,header=0,index_col=0)
     predict = pd.DataFrame()
@@ -1238,21 +1239,95 @@ def molecular_accuracy(predict="active_site_128fg_bi_type_bond3_rf_PF08241_ACS_r
     accuracy=(predict["predict"].value_counts()[True])/len(predict)
     print((predict["predict"].value_counts()[True])/len(predict))
     return round(accuracy,3)
+def molecule_number_count(substrate_df ="seq_smile_all.csv",input_data = ""):
+    input_data = pd.read_csv(input_data,header=0,index_col=0)
+    substrate_df = pd.read_csv(substrate_df,index_col=0,header=0)
+    input_data["main_sub"]=pd.DataFrame(
+                len(input_data.index) * [""]).astype('string')
+    for i in input_data.index:
+        index=int("".join(list(input_data.loc[i,"molecular_id"])[1:]))
+        input_data.loc[i,"main_sub"]=substrate_df.loc[index,"main_sub"]
+        input_data.loc[i, "reactant_site"] = substrate_df.loc[index, "reactant_site"]
+    print(len(input_data["main_sub"].unique()))
+    print()
+    # saved_smile =[]
+    # os.system("mkdir all/".format(input_data))
+    # for index in input_data.index:
+    #     smile = input_data.loc[index, "main_sub"]
+    #     sites = input_data.loc[index, "reactant_site"]
+    #     # print(sites)
+    #     if "," in sites:
+    #         print(sites)
+    #         site_list = sites.split(",")
+    #     else:
+    #         site_list = [sites]
+    #     sites = []
+    #     for site in site_list:
+    #         sites.append(site.split(":")[1])
+    #     mol1 = Chem.MolFromSmiles(smile)
+    #
+    #     atomindex = []
+    #     for atom in mol1.GetAtoms():
+    #         isotope = atom.GetIsotope()
+    #         for item in sites:
+    #             if isotope == int(item):
+    #                 atomindex.append(atom.GetIdx())
+    #     if smile not in saved_smile:
+    #         file = "all/{}.png".format(index)
+    #         mol1=Chem.MolFromSmiles(smile)
+    #         img1 = Draw.MolToImage(mol1, (600, 600), highlightAtoms=atomindex)
+    #         img1.save(file)
+    #         saved_smile.append(smile)
+
 
 def main():
-
-    #molecular_accuracy("N_AA_properties_encoding_MACCSkey_no_same_sub_predictresult.csv")
-    # sum_pd = pd.DataFrame(columns=[50, 60, 70, 80, 90],index=[11, 15])
+    #read_msa_and_encoding(file_name="")
+    # pd1= pd.read_csv("../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv")
+    # print(len(pd1["Entry"].unique()))
+    # pd1= pd.read_csv("../autodata/input_data/active_site/N_AA_properties_encoding_MACCSkey.csv")
+    # print(len(pd1["Entry"].unique()))
+    # pd1 = pd.read_csv("traindata_allMACCS.csv")
+    # pd2 = pd.read_csv("testdata_allMACCS.csv")
+    # len1=set(list(pd1["Entry"].unique())+list(pd2["Entry"].unique()))
+    # print(len(len1))
+    pd1 = pd.read_csv("traindataO_AA.csv")
+    pd2 = pd.read_csv("testdataO_AA.csv")
+    len1=set(list(pd1["Entry"].unique())+list(pd2["Entry"].unique()))
+    print(len(len1))
+    #different_similarity_result()
+    # molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv", input_data="../autodata/input_data/active_site/C_AA_properties_encoding_MACCSkey.csv")
+    # molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
+    #                       input_data="../autodata/input_data/active_site/O_AA_properties_encoding_MACCSkey.csv")
+    # molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
+    #                       input_data="../autodata/input_data/6_seed_onehot_encoding_MACCSkey.csv")
+    # molecular_accuracy("6_seed_onehot_encoding_MACCSkeyprediction_x_test.csv")
+    # sum_pd = pd.DataFrame(columns=["coverage","same_substrate","accuracy","bit_score"],index=list(range(20)))
+    # i=0
     # for coverage in [50, 60, 70, 80, 90]:
     #     for bitscore in [11, 15]:
     #         accuracy=molecular_accuracy("active_site_128fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_{}_{}_MACCSprediction_x_test.csv".format(bitscore,coverage))
-    #         sum_pd.loc[bitscore,coverage]=accuracy
+    #         sum_pd.loc[i,"coverage"]=str(coverage)
+    #         sum_pd.loc[i, "bit_score"] = bitscore
+    #         sum_pd.loc[i,"same_substrate"]=True
+    #         sum_pd.loc[i, "accuracy"] = accuracy
+    #         i+=1
+    # for coverage in [50, 60, 70, 80, 90]:
+    #     for bitscore in [11, 15]:
+    #         accuracy=molecular_accuracy("active_site_128fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_{}_{}_MACCS_no_same_subprediction_x_test.csv".format(bitscore,coverage))
+    #         sum_pd.loc[i,"coverage"]=str(coverage)
+    #         sum_pd.loc[i, "bit_score"] = bitscore
+    #         sum_pd.loc[i,"same_substrate"]=False
+    #         sum_pd.loc[i, "accuracy"] = accuracy
+    #         i+=1
     # print(sum_pd)
-    # sns.lineplot(data=sum_pd.T)
+    # fig,ax = plt.subplots(figsize=(10,7))
+    #
+    # sns.lineplot(data=sum_pd,x="coverage",y="accuracy",hue="same_substrate",style="bit_score",ax=ax)
     # plt.ylabel("Accuracy based on molecule")
     # plt.xlabel("coverage")
-    # plt.show()
-    check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data=r"../autodata/model/S_seed_onehot_encoding_sepreate_MACCSkey_X_test.csv")
+    # plt.legend(loc='upper right')
+    # plt.savefig("molecullar accuracy for PF08241.png")
+    #check_substrate(substrate_df="../autodata/seq_smiles_all.csv", input_data=r"../autodata/model/S_seed_onehot_encoding_sepreate_MACCSkey_X_test.csv")
     # all=pd.read_csv("../autodata/seq_smiles_all.csv",header=0,index_col=0)
     # print("sequences: {}".format(len(all["Entry"].unique())))
     # print("reactions: {}".format(len(all["rxn"].unique())))
@@ -1285,7 +1360,7 @@ def main():
     #check_sequences_similarity()
 
     # use_atom_properties_for_sequences_encoding(file_name="../autodata/align/align_seed_sequences_with_structure/C_4u1q_align_sequences",structure_chain="4u1q.pdb_chainA_s001",
-    #     start=4,group="C")
+    #     start=4,group="C",pdb_name="4u1q.pdb")
     #merge_active_site_and_methyltype("../autodata/entry_with_activesite.csv","../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv")
     # read_msa_and_encoding(file_name="N_seed")
     #merge_encoding_to_onefile()
