@@ -288,7 +288,7 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
         print("after drop duplicate")
         print(input_dataframe)
         input_dataframe.to_csv(
-            "../autodata/input_data/active_site/{}_ACS_bit128_3_remove_redundant_MACCS.csv".format(
+            "../autodata/input_data/active_site/{}_ACS_bit166_3_remove_redundant_MACCS.csv".format(
                 "{}_bit_score{}_coverage{}".format(domain, bit_score,
                                                    coverage)))
         # train model
@@ -301,17 +301,17 @@ def hmmsearch_for_sequence_and_structure(domains, coverage, bit_score,sturcture,
 
         #save x test for further analysis result
         y_test.to_csv(
-            "../autodata/model/active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_y_test.csv".format(
+            "../autodata/model/active_site_166fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_y_test.csv".format(
                 domain, bit_score,
                 str(int(coverage * 100)), i=0))
-        X_test.to_csv("../autodata/model/active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_X_test.csv".format(domain, bit_score,
+        X_test.to_csv("../autodata/model/active_site_166fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_X_test.csv".format(domain, bit_score,
                                      str(int(coverage * 100)), i=0))
         X_test = X_test.drop(columns=["methyl_type", "molecular_id","atom_index"])
         # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
         #                         "_input128fg_bi_type_bond2_svm{}".format(d1),i=0)
         print(X_train)
         model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                                 "active_site_128fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub".format(
+                                 "active_site_166fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub".format(
                                      domain, bit_score,
                                      str(int(coverage * 100)), i=0))
 
@@ -345,7 +345,7 @@ def separate_model_for_different_domain():
     #     seq_domain_df)
     bit_score=[11,15]
     #coverage=[round(x*0.1,2) for x in list(range(1,11,2))]
-    coverage=[0.5,0.6,0.7,0.8,0.9]
+    coverage=[0.1,0.3,0.5,0.6,0.7,0.8,0.9]
     '''
     seq_num_dict={}
     for score in bit_score:

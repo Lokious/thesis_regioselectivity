@@ -137,7 +137,7 @@ class Sequences():
         print(active_sites_dictionary)
         return active_sites_dictionary
 
-    def get_AA_within_distance_from_structure_file(self,pdb_name="3rod.pdb",residue_dictionary:dict={},chain_id:str="A",group:str=""):
+    def get_AA_within_distance_from_structure_file(self,pdb_name="3rod.pdb",residue_dictionary:dict={},chain_id:str="C",group:str=""):
         """
         This function is to get the id of residues close to active sites
 
@@ -216,14 +216,15 @@ class Sequences():
                 print(residue.get_resname())
                 structure_seq_length = residue.id[1]
             else:
-
+                print(residue.id)
+                print(residue.get_resname())
                 break
         print("length of the sequence: {}".format(structure_seq_length))
         return amino_acide_close_to_active_site, structure_seq_length
 
     def get_sites_from_alignment(self, fileformat="fasta", file="",
                                  active_site_dictionary: dict={},
-                                 start_pos: int = 0,
+                                 start_pos: int = 0, chain = "A",endpoint=406,
                                  structure_chain="3rod.pdb_chainA_s001",group:str="",pdb_name="3rod.pdb") -> pd.DataFrame:
         """
         This is the function to get the site close to active site for aligned sequences
@@ -238,7 +239,7 @@ class Sequences():
             print("Need active_site_dictionary, creating....")
             #split and remove the bit score and coverage
             group_1=group.split("_")[0]
-            active_site_dictionary,sequence_length =self.get_AA_within_distance_from_structure_file(pdb_name=pdb_name,group=group_1)
+            active_site_dictionary,sequence_length =self.get_AA_within_distance_from_structure_file(pdb_name=pdb_name,group=group_1,chain_id=chain)
             print(active_site_dictionary)
 
 
@@ -281,7 +282,10 @@ class Sequences():
         #print('Q9KUA0' in align_pd.index)
         #  double check the sequences length are the same with the structure chain sequences
         if (len(align_pd.columns)+start_pos-1) != sequence_length:
-            raise ValueError("The alignment length is not as same as the structure sequence")
+            try:
+                len(align_pd.columns) + start_pos - 1 == endpoint
+            except:
+                raise ValueError("The alignment length is not as same as the structure sequence")
 
         #print(align_pd)
         #create dataframe for saving the site close to active sites

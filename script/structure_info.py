@@ -38,9 +38,9 @@ def download_pdb_structure_from_alphafola(input_file="",entry_pdb="../autodata/e
         len(input_df.index) * [0]).astype('object')
 
     file1 = open(
-        "../autodata/pdb_structure_from_alphafold/missing_structure_OAA.txt", "w")
+        "../autodata/pdb_structure_from_alphafold/missing_structure_allMACCS.txt", "w")
     file2 = open(
-        "../autodata/pdb_structure_from_alphafold/can_not_parse_structure_OAA.txt", "w")
+        "../autodata/pdb_structure_from_alphafold/can_not_parse_structure_allMACCS.txt", "w")
     pdbs = []
     invariants_kmer = []
     invariants_radius = []
@@ -271,18 +271,18 @@ def merge_structure_embedding_to_input(input_df="../autodata/input_data/active_s
     mo_del.run_PCA(structure, y_label,"structure_all")
     print("training data:")
     print(input_train)
-    input_train.to_csv("traindataO_AA_MACCS.csv")
-    input_test.to_csv("testdataO_AA_MACCS.csv")
+    input_train.to_csv("traindata_all_MACCS.csv")
+    input_test.to_csv("testdata_all_MACCS.csv")
 
     return input_train,input_test
     #print(train_kmer_embedder.embedding)
 def train_model_based_on_structure():
     train, test = merge_structure_embedding_to_input(
-        input_df="../autodata/input_data/active_site/O_AA_properties_encoding_MACCSkey")
+        input_df="../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data")
 
-    # train = pd.read_csv("traindataN_AA.csv",header=0,index_col=0)
-    # test = pd.read_csv("testdataN_AA.csv",header=0,index_col=0)
-    file1 = open("file_OAA.txt", "w")
+    # train = pd.read_csv("traindata_allMACCS.csv",header=0,index_col=0)
+    # test = pd.read_csv("testdata_allMACCS.csv",header=0,index_col=0)
+    file1 = open("file_allmaccs.txt", "w")
     file1.write("number of sequences in train{}\n".format(
         len(train["Entry"].unique())))
     print("number of sequences in train {}".format(
@@ -311,15 +311,15 @@ def train_model_based_on_structure():
     # print(test.columns)
     mo_del = Model_class()
     model = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                            "166fg_rf{}_{}".format("11_8",
-                                                   "MACCS_with_structure"),
+                            "166fg_rf{}_{}".format("11_13",
+                                                   "allMACCS_with_structure"),
                             i=0)
 def main():
-    #train_model_based_on_structure()
-    entry = pd.read_table("missing_structure_OAA.txt")
-    entry.drop_duplicates(inplace=True)
-    print(entry)
-    entry.to_csv("structure_missing_OAA.csv")
+    train_model_based_on_structure()
+    # entry = pd.read_table("missing_structure_OAA.txt")
+    # entry.drop_duplicates(inplace=True)
+    # print(entry)
+    # entry.to_csv("structure_missing_OAA.csv")
     # # download_pdb_structure_from_alphafola(input_file="../autodata/input_data/active_site/PF08241_bit_score15_coverage0.7_ACS_bit128_3_remove_redundant.csv")
 
 

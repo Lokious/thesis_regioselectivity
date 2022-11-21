@@ -294,6 +294,8 @@ def show_bitinfo_for_input_data(file="",smile_file=""):
 def check_if_atom_environment_has_specific_bit(substrate_molecule, radius=3,
                                                  numbit=128,
                                                  atom_index=0,bit:int=226):
+
+
     atom_environment = rdmolops.FindAtomEnvironmentOfRadiusN(
         substrate_molecule,
         radius,
@@ -363,6 +365,8 @@ def highlight_atom_with_226_in_represent_mol(smile_file):
                 #site with 226 is red methyl site is green is both then yellow
                 change_colour_index=[]
                 change_colour_colour={}
+                for atom in mol.GetAtoms():
+                    atom.SetIsotope(0)
                 for methyl_site in site_index:
                     if methyl_site in high_light_index:
                         high_light_index.remove(methyl_site)
@@ -398,8 +402,24 @@ def highlight_atom_with_226_in_represent_mol(smile_file):
 def main():
     today = date.today()
     # dd/mm/YY
+    '''
     d1 = today.strftime("%d_%m_%Y")
-
+    mo_del = Model_class()
+    input_df = pd.read_csv("../autodata/input_data/C_k_mer_encoding_without_align_MACCSkey.csv",header=0,index_col=0)
+    X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
+        input_df)
+    X_train = X_train.drop(
+        columns=["methyl_type", "molecular_id", "atom_index"])
+    # save x test for further analysis result
+    y_test.to_csv(
+        "../autodata/model/C_k_mer_encoding_without_align_MACCSkey_y_test.csv")
+    X_test.to_csv(
+        "../autodata/model/C_k_mer_encoding_without_align_MACCSkey_X_test.csv")
+    X_test = X_test.drop(
+        columns=["methyl_type", "molecular_id", "atom_index"])
+    model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
+                             "C_k_mer_encoding_without_align_MACCSkey", i=0)
+    '''
     # drawer = Draw.MolDraw2DCairo(800, 800)
     # print("here1")
     # mol=Chem.MolFromSmiles("C(C)C")
@@ -414,7 +434,7 @@ def main():
     # drawer.FinishDrawing()
     # svg = drawer.GetDrawingText().replace('svg:', '')
     # SVG(svg)
-    highlight_atom_with_226_in_represent_mol(smile_file="../autodata/seq_smiles_all.csv")
+    #highlight_atom_with_226_in_represent_mol(smile_file="../autodata/seq_smiles_all.csv")
     #show_bitinfo_for_input_data(file="../autodata/input_data/active_site/PF08241PF01795_bit_score11_coverage0.7_ACS_bit128_3_remove_redundant.csv", smile_file="../autodata/seq_smiles_all.csv")
     #build_different_input(auto="auto", x="../autodata/group/['N']_128_3_with_bitinfo.csv",num_bit = 128, radius:int = 3, seqfile= "6_seed_onehot_encoding.csv", group = "N")
     #visilize_bit_info_of_created_fingerprint(smile, 3,128,18)
@@ -559,35 +579,38 @@ def main():
     #
     # #
     #sepreate_input("auto","../autodata/fingerprint/fingerprint_bit128_radius3_all_data_drop_atom_19_09.csv",128,3)
-    '''
+
     #for active site encoding
     #O methyltransferase
     X=pd.read_csv("../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv",header=0,index_col=0)
-    add_dataframe=pd.read_csv("../autodata/protein_encoding/6_seed_onehot_encoding.csv_128fg.csv",header=0,index_col=0)
-
+    add_dataframe=pd.read_csv("../autodata/protein_encoding/active_site/S_AA_properties_encoding.csv",header=0,index_col=0)
+    add_dataframe["Entry"] = add_dataframe.index
+    add_dataframe.reset_index(drop=True, inplace=True)
     print(add_dataframe)
     input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
     print(input_dataframe)
+
     input_dataframe = input_dataframe.dropna(axis=0,how="any")
     print(input_dataframe)
-    input_dataframe.to_csv("../autodata/input_data/active_site/6_seed_onehot_encoding_MACCSkey_no_same_sub.csv")
+    input_dataframe.to_csv("../autodata/input_data/active_site/S_AA_properties_encoding_MACCSkey.csv")
     mo_del = Model_class()
-    print(input_dataframe)
+    # input_dataframe = pd.read_csv("../autodata/input_data/S_AA_properties_encoding_MACCSkey.csv",header=0,index_col=0)
+    # print(input_dataframe)
     X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
-        input_dataframe,group_column="main_sub")
+        input_dataframe)
 
     X_train = X_train.drop(columns=["methyl_type", "molecular_id","atom_index"])
     # save x test for further analysis result
     y_test.to_csv(
-        "../autodata/model/6_seed_onehot_encoding_MACCSkey_no_same_sub_y_test.csv")
+        "../autodata/model/S_AA_properties_encoding_MACCSkey_y_test.csv")
     X_test.to_csv(
-        "../autodata/model/6_seed_onehot_encoding_MACCSkey_no_same_sub_X_test.csv")
+        "../autodata/model/S_AA_properties_encoding_MACCSkey_X_test.csv")
     X_test = X_test.drop(columns=["methyl_type", "molecular_id","atom_index"])
     # model1 = mo_del.SVM(X_train, X_test, y_train, y_test,
     model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                             "6_seed_onehot_encoding_MACCSkey_no_same_sub", i=0)
+                             "S_AA_properties_encoding_MACCSkey", i=0)
+    # print("O_k_mer_encoding_without_align_MACCSkey_no_same_sub finished!")
 
-    '''
     #
     # #
     # input_dataframe.to_csv("data/input_data/input2048fg_dpna_manual.csv")

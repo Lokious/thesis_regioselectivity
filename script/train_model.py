@@ -58,7 +58,7 @@ def predict(name="N_AA_properties_encoding_MACCSkey"):
         input.to_csv("{}prediction_x_test.csv".format(name))
 def pca_molecule(input):
 
-        fps = input.iloc[:,:166]
+        fps = input.iloc[:,:4096]
         # fps["fingerprint"] = pd.DataFrame(
         #     len(fps.index) * [""])
 
@@ -71,7 +71,7 @@ def pca_molecule(input):
         y_label = input["label"]
         fps["methyl_type"]=input["methyl_type"]
         mo_del = Model_class()
-        mo_del.run_PCA(fps,y_label,"C_group_molecules")
+        mo_del.run_PCA(fps,y_label,"2048molecules")
 def rename_column():
         input_dataframe = pd.read_csv(
                 "../autodata/fingerprint/fingerprint_bit128_radius3_all_data.csv",
@@ -184,6 +184,36 @@ def main():
         today = date.today()
         # dd/mm/YY
         d1 = today.strftime("%d_%m_%Y")
+        #
+        # input_dataframe = pd.read_csv(
+        #         "../autodata/fingerprint/fingerprint_bit2048_radius3_all_data.csv",
+        #         header=0, index_col=0)
+        # # other_info = pd.DataFrame(input_dataframe,columns=['Entry','atom_index','label','methyl_type','molecular_id'])
+        #
+        # print(input_dataframe)
+        # molecule = Molecule()
+        #
+        # map_dict = {}
+        # list_columns = []
+        # for key in range(2048):
+        #         # print(key)
+        #         map_dict[str(key)] = "molecule_" + str(key)
+        #         list_columns.append("molecule_" + str(key))
+        #
+        # for i in list(range(2048,4096)):
+        #         map_dict[str(i)] = "atom_" + str(i)
+        #         list_columns.append("atom_" + str(i))
+        # print(map_dict)
+        # fingerprint_df = input_dataframe.rename(columns=map_dict)
+        # fingerprint_df.dropna(inplace=True)
+        # print(fingerprint_df)
+        # fingerprint_df.to_csv(
+        #         "../autodata/fingerprint/fingerprint_bit2048_radius3_all_data.csv")
+        # df_1024 = pd.read_csv(
+        #         "../autodata/fingerprint/fingerprint_bit2048_radius3_all_data.csv",
+        #         header=0, index_col=0)
+        # df_1024.dropna(inplace=True)
+        # pca_molecule(input=df_1024)
         #use_manual_data_for_test(data="../autodata/mannual_data.csv")
         # for coverage in [50, 60, 70, 80, 90]:
         #         for bitscore in [11, 15]:
@@ -217,40 +247,61 @@ def main():
         #         "MACCS_fingerprint_bit167_radius3_all_data_2_11_change_nameprediction_x_test.csv")
 
         # #rename_column()
-        # N methyltransferase
-        X = pd.read_csv(
-         "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv",
-         header=0, index_col=0)
-        add_dataframe = pd.read_csv(
-         "../autodata/protein_encoding/k_mer/O_k_mer_encoding_without_align.csv",
-         header=0, index_col=0)
-        add_dataframe["Entry"] = add_dataframe.index
-        add_dataframe.reset_index(drop=True, inplace=True)
-        print(add_dataframe)
-        input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
+        #
+        # # N methyltransferase
+        # X = pd.read_csv(
+        #  "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv",
+        #  header=0, index_col=0)
+        # add_dataframe = pd.read_csv(
+        #  "../autodata/protein_encoding/k_mer/C_k_mer_encoding_without_align_26_08.csv",
+        #  header=0, index_col=0)
+        # #add_dataframe["Entry"] = add_dataframe.index
+        # #add_dataframe.reset_index(drop=True, inplace=True)
+        # print(add_dataframe)
+        # # drop all zero columns
+        # add_dataframe = add_dataframe.drop(columns=["group","ID"])
+        # add_dataframe = (add_dataframe.loc[:, add_dataframe.sum() != 0.0])
+        # add_dataframe.drop_duplicates(subset="Entry", inplace=True)
+        # input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
+        # print(input_dataframe)
+        # input_dataframe = input_dataframe.dropna(axis=0, how="any")
+        # # input_dataframe["methyl_type"] = input_dataframe["group"]
+        #
+        # columns=input_dataframe.select_dtypes(include=['float','int64']).columns
+        # input_dataframe[columns]=input_dataframe[columns].astype('int32')
+        # print(input_dataframe)
+        # input_dataframe.to_csv(
+        #  "../autodata/input_data/16C_k_mer_encoding_without_align_MACCSkey.csv")
+        input_dataframe = pd.read_csv("../autodata/input_data/active_site/PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCS.csv",header=0,index_col=0)
         print(input_dataframe)
-        input_dataframe = input_dataframe.dropna(axis=0, how="any")
-        # input_dataframe["methyl_type"] = input_dataframe["group"]
-        input_dataframe=input_dataframe.drop(columns=["group"])
-        columns=input_dataframe.select_dtypes(include=['float','int64']).columns
-        input_dataframe[columns]=input_dataframe[columns].astype('int32')
-        print(input_dataframe)
-        input_dataframe.to_csv(
-         "../autodata/input_data/O_k_mer_encoding_without_align_MACCSkey.csv")
         X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
                 input_dataframe)
-
         X_train = X_train.drop(
                 columns=["methyl_type", "molecular_id", "atom_index"])
         # save x test for further analysis result
         y_test.to_csv(
-                "../autodata/model/O_k_mer_encoding_without_align_MACCSkey_y_test.csv")
+                "../autodata/model/PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCS_y_test.csv")
         X_test.to_csv(
-                "../autodata/model/O_k_mer_encoding_without_align_MACCSkey_X_test.csv")
+                "../autodata/model/PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCS_X_test.csv")
         X_test = X_test.drop(
                 columns=["methyl_type", "molecular_id", "atom_index"])
         model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                                 "O_k_mer_encoding_without_align_MACCSkey", i=0)
+                                 "PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCS", i=0)
+        parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
+                              input_data="../autodata/input_data/active_site/PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCS.csv")
+        predict(name="PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCS")
+        parse_data.molecular_accuracy(
+                "PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCSprediction_x_test.csv")
+        # parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
+        # #                       input_data="../autodata/input_data/16C_k_mer_encoding_without_align_MACCSkey.csv")
+        # predict(name="16C_k_mer_encoding_without_align_MACCSkey")
+        # parse_data.molecular_accuracy(
+        #         "16C_k_mer_encoding_without_align_MACCSkeyprediction_x_test.csv")
+        # parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
+        #                       input_data="../autodata/input_data/N_k_mer_encoding_without_align_MACCSkey.csv")
+        # predict(name="N_k_mer_encoding_without_align_MACCSkey")
+        # parse_data.molecular_accuracy(
+        #         "N_k_mer_encoding_without_align_MACCSkeyprediction_x_test.csv")
         # parse_data.read_msa_and_encoding("6_seed")
 
         #predict("")
@@ -351,23 +402,59 @@ def main():
         # predict(name="O_seed_onehot_encoding_sepreate_MACCSkey_no_same_sub")
         # parse_data.molecular_accuracy(
         #         "O_seed_onehot_encoding_sepreate_MACCSkey_no_same_subprediction_x_test.csv")
-        # parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
-        #                       input_data="../autodata/input_data/active_site/O_seed_onehot_encoding_sepreate_MACCSkey_no_same_sub.csv")
-        # predict(name="C_seed_onehot_encoding_sepreate_MACCSkey")
+        parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
+                              input_data="../autodata/input_data/active_site/PF08241_bit_score11_coverage0.6_ACS_bit128_3_remove_redundant_MACCS.csv")
+        predict(name="PF08241_bit_score11_coverage0.6_ACS_bit128_3_remove_redundant_MACCS")
+        parse_data.molecular_accuracy(
+                "PF08241_bit_score11_coverage0.6_ACS_bit128_3_remove_redundant_MACCSprediction_x_test.csv")
+        # predict(name="S_AA_properties_encoding_MACCSkey")
         # parse_data.molecular_accuracy(
-        #         "C_seed_onehot_encoding_sepreate_MACCSkeyprediction_x_test.csv")
+        #         "S_AA_properties_encoding_MACCSkeyprediction_x_test.csv")
         # parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
-        #                       input_data="../autodata/input_data/active_site/C_seed_onehot_encoding_sepreate_MACCSkey.csv")
-        # predict(name="N_seed_onehot_encoding_MACCSkey")
+        #                       input_data="../autodata/input_data/O_k_mer_encoding_without_align_MACCSkey.csv")
+
+        # parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
+        #                       input_data="../autodata/input_data/C_k_mer_encoding_without_align_MACCSkey.csv")
+        # predict(name="S_k_mer_encoding_without_align_MACCSkey")
         # parse_data.molecular_accuracy(
-        #         "N_seed_onehot_encoding_MACCSkeyprediction_x_test.csv")
+        #         "S_k_mer_encoding_without_align_MACCSkeyprediction_x_test.csv")
         # parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
-        #                       input_data="../autodata/input_data/N_seed_onehot_encoding_MACCSkey.csv")
-        # predict(name="N_seed_onehot_encoding_sepreate_MACCSkey_no_same_sub")
+        #                       input_data="../autodata/input_data/S_k_mer_encoding_without_align_MACCSkey.csv")
+        # predict(name="O_AA_encoding_without_align_MACCSkey_fromstructure")
         # parse_data.molecular_accuracy(
-        #         "N_seed_onehot_encoding_sepreate_MACCSkey_no_same_subprediction_x_test.csv")
-        # parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
-        #                       input_data="../autodata/input_data/active_site/6_seed_onehot_encoding_MACCSkey_no_same_sub.csv")
+        #         "O_AA_encoding_without_align_MACCSkey_fromstructureprediction_x_test.csv")
+        # train_sub =parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
+        #                       input_data="traindataO_AA_MACCS.csv")
+        # test_sub =parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
+        #                       input_data="testdataO_AA_MACCS.csv")
+        # subs = set(list(test_sub) +list(train_sub))
+        # print(subs)
+        # print(len(subs))
+        # test = pd.read_csv("testdataN_AA.csv",header=0,index_col=0)
+        # print(test)
+        # test = test.dropna()
+        # print(test)
+        # X_test = (copy.deepcopy(test)).drop(
+        #         columns=["label", "invariants_kmer", "Entry",
+        #                  "invariants_radius",
+        #                   "structure"])
+        # X_test.to_csv("../autodata/model/{}_X_test.csv".format("166fg_rf11_6_N_AA_with_structure"))
+        # y_test = test["label"]
+        # y_test.to_csv("../autodata/model/{}_y_test.csv".format(
+        #         "166fg_rf11_6_N_AA_with_structure"))
+        #
+        # predict(name="166fg_rf11_6_N_AA_with_structure")
+        # parse_data.molecular_accuracy(
+        #         "166fg_rf11_6_N_AA_with_structureprediction_x_test.csv")
+
+        #
+        #
+        # predict(name="6_seed_onehot_encoding_MACCSkey_no_same_sub")
+        # parse_data.molecular_accuracy(
+        #         "6_seed_onehot_encoding_MACCSkey_no_same_subprediction_x_test.csv")
+        # parse_data.molecule_number_count(
+        #         substrate_df="../autodata/seq_smiles_all.csv",
+        #         input_data="../autodata/input_data/active_site/6_seed_onehot_encoding_MACCSkey.csv")
         # X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(input_dataframe)
         # #
         # #     # mo_del.three_D_pca(X_train, y_train, "{}_128_2".format(file))

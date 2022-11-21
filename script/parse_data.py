@@ -14,12 +14,14 @@ import subprocess
 import matplotlib.pyplot as plt
 import pandas as pd
 import typing
+import re
 from sys import argv
 from urllib.request import urlopen
 from rdkit import Chem, DataStructs
 from rdkit.Chem import RDKFingerprint, SDMolSupplier
 from rdkit.Chem.Draw import IPythonConsole
 from rdkit.Chem import Draw, AllChem, rdChemReactions
+from rdkit.Chem import MACCSkeys
 #import pikachu
 from upsetplot import plot
 import seaborn as sns
@@ -623,7 +625,7 @@ def k_mer_encoding(file_name,k):
     align_pd.to_csv("../autodata/protein_encoding/{}_k_mer_encoding_without_align_26_08.csv".format(file_name))
     return align_pd
 
-def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_name:str=None,structure_chain="3rod.pdb_chainA_s001",start:int=0,group:str="",file_format="fasta",pdb_name="3rod.pdb"):
+def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_name:str=None,structure_chain="3rod.pdb_chainA_s001",start:int=0,group:str="",file_format="fasta",pdb_name="3rod.pdb",chain="A",end_point=0):
     #add properties as features
     seq = Sequences()
     if input_df!=None:
@@ -636,7 +638,7 @@ def use_atom_properties_for_sequences_encoding(input_df:pd.DataFrame=None,file_n
         except:
             input_df = seq.get_sites_from_alignment(fileformat=file_format,pdb_name=pdb_name,
                 file=file_name,structure_chain=structure_chain,
-                start_pos=start,group=group)
+                start_pos=start,group=group,chain=chain,endpoint=end_point)
             print(input_df)
 
 
@@ -1249,7 +1251,7 @@ def molecule_number_count(substrate_df ="seq_smile_all.csv",input_data = ""):
         input_data.loc[i,"main_sub"]=substrate_df.loc[index,"main_sub"]
         input_data.loc[i, "reactant_site"] = substrate_df.loc[index, "reactant_site"]
     print(len(input_data["main_sub"].unique()))
-    print()
+    return input_data["main_sub"].unique()
     # saved_smile =[]
     # os.system("mkdir all/".format(input_data))
     # for index in input_data.index:
@@ -1279,8 +1281,113 @@ def molecule_number_count(substrate_df ="seq_smile_all.csv",input_data = ""):
     #         img1.save(file)
     #         saved_smile.append(smile)
 
+def heatmap_for_all_sub(file = "../autodata/seq_smiles_all.csv"):
 
+    sub_type_df = pd.read_csv(file,header=0,index_col=0)
+    sub_type_df = pd.DataFrame(sub_type_df,columns=["main_sub","methyl_type"])
+    sub_type_df.dropna(inplace=True)
+    unique_sub = {}
+
+    for i in sub_type_df.index:
+        substrate = sub_type_df.loc[i,"main_sub"]
+        type = sub_type_df.loc[i,"methyl_type"]
+        if substrate not in unique_sub.keys():
+            unique_sub[substrate]=type
+
+    a = sorted(unique_sub.items(), key=lambda x: x[1])
+    sorted_sub= []
+    sorted_type = []
+    print(a)
+    for item in a:
+        sorted_sub.append(item[0])
+        sorted_type.append(item[1])
+    df_heatmap = pd.DataFrame(columns=sorted_sub,index=sorted_sub)
+    for i in df_heatmap.index:
+        for j in df_heatmap.columns:
+            mol1 = Chem.MolFromSmiles(i)
+            mol2 = Chem.MolFromSmiles(j)
+            MACCS1=MACCSkeys.GenMACCSKeys(mol1)
+            MACCS2 = MACCSkeys.GenMACCSKeys(mol2)
+            similiarity = DataStructs.FingerprintSimilarity(
+                MACCS1,
+                MACCS2)
+            df_heatmap.loc[i,j]=similiarity
+    print(df_heatmap)
+    df_heatmap=df_heatmap.rename(columns=unique_sub)
+    df_heatmap = df_heatmap.rename(index=unique_sub)
+    print(df_heatmap)
+    df_heatmap.to_csv("sub_heatmap.csv")
+    fig,ax = plt.subplots(figsize=(20,20))
+
+    # df_heatmap = pd.read_csv("sub_heatmap.csv",header=0,index_col=0)
+    df_heatmap = df_heatmap.astype("float")
+    # df_heatmap = df_heatmap.sort_index(axis=0)
+    # df_heatmap = df_heatmap.sort_index(axis=1,ascending=False)
+    sns.heatmap(df_heatmap,cmap="viridis")
+
+    #plt.imshow(df_heatmap, interpolation='nearest')
+    plt.savefig("heat_map_sub.svg")
+    plt.savefig("heat_map_sub.png")
+    plt.show()
+
+def density_plot_for_substrate_similarity(file = "sub_heatmap.csv"):
+    df_martrix = pd.read_csv(file,header=0,index_col=0)
+    df_martrix['group']= df_martrix.index
+    df_martrix.reset_index(inplace=True,drop=True)
+    print(df_martrix)
+    density_df_inside_group = pd.DataFrame(columns=["Tanimoto_similarity","group"])
+    density_df_outside_group = pd.DataFrame(
+        columns=["Tanimoto_similarity", "group"])
+    index_1=0
+    index_2=0
+    for i in df_martrix.index:
+        for j in list(df_martrix.columns)[:-1]:
+            #group = (re.sub(r'[^a-zA-Z]', ' ', j))
+            group_column=j.split(".")[0]
+            group_index= df_martrix.loc[i,"group"]
+            #print(j)
+            if group_index == group_column:
+                simlarity = df_martrix.loc[i,j]
+                print(simlarity)
+                density_df_inside_group.loc[index_1] = [simlarity,group_index]
+                index_1 +=1
+            else:
+                simlarity = df_martrix.loc[i, j]
+                print(simlarity)
+                density_df_outside_group.loc[index_2] = [simlarity, group_index]
+                index_2 += 1
+    print(density_df_inside_group)
+    density_df_inside_group = density_df_inside_group.loc[density_df_inside_group['group'].isin(["C","N","O","S"])]
+    print(density_df_inside_group)
+    density_df_outside_group = density_df_outside_group.loc[
+        density_df_outside_group['group'].isin(["C", "N", "O", "S"])]
+    print(density_df_outside_group)
+    # With transparency
+    from plotnine.data import diamonds  # dataset
+    #print(diamonds)
+    # fig,axs= plt.subplots(nrows=2, ncols=2)
+    # groups= ["C","N","O","S"]
+    # for row in [0,1]:
+    #     for column in [0,1]:
+    #         ax=axs[row,column]
+    #         group = groups.pop(0)
+    #         sub_in=density_df_inside_group.loc[density_df_inside_group['group']==group]
+    #         sub_out = density_df_outside_group.loc[
+    #             density_df_outside_group['group'] == group]
+    #         sns.histplot(sub_in,x="Tanimoto_similarity",color="blue",ax=ax)
+    #         # plt.show()
+    #         sns.histplot(sub_out, x="Tanimoto_similarity",color="red",ax=ax)
+    # ax=sns.kdeplot(data=density_df_inside_group, x="Tanimoto_similarity", hue="group", fill=True,
+    #             common_norm=False)
+    # x_stick = [x*0.1 for x in list(range(0,11,2))]
+    # ax.set_xticks(x_stick)
+    sns.histplot(density_df_inside_group, x="Tanimoto_similarity",hue="group", kde=True)
+    plt.show()
+    sns.histplot(density_df_outside_group, x="Tanimoto_similarity",hue="group", kde=True)
+    plt.show()
 def main():
+    #density_plot_for_substrate_similarity(file="sub_heatmap.csv")
+    #heatmap_for_all_sub(file="../autodata/seq_smiles_all.csv")
     #read_msa_and_encoding(file_name="")
     # pd1= pd.read_csv("../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv")
     # print(len(pd1["Entry"].unique()))
@@ -1290,11 +1397,16 @@ def main():
     # pd2 = pd.read_csv("testdata_allMACCS.csv")
     # len1=set(list(pd1["Entry"].unique())+list(pd2["Entry"].unique()))
     # print(len(len1))
-    pd1 = pd.read_csv("traindataO_AA.csv")
-    pd2 = pd.read_csv("testdataO_AA.csv")
-    len1=set(list(pd1["Entry"].unique())+list(pd2["Entry"].unique()))
-    print(len(len1))
-    #different_similarity_result()
+    # pd1 = pd.read_csv("traindataO_AA.csv")
+    # pd2 = pd.read_csv("testdataO_AA.csv")
+    # len1=set(list(pd1["Entry"].unique())+list(pd2["Entry"].unique()))
+    # print(len(len1))
+
+    # pd1 = pd.read_csv("traindataN_AA.csv")
+    # pd2 = pd.read_csv("testdataN_AA.csv")
+    # len1=set(list(pd1["Entry"].unique())+list(pd2["Entry"].unique()))
+    # print(len(len1))
+    different_similarity_result()
     # molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv", input_data="../autodata/input_data/active_site/C_AA_properties_encoding_MACCSkey.csv")
     # molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
     #                       input_data="../autodata/input_data/active_site/O_AA_properties_encoding_MACCSkey.csv")
@@ -1359,8 +1471,8 @@ def main():
 
     #check_sequences_similarity()
 
-    # use_atom_properties_for_sequences_encoding(file_name="../autodata/align/align_seed_sequences_with_structure/C_4u1q_align_sequences",structure_chain="4u1q.pdb_chainA_s001",
-    #     start=4,group="C",pdb_name="4u1q.pdb")
+    use_atom_properties_for_sequences_encoding(file_name="../autodata/align/align_seed_sequences_with_structure/S_1umy_align_sequences",structure_chain="1UMY_1|Chains",
+        start=1,group="S",pdb_name="1umy.pdb",chain="C",end_point=406)
     #merge_active_site_and_methyltype("../autodata/entry_with_activesite.csv","../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv")
     # read_msa_and_encoding(file_name="N_seed")
     #merge_encoding_to_onefile()

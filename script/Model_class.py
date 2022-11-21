@@ -252,7 +252,8 @@ class Model_class():
                 sub_mol = Chem.MolFromSmiles(sauce_data.loc[index,"main_sub"])
                 # print(sub_mol)
                 #Draw.ShowMol(sub_mol, size=(600, 600))
-                sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(copy.deepcopy(sub_mol))
+                #sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(copy.deepcopy(sub_mol))
+                sub_rest_mol=copy.deepcopy(sub_mol)
                 fingerprint_mol = self_defined_mol_object.create_fingerprint_mol(
                     sub_rest_mol, num_bits=num_bits, radius=radius)
                 for atom in sub_mol.GetAtoms():
@@ -362,7 +363,8 @@ class Model_class():
                 sub_mol = Chem.MolFromSmiles(sauce_data.loc[index,"main_sub"])
                 # print(sub_mol)
                 #Draw.ShowMol(sub_mol, size=(600, 600))
-                sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(copy.deepcopy(sub_mol))
+                #sub_rest_mol, no_use_variable = self_defined_mol_object.mol_with_atom_index(copy.deepcopy(sub_mol))
+                sub_rest_mol = copy.deepcopy(sub_mol)
                 fingerprint_mol = self_defined_mol_object.create_MACCSkey_mol(
                     sub_rest_mol)
                 for atom in sub_mol.GetAtoms():
@@ -709,7 +711,7 @@ class Model_class():
         plt.ylabel("pc2({:.2f}%)".format(round(pca_fit.explained_variance_ratio_[1]*100),2))
         plt.title(" PCA coloured by methylation type")
         plt.savefig(
-            "../pca_for encoding sequences and fingerprint_PC1 PC2{}".format(file_name))
+            "../pca_for encoding sequences and fingerprint_PC1 PC2{}.png".format(file_name))
         plt.clf()
         plt.close()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
@@ -717,7 +719,7 @@ class Model_class():
         plt.ylabel('Proportion of Variance Explained_{}'.format(file_name))
         plt.xlabel("components")
         plt.savefig(
-            '../Proportion of Variance Explained_{}'.format(file_name))
+            '../Proportion of Variance Explained_{}.svg'.format(file_name))
 
         plt.clf()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
@@ -725,7 +727,7 @@ class Model_class():
         plt.ylabel('Cumulative Proportion of Variance Explained_{}'.format(file_name))
         plt.xlabel("components")
         plt.savefig(
-            '../Cumulative Proportion of Variance Explained_{}'.format(file_name))
+            '../Cumulative Proportion of Variance Explained_{}.svg'.format(file_name))
 
         plt.clf()
         ##pac with label
@@ -758,7 +760,7 @@ class Model_class():
         plt.ylabel("pc2({:.2f}%)".format(round(pca_fit.explained_variance_ratio_[1]*100),2))
         plt.title("First two component of PCA coloured by label type")
         plt.savefig(
-            "../pca_for encoding sequences and fingerprint for label_{}".format(file_name))
+            "../pca_for encoding sequences and fingerprint for label_{}.svg".format(file_name))
         #plt.show()
         plt.close()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
@@ -766,7 +768,7 @@ class Model_class():
         plt.ylabel('Proportion of Variance Explained for label_{}'.format(file_name))
         plt.xlabel("components")
         plt.savefig(
-            '../Proportion of Variance Explained_{}'.format(file_name))
+            '../Proportion of Variance Explained_{}.svg'.format(file_name))
         #plt.show()
         plt.clf()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
@@ -775,7 +777,7 @@ class Model_class():
             '../Cumulative Proportion of Variance Explained foe label_{}'.format(file_name))
         plt.xlabel("components")
         plt.savefig(
-            '../Cumulative Proportion of Variance Explained foe label_{}'.format(file_name))
+            '../Cumulative Proportion of Variance Explained foe label_{}.svg'.format(file_name))
         #plt.show()
         plt.close()
 
@@ -822,7 +824,7 @@ class Model_class():
 
         hyperparameters = {'n_estimators': [500,1000,1500,2000],
                            'max_features': [0.3,0.5,0.7],
-                           'max_depth' : [10,15,20,30]
+                           'max_depth' : [10,15,20]
                            }
 
         #just for test
@@ -837,7 +839,7 @@ class Model_class():
                              hyperparameters, scoring='roc_auc',
                              cv=5,
                              verbose=3,
-                             n_jobs=12)
+                             n_jobs=10)
 
         ####use MCC as scoring#####
         # rf_cv = GridSearchCV(RandomForestClassifier(random_state=0,class_weight="balanced"),
@@ -1522,6 +1524,30 @@ def main():
     #create_MACCSkey_fingerprint()
 
     model = Model_class()
-    model.comapre_result_for_different_similarity_test("../autodata/input_data/active_site/PF08241_bit_score11_coverage0.5_ACS_bit167_3_remove_redundant_MACCS.csv")
+    # test_data = pd.read_csv("testdataO_AA_MACCS.csv",header=0,index_col=0)
+    # train_data = pd.read_csv("traindataO_AA_MACCS.csv",header=0,index_col=0)
+    #
+    # without_structure_column=pd.read_csv("../autodata/model/N_AA_properties_encoding_MACCSkey_X_test.csv", nrows=1,header=0,index_col=0).columns
+    # without_structure_column = (list(without_structure_column) + ["label"])
+    # print(without_structure_column)
+    # X_train = pd.DataFrame(train_data,columns=without_structure_column)
+    # print(X_train)
+    # X_train = X_train.drop(
+    #     columns=["methyl_type", "molecular_id", "atom_index","label"])
+    # print(X_train)
+    # y_train = train_data["label"]
+    # X_test = pd.DataFrame(test_data,columns=without_structure_column)
+    # X_test = X_test.drop(columns=["label"])
+    # y_test = test_data["label"]
+    # # save x test for further analysis result
+    # y_test.to_csv(
+    #     "../autodata/model/N_AA_encoding_without_align_MACCSkey_fromstructure_y_test.csv")
+    # X_test.to_csv(
+    #     "../autodata/model/N_AA_encoding_without_align_MACCSkey_fromstructure_X_test.csv")
+    # X_test = X_test.drop(
+    #     columns=["methyl_type", "molecular_id", "atom_index"])
+    # model2 = model.RF_model(X_train, X_test, y_train, y_test,
+    #                          "N_AA_encoding_without_align_MACCSkey_fromstructure", i=0)
+    model.comapre_result_for_different_similarity_test("../autodata/input_data/active_site/PF08241_bit_score11_coverage0.1_ACS_bit166_3_remove_redundant_MACCS.csv")
 if __name__ == "__main__":
     main()

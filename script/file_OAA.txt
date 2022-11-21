@@ -1,0 +1,3 @@
+number of sequences in train400
+number of structure in train400
+number of structure in all408
