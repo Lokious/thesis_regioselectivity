@@ -58,7 +58,7 @@ def predict(name="N_AA_properties_encoding_MACCSkey"):
         input.to_csv("{}prediction_x_test.csv".format(name))
 def pca_molecule(input):
 
-        fps = input.iloc[:,:4096]
+        fps = input.iloc[:,:332]
         # fps["fingerprint"] = pd.DataFrame(
         #     len(fps.index) * [""])
 
@@ -71,7 +71,7 @@ def pca_molecule(input):
         y_label = input["label"]
         fps["methyl_type"]=input["methyl_type"]
         mo_del = Model_class()
-        mo_del.run_PCA(fps,y_label,"2048molecules")
+        mo_del.run_PCA(fps,y_label,"166_11_50_ALL_sub")
 def rename_column():
         input_dataframe = pd.read_csv(
                 "../autodata/fingerprint/fingerprint_bit128_radius3_all_data.csv",
@@ -177,12 +177,67 @@ def use_manual_data_for_test(data="../autodata/mannual_data.csv"):
                         count +=1
         print(count)
         print((count/len(input.index))) #95.37% accuracy probabily all the substrate has already present in trainning data
+def repeat_with_different_random_seed():
+        input_dataframe = pd.read_csv("../autodata/input_data/active_site/PF08241_bit_score11_coverage0.6_ACS_bit166_3_remove_redundant_MACCS.csv",header=0,index_col=0)
+        print(len(input_dataframe["Entry"].unique()))
+        mo_del = Model_class()
+        print(input_dataframe)
+        domain = "PF08241"
+        X_train1, X_test1, y_train1, y_test1 = mo_del.prepare_train_teat_data(
+            input_dataframe,group_column="main_sub",i=3)
+        X_test1.to_csv("active_site_166fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_random3_X_test.csv".format(
+                                     domain, 11,
+                                     str(60)))
+        y_test1.to_csv("active_site_166fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_random3_y_test.csv".format(
+                                     domain, 11,
+                                     str(60)))
+        X_train1 = X_train1.drop(columns=["methyl_type","molecular_id","atom_index"])
+        X_test1 = X_test1.drop(columns=["methyl_type", "molecular_id","atom_index"])
+        print(X_train1)
+        model1 = mo_del.RF_model(X_train1, X_test1, y_train1, y_test1,
+                                 "active_site_166fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_random1".format(
+                                     domain, 11,
+                                     str(60)), i=1)
 
+        X_train2, X_test2, y_train2, y_test2 = mo_del.prepare_train_teat_data(
+            input_dataframe,group_column="main_sub",i=11)
+        X_test2.to_csv("active_site_166fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_random11_X_test.csv".format(
+                                     domain, 11,
+                                     str(60)))
+        y_test2.to_csv("active_site_166fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_random11_y_test.csv".format(
+                                     domain, 11,
+                                     str(60)))
+        X_train2 = X_train2.drop(columns=["methyl_type","molecular_id","atom_index"])
+        X_test2 = X_test2.drop(columns=["methyl_type", "molecular_id","atom_index"])
+        print(X_train2)
+        model2 = mo_del.RF_model(X_train2, X_test2, y_train2, y_test2,
+                                 "active_site_166fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_random11".format(
+                                     domain, 11,
+                                     str(60)), i=2)
+
+        X_train3, X_test3, y_train3, y_test3 = mo_del.prepare_train_teat_data(
+            input_dataframe,group_column="main_sub",i=9)
+        X_test3.to_csv("active_site_166fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_random9_X_test.csv".format(
+                                     domain, 11,
+                                     str(60)))
+        y_test3.to_csv("active_site_166fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_random9_y_test.csv".format(
+                                     domain, 11,
+                                     str(60)))
+        X_train3 = X_train3.drop(columns=["methyl_type","molecular_id","atom_index"])
+        X_test3 = X_test3.drop(columns=["methyl_type", "molecular_id","atom_index"])
+        print(X_train3)
+        model3 = mo_del.RF_model(X_train3, X_test3, y_train3, y_test3,
+                                 "active_site_166fg_bi_type_bond3_rf_{}_ACS_remove_redundant_{}_{}_MACCS_no_same_sub_random9".format(
+                                     domain, 11,
+                                     str(60)), i=3)
 def main():
 
         mo_del = Model_class()
         today = date.today()
+        repeat_with_different_random_seed()
         # dd/mm/YY
+        # input1= pd.read_csv("../autodata/input_data/active_site/PF08241_bit_score11_coverage0.5_ACS_bit166_3_remove_redundant_MACCS.csv",header=0,index_col=0)
+        # pca_molecule(input1)
         d1 = today.strftime("%d_%m_%Y")
         #
         # input_dataframe = pd.read_csv(
@@ -253,7 +308,7 @@ def main():
         #  "../autodata/fingerprint/MACCS_fingerprint_bit167_radius3_all_data.csv",
         #  header=0, index_col=0)
         # add_dataframe = pd.read_csv(
-        #  "../autodata/protein_encoding/k_mer/C_k_mer_encoding_without_align_26_08.csv",
+        #  "../autodata/protein_encoding/k_mer/S_k_mer_encoding_without_align_26_08.csv",
         #  header=0, index_col=0)
         # #add_dataframe["Entry"] = add_dataframe.index
         # #add_dataframe.reset_index(drop=True, inplace=True)
@@ -262,37 +317,92 @@ def main():
         # add_dataframe = add_dataframe.drop(columns=["group","ID"])
         # add_dataframe = (add_dataframe.loc[:, add_dataframe.sum() != 0.0])
         # add_dataframe.drop_duplicates(subset="Entry", inplace=True)
+        # add_dataframe.to_csv("../autodata/protein_encoding/k_mer/S_k_mer_encoding_without_align_26_08.csv")
         # input_dataframe = X.merge(add_dataframe, on="Entry", how="left")
         # print(input_dataframe)
         # input_dataframe = input_dataframe.dropna(axis=0, how="any")
         # # input_dataframe["methyl_type"] = input_dataframe["group"]
-        #
         # columns=input_dataframe.select_dtypes(include=['float','int64']).columns
         # input_dataframe[columns]=input_dataframe[columns].astype('int32')
+        # # print(input_dataframe)
+        # input_dataframe=pd.read_csv(
+        #  "../autodata/input_data/S_k_mer_encoding_without_align_MACCSkey.csv",header=0,index_col=0)
         # print(input_dataframe)
-        # input_dataframe.to_csv(
-        #  "../autodata/input_data/16C_k_mer_encoding_without_align_MACCSkey.csv")
-        input_dataframe = pd.read_csv("../autodata/input_data/active_site/PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCS.csv",header=0,index_col=0)
-        print(input_dataframe)
-        X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
-                input_dataframe)
-        X_train = X_train.drop(
-                columns=["methyl_type", "molecular_id", "atom_index"])
-        # save x test for further analysis result
-        y_test.to_csv(
-                "../autodata/model/PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCS_y_test.csv")
-        X_test.to_csv(
-                "../autodata/model/PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCS_X_test.csv")
-        X_test = X_test.drop(
-                columns=["methyl_type", "molecular_id", "atom_index"])
-        model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
-                                 "PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCS", i=0)
-        parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
-                              input_data="../autodata/input_data/active_site/PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCS.csv")
-        predict(name="PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCS")
-        parse_data.molecular_accuracy(
-                "PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCSprediction_x_test.csv")
+        # # input_dataframe.drop(
+        # #         columns=["methyl_type", "molecular_id", "atom_index", "label"],
+        # #         inplace=True)
+        # # print("{} k mer".format("S"))
+        # # print((len(input_dataframe.columns) - 332))
+        # X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
+        #         input_dataframe)
+        # X_train = X_train.drop(
+        #         columns=["methyl_type", "molecular_id", "atom_index"])
+        # #save x test for further analysis result
+        # y_test.to_csv(
+        #         "../autodata/model/S_k_mer_encoding_without_align_MACCSkey.csv")
+        # X_test.to_csv(
+        #         "../autodata/model/S_k_mer_encoding_without_align_MACCSkey.csv")
+        # X_test = X_test.drop(
+        #         columns=["methyl_type", "molecular_id", "atom_index"])
+        # model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
+        #                          "S_k_mer_encoding_without_align_MACCSkey", i=0)
+        # for group in ["O","N","C","S"]:
+        #         input_dataframe = pd.read_csv("../autodata/input_data/active_site/{}_AA_properties_encoding_MACCSkey.csv".format(group),header=0,index_col=0)
+        #         input_dataframe.drop(columns=["methyl_type", "molecular_id", "atom_index","label"],inplace=True)
+        #         print("{} AA".format(group))
+        #         print((len(input_dataframe.columns)-332))
+        #
+        #         input_dataframe = pd.read_csv("../autodata/input_data/active_site/{}_seed_onehot_encoding_sepreate_MACCSkey.csv".format(group),header=0,index_col=0)
+        #         input_dataframe.drop(columns=["methyl_type", "molecular_id", "atom_index","label"],inplace=True)
+        #         print("{} one hot".format(group))
+        #         print((len(input_dataframe.columns)-332))
+        #
+        #         input_dataframe = pd.read_csv(
+        #                 "../autodata/input_data/{}_k_mer_encoding_without_align_MACCSkey.csv".format(group),
+        #                 header=0, index_col=0)
+        #         input_dataframe.drop(
+        #                 columns=["methyl_type", "molecular_id", "atom_index", "label"],
+        #                 inplace=True)
+        #         print("{} k mer".format(group))
+        #         print((len(input_dataframe.columns)-332))
+        # input_dataframe = pd.read_csv("../autodata/input_data/active_site/PF08241_bit_score11_coverage0.6_ACS_bit166_3_remove_redundant_MACCS.csv",header=0,index_col=0)
+        # input_dataframe.drop(columns=["methyl_type", "molecular_id", "atom_index","label"],inplace=True)
+        # print("PF08241_bit_score11_coverage0.6 AA")
+        # print((len(input_dataframe.columns)-332))
+        # input_dataframe = pd.read_csv("../autodata/input_data/active_site/PF08241_bit_score11_coverage0.1_ACS_bit166_3_remove_redundant_MACCS.csv",header=0,index_col=0)
+        # input_dataframe.drop(columns=["methyl_type", "molecular_id", "atom_index","label"],inplace=True)
+        # print("PF08241_bit_score11_coverage0.1 AA")
+        # print((len(input_dataframe.columns)-332))
+        # input_dataframe = pd.read_csv("../autodata/input_data/6_seed_onehot_encoding_MACCSkey.csv",header=0,index_col=0)
+        # input_dataframe.drop(columns=["methyl_type", "molecular_id", "atom_index","label"],inplace=True)
+        # print("6 seed one hot")
+        # print((len(input_dataframe.columns)-332))
+        # input_dataframe = pd.read_csv("../autodata/input_data/all_k_mer_encoding_sepreate_without_align_MACCSkey.csv",header=0,index_col=0)
+        # input_dataframe.drop(columns=["methyl_type", "molecular_id", "atom_index","label"],inplace=True)
+        # print("all kmer")
+        # print((len(input_dataframe.columns)-332))
+
+        # X_train, X_test, y_train, y_test = mo_del.prepare_train_teat_data(
+        #         input_dataframe,group_column="main_sub")
+        # X_train = X_train.drop(
+        #         columns=["methyl_type", "molecular_id", "atom_index"])
+        # # save x test for further analysis result
+        # y_test.to_csv(
+        #         "../autodata/model/S_seed_onehot_encoding_sepreate_MACCSkey_no_sam_sub_y_test.csv")
+        # X_test.to_csv(
+        #         "../autodata/model/S_seed_onehot_encoding_sepreate_MACCSkey_no_sam_sub_X_test.csv")
+        # X_test = X_test.drop(
+        #         columns=["methyl_type", "molecular_id", "atom_index"])
+        # model2 = mo_del.RF_model(X_train, X_test, y_train, y_test,
+        #                          "S_seed_onehot_encoding_sepreate_MACCSkey_no_sam_sub", i=0)
+
+        #
         # parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
+        #                       input_data="../autodata/input_data/active_site/PF08241_bit_score11_coverage0.6_ACS_bit166_3_remove_redundant_MACCS.csv")
+        # # predict(name="active_site_166fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_60_MACCS_no_same_sub")
+        # parse_data.molecular_accuracy(
+        #         "active_site_166fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_60_MACCS_no_same_subprediction_x_test.csv")
+        # # parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
         # #                       input_data="../autodata/input_data/16C_k_mer_encoding_without_align_MACCSkey.csv")
         # predict(name="16C_k_mer_encoding_without_align_MACCSkey")
         # parse_data.molecular_accuracy(
@@ -402,11 +512,11 @@ def main():
         # predict(name="O_seed_onehot_encoding_sepreate_MACCSkey_no_same_sub")
         # parse_data.molecular_accuracy(
         #         "O_seed_onehot_encoding_sepreate_MACCSkey_no_same_subprediction_x_test.csv")
-        parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
-                              input_data="../autodata/input_data/active_site/PF08241_bit_score11_coverage0.6_ACS_bit128_3_remove_redundant_MACCS.csv")
-        predict(name="PF08241_bit_score11_coverage0.6_ACS_bit128_3_remove_redundant_MACCS")
-        parse_data.molecular_accuracy(
-                "PF08241_bit_score11_coverage0.6_ACS_bit128_3_remove_redundant_MACCSprediction_x_test.csv")
+        # parse_data.molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
+        #                       input_data="../autodata/input_data/active_site/PF08241_bit_score11_coverage0.6_ACS_bit128_3_remove_redundant_MACCS.csv")
+        # predict(name="PF08241_bit_score11_coverage0.6_ACS_bit128_3_remove_redundant_MACCS")
+        # parse_data.molecular_accuracy(
+        #         "PF08241_bit_score11_coverage0.6_ACS_bit128_3_remove_redundant_MACCSprediction_x_test.csv")
         # predict(name="S_AA_properties_encoding_MACCSkey")
         # parse_data.molecular_accuracy(
         #         "S_AA_properties_encoding_MACCSkeyprediction_x_test.csv")

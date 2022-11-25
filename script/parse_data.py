@@ -977,10 +977,10 @@ def output_analysis(predict_df,fingerprint_df):
     violiint_plot(summary_df,file_name=file_name)
 
 def violiint_plot(summary_df, x="methyl_type", y="number_of_possiable_atoms",hue="predict",file_name=""):
-    ax = sns.violinplot(data=summary_df, x=x, y=y, hue=hue, split=True,inner="stick",scale="width")
+    ax = sns.violinplot(data=summary_df, x=x, y=y, hue=hue, split=True,inner="stick",scale="area")
     y_stick = [x*0.1 for x in list(range(0,11,2))]
     ax.set_yticks(y_stick)
-    plt.savefig("violint_width{}.png".format(file_name))
+    plt.savefig("violint_area{}.png".format(file_name))
     #plt.show()
     plt.close()
 def check_substrate(substrate_df = "seq_smile_all.csv",input_data = ""):
@@ -1212,7 +1212,7 @@ def different_similarity_result():
     # violiint_plot(summary_df, x="methyl_type", y="similarity_range",
     #               hue="predict")
     violiint_plot(sum_df, x="methyl_type", y="similarity_range",
-                  hue="atom_predict")
+                  hue="atom_predict",file_name="similarity_for_11_01_result")
 
 def molecular_accuracy(predict="active_site_128fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCSprediction_x_test.csv"):
     df = pd.read_csv(predict,header=0,index_col=0)
@@ -1406,6 +1406,7 @@ def main():
     # pd2 = pd.read_csv("testdataN_AA.csv")
     # len1=set(list(pd1["Entry"].unique())+list(pd2["Entry"].unique()))
     # print(len(len1))
+
     different_similarity_result()
     # molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv", input_data="../autodata/input_data/active_site/C_AA_properties_encoding_MACCSkey.csv")
     # molecule_number_count(substrate_df="../autodata/seq_smiles_all.csv",
@@ -1471,8 +1472,8 @@ def main():
 
     #check_sequences_similarity()
 
-    use_atom_properties_for_sequences_encoding(file_name="../autodata/align/align_seed_sequences_with_structure/S_1umy_align_sequences",structure_chain="1UMY_1|Chains",
-        start=1,group="S",pdb_name="1umy.pdb",chain="C",end_point=406)
+    # use_atom_properties_for_sequences_encoding(file_name="../autodata/align/align_seed_sequences_with_structure/S_1umy_align_sequences",structure_chain="1UMY_1|Chains",
+    #     start=1,group="S",pdb_name="1umy.pdb",chain="C",end_point=406)
     #merge_active_site_and_methyltype("../autodata/entry_with_activesite.csv","../autodata/fingerprint_bit128_radius3_all_data_drop_atom.csv")
     # read_msa_and_encoding(file_name="N_seed")
     #merge_encoding_to_onefile()

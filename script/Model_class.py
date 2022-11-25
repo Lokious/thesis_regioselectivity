@@ -617,8 +617,8 @@ class Model_class():
             train_inds, test_inds = next(split)
             train = df.iloc[train_inds]
             test = df.iloc[test_inds]
-            print("number of substrates in train".format(len(train["main_sub"].unique())))
-            print(len(test["main_sub"].unique()))
+            print("number of substrates in train {}".format(len(train["main_sub"].unique())))
+            print("number of substrates in train {}".format(len(test["main_sub"].unique())))
             X_train = (copy.deepcopy(train)).drop(columns=["Entry", "label","main_sub"])
             Y_train = train["label"]
             X_test = (copy.deepcopy(test)).drop(columns=["Entry", "label","main_sub"])
