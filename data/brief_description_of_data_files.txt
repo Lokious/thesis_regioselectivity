@@ -1,3 +1,7 @@
+The data/ directory includes some raw data and some not used data.
+The useful data is moved to ../autodata/
+
+In the rawdata/ 
 #id_tosequence.xlsx includes uniprot entry and corresponding AA sequences
 #rhea2xrefs.tsv includes rhea id with reaction_direction EC_number and GO_annotation
 #Rhea-ec_2.1.1.list is all the Rhea id under EC 2.1.1.-
