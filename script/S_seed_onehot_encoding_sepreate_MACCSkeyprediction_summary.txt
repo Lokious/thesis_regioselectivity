@@ -1,0 +1,10 @@
+The following is the result for S_seed_onehot_encoding_sepreate_MACCSkey:best parameters:{'max_depth': 10, 'max_features': 0.3, 'n_estimators': 1000}
+accuracy_score: 0.9853556485355649
+accuracy: 0.9769874476987448
+sensitivity : 1.0
+specificity : 0.9711286089238845
+precision : 0.8981481481481481
+mcc_score: 0.9554227875132231
+roc_score: 0.9993370674026572
+threshold: 0.4173759856600204
+###############################################

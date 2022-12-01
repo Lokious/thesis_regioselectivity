@@ -58,7 +58,7 @@ def predict(name="N_AA_properties_encoding_MACCSkey"):
         input.to_csv("{}prediction_x_test.csv".format(name))
 def pca_molecule(input):
 
-        fps = input.iloc[:,:332]
+        fps = input.iloc[:,:255]
         # fps["fingerprint"] = pd.DataFrame(
         #     len(fps.index) * [""])
 
@@ -71,7 +71,8 @@ def pca_molecule(input):
         y_label = input["label"]
         fps["methyl_type"]=input["methyl_type"]
         mo_del = Model_class()
-        mo_del.run_PCA(fps,y_label,"166_11_50_ALL_sub")
+        #mo_del.run_PCA(fps,y_label,"166MACCS——30——11_onlymol")
+        mo_del.three_D_pca(fps,y_label,"128MORGAN——30——11_onlymol")
 def rename_column():
         input_dataframe = pd.read_csv(
                 "../autodata/fingerprint/fingerprint_bit128_radius3_all_data.csv",
@@ -234,9 +235,10 @@ def main():
 
         mo_del = Model_class()
         today = date.today()
-        repeat_with_different_random_seed()
+        #repeat_with_different_random_seed()
         # dd/mm/YY
-        # input1= pd.read_csv("../autodata/input_data/active_site/PF08241_bit_score11_coverage0.5_ACS_bit166_3_remove_redundant_MACCS.csv",header=0,index_col=0)
+        # input1= pd.read_csv("../autodata/input_data/fingerprint_bit128_radius3_all_data_morganfingerprint.csv",header=0,index_col=0)
+        # input1.drop_duplicates(inplace=True)
         # pca_molecule(input1)
         d1 = today.strftime("%d_%m_%Y")
         #
@@ -297,10 +299,15 @@ def main():
         # predict(name="onlyfingerprint_bit128_radius3_all_data_morganfingerprint")
         # parse_data.molecular_accuracy(
         #         "onlyfingerprint_bit128_radius3_all_data_morganfingerprintprediction_x_test.csv")
-        # predict(name="MACCS_fingerprint_bit167_radius3_all_data_2_11_change_name")
-        # parse_data.molecular_accuracy(
-        #         "MACCS_fingerprint_bit167_radius3_all_data_2_11_change_nameprediction_x_test.csv")
-
+        predict(name="all_k_mer_encoding_sepreate_without_align_MACCSkey")
+        parse_data.molecular_accuracy(
+                "all_k_mer_encoding_sepreate_without_align_MACCSkeyprediction_x_test.csv")
+        predict(name="S_seed_onehot_encoding_sepreate_MACCSkey")
+        parse_data.molecular_accuracy(
+                "S_seed_onehot_encoding_sepreate_MACCSkeyprediction_x_test.csv")
+        predict(name="S_seed_onehot_encoding_sepreate_MACCSkey_no_sam_sub")
+        parse_data.molecular_accuracy(
+                "S_seed_onehot_encoding_sepreate_MACCSkey_no_sam_subprediction_x_test.csv")
         # #rename_column()
         #
         # # N methyltransferase

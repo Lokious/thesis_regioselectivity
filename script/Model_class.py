@@ -760,7 +760,7 @@ class Model_class():
         plt.ylabel("pc2({:.2f}%)".format(round(pca_fit.explained_variance_ratio_[1]*100),2))
         plt.title("First two component of PCA coloured by label type")
         plt.savefig(
-            "../pca_for encoding sequences and fingerprint for label_{}.svg".format(file_name))
+            "../pca_for encoding sequences and fingerprint for label_{}.png".format(file_name))
         #plt.show()
         plt.close()
         plt.plot(list(range(1, len(pca_df.columns) + 1)),
@@ -808,7 +808,7 @@ class Model_class():
             title=f'Total Explained Variance: {total_var:.2f}%',
             labels={'0': 'PC 1', '1': 'PC 2', '2': 'PC 3'}
         )
-        #fig.show()
+        fig.show()
 
 
 
