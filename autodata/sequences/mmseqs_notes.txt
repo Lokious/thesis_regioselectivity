@@ -1,0 +1,13 @@
+create database from fasta file
+ mmseqs createdb <input_fasta>  <db_name>
+
+mmseqs createindex S_seq_db tmp
+mmseqs search S_seq_db S_seq_db result_db tmp
+mmseqs  convertalis S_seq_db S_seq_db result_db result_db.m8
+##convert the result database into a BLAST tab formatted file (option -m 8 in legacy blast
+#The file is formatted as a tab-separated list with 12 columns: (1,2) identifiers for query and target
+#sequences/profiles, (3) sequence identity, (4) alignment length, (5) number of mismatches, (6) number of gap openings, (7-8, 9-10) domain start and end-position in query and in target, (11) E-value,
+#and (12) bit score.
+
+or use easy-search 
+mmseqs easy-search S_seed_addmodel_rm S_seed_addmodel_rm tmp result --alignment-mode 3
