@@ -1,0 +1,10 @@
+The following is the result for all_MACCSkey:best parameters:{'max_depth': 10, 'max_features': 0.3, 'n_estimators': 1500}
+accuracy_score: 0.9154135338345865
+accuracy: 0.9210526315789473
+sensitivity : 0.5757575757575758
+specificity : 0.9438877755511023
+precision : 0.40425531914893614
+mcc_score: 0.44017971851261833
+roc_score: 0.8677961984575211
+threshold: 0.514332792443561
+###############################################

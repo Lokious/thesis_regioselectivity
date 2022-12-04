@@ -1,0 +1,19 @@
+The following is the result for active_site_128fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_10:best parameters:{'max_depth': 9, 'max_features': 0.7, 'n_estimators': 1000}
+accuracy_score: 0.8160826412801296
+accuracy: 0.8195260279521976
+sensitivity : 0.5903790087463557
+specificity : 0.836634740966478
+precision : 0.2124868835257083
+mcc_score: 0.2739135165990643
+roc_score: 0.7895220156599241
+best_score: 0.7158047568713805
+###############################################The following is the result for active_site_128fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_10:best parameters:{'max_depth': 10, 'max_features': 0.7, 'n_estimators': 500}
+accuracy_score: 0.8490986429005469
+accuracy: 0.8588211464452097
+sensitivity : 0.4868804664723032
+specificity : 0.8865912059207662
+precision : 0.24273255813953487
+mcc_score: 0.27777057574536546
+roc_score: 0.791446347181201
+best_score: 0.7163601684892716
+###############################################

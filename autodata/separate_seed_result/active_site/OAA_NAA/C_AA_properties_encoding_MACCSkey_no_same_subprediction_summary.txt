@@ -1,0 +1,10 @@
+The following is the result for C_AA_properties_encoding_MACCSkey_no_same_sub:best parameters:{'max_depth': 30, 'max_features': 0.7, 'n_estimators': 1500}
+accuracy_score: 0.9693567961165048
+accuracy: 0.9693567961165048
+sensitivity : 0.5769230769230769
+specificity : 0.999346832135859
+precision : 0.9854014598540146
+mcc_score: 0.7414832897084579
+roc_score: 0.9857161399454019
+threshold: 0.5523691846438208
+###############################################

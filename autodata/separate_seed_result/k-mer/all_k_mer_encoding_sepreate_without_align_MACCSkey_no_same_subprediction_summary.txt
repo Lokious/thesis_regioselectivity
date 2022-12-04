@@ -1,0 +1,10 @@
+The following is the result for all_k_mer_encoding_sepreate_without_align_MACCSkey_no_same_sub:best parameters:{'max_depth': 10, 'max_features': 0.3, 'n_estimators': 1000}
+accuracy_score: 0.9182294539437397
+accuracy: 0.9496690568119139
+sensitivity : 0.6220275344180225
+specificity : 0.9687705217074061
+precision : 0.5372972972972972
+mcc_score: 0.5136463882911614
+roc_score: 0.9455761694091346
+threshold: 0.5966322195970446
+###############################################

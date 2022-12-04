@@ -1,0 +1,10 @@
+The following is the result for active_site_128fg_bi_type_bond3_rf14_10_2022_PF08241PF01795_bit_score11_coverage70_substrate:best parameters:{'max_features': 0.3, 'n_estimators': 1500}
+accuracy_score: 0.9411764705882353
+accuracy: 0.9422331806974287
+sensitivity : 0.874251497005988
+specificity : 0.9464820359281437
+precision : 0.5051903114186851
+mcc_score: 0.0
+roc_score: 0.9590978970203307
+best_score: 0.9575246639868807
+###############################################

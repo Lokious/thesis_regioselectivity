@@ -1,0 +1,10 @@
+The following is the result for active_site_128fg_bi_type_bond3_rf12_10_2022_PF08241PF01795_bit_score5_coverage30_different_n_estimater_drop_226:best parameters:{'max_depth': 10, 'max_features': 0.5, 'n_estimators': 100}
+accuracy_score: 0.9181340747605807
+accuracy: 0.9212233549582948
+sensitivity : 0.020618556701030927
+specificity : 0.9786395004929346
+precision : 0.057971014492753624
+mcc_score: 0.0012124338676519507
+roc_score: 0.6399951214719602
+best_score: 0.6213299001469158
+###############################################

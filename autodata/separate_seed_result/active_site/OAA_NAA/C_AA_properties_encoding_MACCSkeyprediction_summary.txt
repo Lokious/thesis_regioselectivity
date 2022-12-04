@@ -1,0 +1,10 @@
+The following is the result for C_AA_properties_encoding_MACCSkey:best parameters:{'max_depth': 15, 'max_features': 0.7, 'n_estimators': 500}
+accuracy_score: 0.9978041282389108
+accuracy: 0.9978041282389108
+sensitivity : 0.9758454106280193
+specificity : 0.9992208196976781
+precision : 0.9877750611246944
+mcc_score: 0.9806570448056583
+roc_score: 0.9999036376051235
+threshold: 0.5380561269026233
+###############################################

@@ -1,0 +1,55 @@
+The following is the result for active_site_128fg_bi_type_bond3_rf14_10_2022_PF08241PF01795_bit_score11_coverage70_substrate:best parameters:{'max_depth': 5, 'max_features': 0.5, 'n_estimators': 50}
+accuracy_score: 0.6777034166960197
+accuracy: 0.8693201831630856
+sensitivity : 0.6826347305389222
+specificity : 0.8809880239520959
+precision : 0.2638888888888889
+mcc_score: 0.2661899547460161
+roc_score: 0.8620491053820503
+best_score: 0.8758915934563755
+###############################################The following is the result for active_site_128fg_bi_type_bond3_rf14_10_2022_PF08241PF01795_bit_score11_coverage70_substrate:best parameters:{'max_depth': 5, 'max_features': 0.5, 'n_estimators': 50}
+accuracy_score: 0.6777034166960197
+accuracy: 0.8693201831630856
+sensitivity : 0.6826347305389222
+specificity : 0.8809880239520959
+precision : 0.2638888888888889
+mcc_score: 0.2661899547460161
+roc_score: 0.8620491053820503
+best_score: 0.8758915934563755
+###############################################The following is the result for active_site_128fg_bi_type_bond3_rf14_10_2022_PF08241PF01795_bit_score11_coverage70_substrate:best parameters:{'max_depth': 5, 'max_features': 0.5, 'n_estimators': 50}
+accuracy_score: 0.6777034166960197
+accuracy: 0.8693201831630856
+sensitivity : 0.6826347305389222
+specificity : 0.8809880239520959
+precision : 0.2638888888888889
+mcc_score: 0.2661899547460161
+roc_score: 0.8620491053820503
+best_score: 0.8758915934563755
+###############################################The following is the result for active_site_128fg_bi_type_bond3_rf14_10_2022_PF08241PF01795_bit_score11_coverage70_substrate:best parameters:{'max_depth': 5, 'max_features': 0.5, 'n_estimators': 50}
+accuracy_score: 0.6777034166960197
+accuracy: 0.8693201831630856
+sensitivity : 0.6826347305389222
+specificity : 0.8809880239520959
+precision : 0.2638888888888889
+mcc_score: 0.2661899547460161
+roc_score: 0.8620491053820503
+best_score: 0.8758915934563755
+###############################################The following is the result for active_site_128fg_bi_type_bond3_rf14_10_2022_PF08241PF01795_bit_score11_coverage70_substrate:best parameters:{'max_depth': 5, 'max_features': 0.5, 'n_estimators': 50}
+accuracy_score: 0.6777034166960197
+accuracy: 0.8693201831630856
+sensitivity : 0.6826347305389222
+specificity : 0.8809880239520959
+precision : 0.2638888888888889
+mcc_score: 0.2661899547460161
+roc_score: 0.8620491053820503
+best_score: 0.8758915934563755
+###############################################The following is the result for active_site_128fg_bi_type_bond3_rf14_10_2022_PF08241PF01795_bit_score11_coverage70_substrate:best parameters:{'max_depth': 5, 'max_features': 0.5, 'n_estimators': 50}
+accuracy_score: 0.6777034166960197
+accuracy: 0.8693201831630856
+sensitivity : 0.6826347305389222
+specificity : 0.8809880239520959
+precision : 0.2638888888888889
+mcc_score: 0.2661899547460161
+roc_score: 0.8620491053820503
+best_score: 0.8758915934563755
+###############################################

@@ -1,0 +1,10 @@
+The following is the result for 166fg_rf11_8_MACCS_with_structure:best parameters:{'max_depth': 10, 'max_features': 0.5, 'n_estimators': 1000}
+accuracy_score: 0.9536784741144414
+accuracy: 0.9591280653950953
+sensitivity : 0.75
+specificity : 0.9686609686609686
+precision : 0.5217391304347826
+mcc_score: 0.5778265086662191
+roc_score: 0.897881054131054
+threshold: 0.6127381952610322
+###############################################

@@ -1,0 +1,10 @@
+The following is the result for active_site_166fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_60_MACCS_no_same_sub_random10:best parameters:{'max_depth': 10, 'max_features': 0.7, 'n_estimators': 1000}
+accuracy_score: 0.9833593924503016
+accuracy: 0.9852579852579852
+sensitivity : 0.8270440251572327
+specificity : 0.9973551334455398
+precision : 0.9598540145985401
+mcc_score: 0.869805595652352
+roc_score: 0.9904024348196909
+threshold: 0.607186113001536
+###############################################

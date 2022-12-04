@@ -1,0 +1,10 @@
+The following is the result for PF08241_bit_score11_coverage0.6_ACS_bit167_3_remove_redundant_MACCS:best parameters:{'max_depth': 10, 'max_features': 0.5, 'n_estimators': 500}
+accuracy_score: 0.9686135371179039
+accuracy: 0.9701146288209607
+sensitivity : 0.9908256880733946
+specificity : 0.9684505381099808
+precision : 0.7161803713527851
+mcc_score: 0.821743173604527
+roc_score: 0.9932889428103447
+threshold: 0.5648030641690261
+###############################################

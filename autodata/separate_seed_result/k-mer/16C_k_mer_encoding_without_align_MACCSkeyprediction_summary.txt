@@ -1,0 +1,19 @@
+The following is the result for 16C_k_mer_encoding_without_align_MACCSkey:best parameters:{'max_depth': 20, 'max_features': 0.7, 'n_estimators': 500}
+accuracy_score: 0.9986871573094448
+accuracy: 0.9986871573094448
+sensitivity : 0.9936948297604036
+specificity : 0.9990128331688055
+precision : 0.985
+mcc_score: 0.9886600873212527
+roc_score: 0.9999734431789842
+threshold: 0.5968036316723931
+###############################################The following is the result for 16C_k_mer_encoding_without_align_MACCSkey:best parameters:{'max_depth': 20, 'max_features': 0.7, 'n_estimators': 500}
+accuracy_score: 0.9986871573094448
+accuracy: 0.9986871573094448
+sensitivity : 0.9936948297604036
+specificity : 0.9990128331688055
+precision : 0.985
+mcc_score: 0.9886600873212527
+roc_score: 0.9999734431789842
+threshold: 0.5968036316723931
+###############################################

@@ -1,0 +1,46 @@
+The following is the result for active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCS:best parameters:{'max_depth': 15, 'max_features': 0.5, 'n_estimators': 500}
+accuracy_score: 0.9787413176173437
+accuracy: 0.9786360766154494
+sensitivity : 0.9790104947526237
+specificity : 0.9786078098471986
+precision : 0.7755344418052257
+mcc_score: 0.8617680265946076
+roc_score: 0.9960159987917756
+best_score: 0.9637255401568776
+###############################################The following is the result for active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCS:best parameters:{'max_depth': 15, 'max_features': 0.5, 'n_estimators': 500}
+accuracy_score: 0.9787413176173437
+accuracy: 0.9786360766154494
+sensitivity : 0.9790104947526237
+specificity : 0.9786078098471986
+precision : 0.7755344418052257
+mcc_score: 0.8617680265946076
+roc_score: 0.9960159987917756
+best_score: 0.9637255401568776
+###############################################The following is the result for active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCS:best parameters:{'max_depth': 15, 'max_features': 0.5, 'n_estimators': 50}
+accuracy_score: 0.9786360766154494
+accuracy: 0.978530835613555
+sensitivity : 0.9865067466266867
+specificity : 0.9779286926994907
+precision : 0.7713950762016413
+mcc_score: 0.8621802467890062
+roc_score: 0.9959936839729541
+best_score: 0.9635447063773115
+###############################################The following is the result for active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCS:best parameters:{'max_depth': 20, 'max_features': 0.5, 'n_estimators': 2000}
+accuracy_score: 0.9787413176173437
+accuracy: 0.9784255946116607
+sensitivity : 0.9730134932533733
+specificity : 0.9788341822297679
+precision : 0.7763157894736842
+mcc_score: 0.8620910497482205
+roc_score: 0.9961729661485047
+best_score: 0.9641835855415725
+###############################################The following is the result for active_site_167fg_bi_type_bond3_rf_PF08241_ACS_remove_redundant_11_50_MACCS:best parameters:{'max_depth': 20, 'max_features': 0.5, 'n_estimators': 2000}
+accuracy_score: 0.9787413176173437
+accuracy: 0.9784255946116607
+sensitivity : 0.9730134932533733
+specificity : 0.9788341822297679
+precision : 0.7763157894736842
+mcc_score: 0.8620910497482205
+roc_score: 0.9961729661485047
+best_score: 0.9641835855415725
+###############################################

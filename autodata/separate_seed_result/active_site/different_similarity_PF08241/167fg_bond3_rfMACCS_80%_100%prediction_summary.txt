@@ -1,0 +1,28 @@
+The following is the result for 167fg_bond3_rfMACCS_80%_100%:best parameters:{'max_depth': 8, 'max_features': 0.7, 'n_estimators': 500}
+accuracy_score: 0.9436560934891486
+accuracy: 0.9616026711185309
+sensitivity : 0.906832298136646
+specificity : 0.9655480984340045
+precision : 0.6547085201793722
+mcc_score: 0.6986434754411064
+roc_score: 0.9853224394514153
+best_score: 0.9490537618542273
+###############################################The following is the result for 167fg_bond3_rfMACCS_80%_100%:best parameters:{'max_depth': 8, 'max_features': 0.7, 'n_estimators': 500}
+accuracy_score: 0.9487666034155597
+accuracy: 0.9666576307942532
+sensitivity : 0.9362549800796812
+specificity : 0.9688772542175683
+precision : 0.6871345029239766
+mcc_score: 0.7242259746732622
+roc_score: 0.989310356016307
+best_score: 0.9490537618542273
+###############################################The following is the result for 167fg_bond3_rfMACCS_80%_100%:best parameters:{'max_depth': 14, 'max_features': 0.7, 'n_estimators': 500}
+accuracy_score: 0.976209109406793
+accuracy: 0.9763656284238535
+sensitivity : 0.998062015503876
+specificity : 0.974459390430785
+precision : 0.7744360902255639
+mcc_score: 0.8674462882373294
+roc_score: 0.9960776685317251
+best_score: 0.9420154505123058
+###############################################

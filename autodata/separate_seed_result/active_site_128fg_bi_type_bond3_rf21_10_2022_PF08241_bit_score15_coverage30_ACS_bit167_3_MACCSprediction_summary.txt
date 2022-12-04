@@ -1,0 +1,28 @@
+The following is the result for active_site_128fg_bi_type_bond3_rf21_10_2022_PF08241_bit_score15_coverage30_ACS_bit167_3_MACCS:best parameters:{'max_depth': 10, 'max_features': 0.7, 'n_estimators': 50}
+accuracy_score: 0.9728613569321534
+accuracy: 0.9726647000983284
+sensitivity : 0.9898477157360406
+specificity : 0.9712214879556598
+precision : 0.7428571428571429
+mcc_score: 0.8441195019260763
+roc_score: 0.9939415794582346
+best_score: 0.9291148226222005
+###############################################The following is the result for active_site_128fg_bi_type_bond3_rf21_10_2022_PF08241_bit_score15_coverage30_ACS_bit167_3_MACCS:best parameters:{'max_depth': 10, 'max_features': 0.7, 'n_estimators': 50}
+accuracy_score: 0.9728613569321534
+accuracy: 0.9726647000983284
+sensitivity : 0.9898477157360406
+specificity : 0.9712214879556598
+precision : 0.7428571428571429
+mcc_score: 0.8441195019260763
+roc_score: 0.9939415794582346
+best_score: 0.9291148226222005
+###############################################The following is the result for active_site_128fg_bi_type_bond3_rf21_10_2022_PF08241_bit_score15_coverage30_ACS_bit167_3_MACCS:best parameters:{'max_depth': 10, 'max_features': 0.7, 'n_estimators': 50}
+accuracy_score: 0.9728613569321534
+accuracy: 0.9726647000983284
+sensitivity : 0.9898477157360406
+specificity : 0.9712214879556598
+precision : 0.7428571428571429
+mcc_score: 0.8441195019260763
+roc_score: 0.9939415794582346
+best_score: 0.9291148226222005
+###############################################

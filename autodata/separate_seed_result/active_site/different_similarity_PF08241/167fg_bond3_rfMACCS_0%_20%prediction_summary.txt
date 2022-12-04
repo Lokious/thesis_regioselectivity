@@ -1,0 +1,46 @@
+The following is the result for 167fg_bond3_rfMACCS_0%_20%:best parameters:{'max_depth': 16, 'max_features': 0.3, 'n_estimators': 2000}
+accuracy_score: 0.9732730263157895
+accuracy: 0.9736019736842105
+sensitivity : 0.9836244541484717
+specificity : 0.9727854855923159
+precision : 0.7464788732394366
+mcc_score: 0.8431497553790033
+roc_score: 0.9928909683417766
+best_score: 0.88592282891462
+###############################################The following is the result for 167fg_bond3_rfMACCS_0%_20%:best parameters:{'max_depth': 8, 'max_features': 0.7, 'n_estimators': 500}
+accuracy_score: 0.9436560934891486
+accuracy: 0.9616026711185309
+sensitivity : 0.906832298136646
+specificity : 0.9655480984340045
+precision : 0.6547085201793722
+mcc_score: 0.6986434754411064
+roc_score: 0.9853224394514153
+best_score: 0.9490537618542273
+###############################################The following is the result for 167fg_bond3_rfMACCS_0%_20%:best parameters:{'max_depth': 8, 'max_features': 0.5, 'n_estimators': 200}
+accuracy_score: 0.9428213689482471
+accuracy: 0.9624373956594324
+sensitivity : 0.9316770186335404
+specificity : 0.9646532438478748
+precision : 0.6550218340611353
+mcc_score: 0.693470289765893
+roc_score: 0.9846957633359734
+best_score: 0.9430556311114625
+###############################################The following is the result for 167fg_bond3_rfMACCS_0%_20%:best parameters:{'max_depth': 8, 'max_features': 0.7, 'n_estimators': 500}
+accuracy_score: 0.9436560934891486
+accuracy: 0.9616026711185309
+sensitivity : 0.906832298136646
+specificity : 0.9655480984340045
+precision : 0.6547085201793722
+mcc_score: 0.6986434754411064
+roc_score: 0.9853224394514153
+best_score: 0.9490537618542273
+###############################################The following is the result for 167fg_bond3_rfMACCS_0%_20%:best parameters:{'max_depth': 14, 'max_features': 0.7, 'n_estimators': 500}
+accuracy_score: 0.9726526891522334
+accuracy: 0.9726526891522334
+sensitivity : 0.9934980494148244
+specificity : 0.9708919156414763
+precision : 0.7424684159378037
+mcc_score: 0.8461808626853485
+roc_score: 0.9943944958531497
+best_score: 0.9420154505123058
+###############################################

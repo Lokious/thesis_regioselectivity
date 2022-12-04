@@ -1,0 +1,28 @@
+The following is the result for N_AA_properties_encoding_MACCSkey:best parameters:{'max_depth': 30, 'max_features': 0.5, 'n_estimators': 1500}
+accuracy_score: 0.9964656695832076
+accuracy: 0.9965087711736563
+sensitivity : 0.9923371647509579
+specificity : 0.9967573986116186
+precision : 0.9480234260614934
+mcc_score: 0.9680338232936087
+roc_score: 0.9998667682965241
+best_score: 0.9944246053469824
+###############################################The following is the result for N_AA_properties_encoding_MACCSkey:best parameters:{'max_depth': 30, 'max_features': 0.3, 'n_estimators': 2000}
+accuracy_score: 0.9963794664023102
+accuracy: 0.9965087711736563
+sensitivity : 0.9923371647509579
+specificity : 0.9967573986116186
+precision : 0.9480234260614934
+mcc_score: 0.9672890671905341
+roc_score: 0.9998656484082888
+best_score: 0.9945777097496877
+###############################################The following is the result for N_AA_properties_encoding_MACCSkey:best parameters:{'max_depth': 15, 'max_features': 0.5, 'n_estimators': 2000}
+accuracy_score: 0.9951295202792984
+accuracy: 0.9954743330028878
+sensitivity : 0.9938697318007663
+specificity : 0.9955699671172817
+precision : 0.930416068866571
+mcc_score: 0.9567258622151416
+roc_score: 0.9997298969562838
+threshold: 0.591279651709808
+###############################################

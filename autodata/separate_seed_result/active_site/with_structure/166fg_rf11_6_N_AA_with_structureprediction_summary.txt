@@ -1,0 +1,10 @@
+The following is the result for 166fg_rf11_6_N_AA_with_structure:best parameters:{'max_depth': 10, 'max_features': 0.3, 'n_estimators': 1000}
+accuracy_score: 0.9874838152783773
+accuracy: 0.9887785930082003
+sensitivity : 0.988950276243094
+specificity : 0.9887640449438202
+precision : 0.8817733990147784
+mcc_score: 0.9205552208087595
+roc_score: 0.9977872100482132
+threshold: 0.6135615825665344
+###############################################

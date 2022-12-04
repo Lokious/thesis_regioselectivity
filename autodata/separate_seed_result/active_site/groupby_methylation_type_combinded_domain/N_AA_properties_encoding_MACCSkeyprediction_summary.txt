@@ -1,0 +1,10 @@
+The following is the result for N_AA_properties_encoding_MACCSkey:best parameters:{'max_depth': 30, 'max_features': 0.5, 'n_estimators': 1500}
+accuracy_score: 0.9964656695832076
+accuracy: 0.9965087711736563
+sensitivity : 0.9923371647509579
+specificity : 0.9967573986116186
+precision : 0.9480234260614934
+mcc_score: 0.9680338232936087
+roc_score: 0.9998667682965241
+best_score: 0.9944246053469824
+###############################################

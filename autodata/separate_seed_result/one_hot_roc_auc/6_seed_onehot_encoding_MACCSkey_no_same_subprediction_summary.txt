@@ -1,0 +1,10 @@
+The following is the result for 6_seed_onehot_encoding_MACCSkey_no_same_sub:best parameters:{'max_depth': 15, 'max_features': 0.3, 'n_estimators': 1000}
+accuracy_score: 0.9527618726844055
+accuracy: 0.9525934658134052
+sensitivity : 0.2482758620689655
+specificity : 0.9983857949959645
+precision : 0.9090909090909091
+mcc_score: 0.4651630226644235
+roc_score: 0.9551760009153347
+threshold: 0.6112477860774403
+###############################################

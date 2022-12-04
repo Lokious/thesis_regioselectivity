@@ -1,0 +1,10 @@
+The following is the result for onlyfingerprint_bit128_radius3_all_data_morganfingerprint:best parameters:{'max_depth': 20, 'max_features': 0.7, 'n_estimators': 2000}
+accuracy_score: 0.9363275751759437
+accuracy: 0.9362763915547025
+sensitivity : 0.09969558599695585
+specificity : 0.9965977995445441
+precision : 0.6787564766839378
+mcc_score: 0.24436843921979837
+roc_score: 0.7506364196229307
+threshold: 0.4988239287763585
+###############################################

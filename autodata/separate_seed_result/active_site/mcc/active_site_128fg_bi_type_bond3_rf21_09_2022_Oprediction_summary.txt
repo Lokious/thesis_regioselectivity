@@ -1,0 +1,7 @@
+The following is the result for active_site_128fg_bi_type_bond3_rf21_09_2022_O:accuracy: 0.9340157698160189
+sensitivity : 0.8427672955974843
+specificity : 0.8019845971563981
+precision : 0.23116733755031627
+mcc_score: 0.19629574778988024
+roc_score: 0.8778462721193876
+###############################################

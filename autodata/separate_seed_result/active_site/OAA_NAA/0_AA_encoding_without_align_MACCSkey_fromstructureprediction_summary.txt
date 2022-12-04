@@ -1,0 +1,10 @@
+The following is the result for 0_AA_encoding_without_align_MACCSkey_fromstructure:best parameters:{'max_depth': 10, 'max_features': 0.3, 'n_estimators': 500}
+accuracy_score: 0.9591280653950953
+accuracy: 0.9564032697547684
+sensitivity : 0.6875
+specificity : 0.9686609686609686
+precision : 0.5
+mcc_score: 0.6054725641803976
+roc_score: 0.9530804843304843
+threshold: 0.5706153777403076
+###############################################

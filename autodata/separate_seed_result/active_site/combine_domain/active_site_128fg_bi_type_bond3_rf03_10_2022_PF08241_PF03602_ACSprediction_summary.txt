@@ -1,0 +1,7 @@
+The following is the result for active_site_128fg_bi_type_bond3_rf03_10_2022_PF08241_PF03602_ACS:best parameters:{'max_features': 0.3, 'n_estimators': 2000}accuracy: 0.935030303030303
+sensitivity : 0.7306733167082294
+specificity : 0.7071632247472566
+precision : 0.14742138364779875
+mcc_score: 0.15588678440941783
+roc_score: 0.8101016253111282
+###############################################
